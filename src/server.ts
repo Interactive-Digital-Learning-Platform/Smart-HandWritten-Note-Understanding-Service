@@ -1,0 +1,92 @@
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import path from "path";
+import { config } from "./config/config";
+import { connectDB } from "./config/database";
+import { errorHandler } from "./middleware/errorHandler";
+
+// ─── Route imports ──────────────────────────────────────────────────────────
+import healthRouter from "./routes/health";
+import notesRouter from "./routes/notes";
+import materialsRouter from "./routes/materials";
+import analysisRouter from "./routes/analysis";
+
+// ─── App setup ──────────────────────────────────────────────────────────────
+
+const app = express();
+
+// ─── Security & parsing middleware ─────────────────────────────────────────
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // allow image serving
+  })
+);
+
+app.use(
+  cors({
+    origin: "*", // tighten this in production
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// ─── Static file serving (uploaded images) ─────────────────────────────────
+
+app.use(
+  "/uploads",
+  express.static(path.resolve(config.uploads.uploadDir))
+);
+
+app.use(
+  "/generated_audio",
+  express.static(path.resolve("generated_audio"))
+);
+
+// ─── Routes ─────────────────────────────────────────────────────────────────
+
+app.use("/api/health", healthRouter);
+app.use("/api/notes", notesRouter);
+app.use("/api/materials", materialsRouter);
+app.use("/api/analyze", analysisRouter);
+
+// ─── 404 handler ────────────────────────────────────────────────────────────
+
+app.use((_req, res) => {
+  res.status(404).json({
+    success: false,
+    error: "Route not found",
+  });
+});
+
+// ─── Global error handler ────────────────────────────────────────────────────
+
+app.use(errorHandler);
+
+// ─── Start server ────────────────────────────────────────────────────────────
+
+const startServer = async (): Promise<void> => {
+  try {
+    await connectDB();
+
+    app.listen(config.port, () => {
+      console.log("\n========================================");
+      console.log("🚀 Smart Note Understanding Service");
+      console.log(`📡 Running on: http://localhost:${config.port}`);
+      console.log(`🌍 Environment: ${config.nodeEnv}`);
+      console.log(`❤️  Health: http://localhost:${config.port}/api/health`);
+      console.log("========================================\n");
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+export default app;
