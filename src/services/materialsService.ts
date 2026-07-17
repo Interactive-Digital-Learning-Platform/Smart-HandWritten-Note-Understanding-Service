@@ -295,27 +295,27 @@ Write naturally as spoken words only — no bullet points or markdown.`;
   const script = await askGroq(system, user);
 
   // ── Step 2: Convert to audio via ElevenLabs ───────────────────────────────
+  const audioDir = path.resolve("generated_audio");
+  if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
+
   if (!config.elevenlabs.apiKey) {
-    // Save the script as a text file as fallback
-    const scriptPath = path.resolve(
-      config.uploads.uploadDir,
-      `audio-script-${noteId}.txt`
-    );
+    // Save the script as a text file fallback
+    const scriptPath = path.join(audioDir, `audio-script-${noteId}.txt`);
     fs.writeFileSync(scriptPath, script, "utf-8");
-    return `/uploads/audio-script-${noteId}.txt`;
+    console.log(`📄 Audio script saved (no ElevenLabs key): ${scriptPath}`);
+    return `/generated_audio/audio-script-${noteId}.txt`;
   }
 
-  const VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // ElevenLabs "Rachel" voice
-  const audioPath = path.resolve(
-    config.uploads.uploadDir,
-    `audio-${noteId}.mp3`
-  );
+  const VOICE_ID = "JBFqnCBsd6RMkjVDRZzb"; // ElevenLabs "George" voice (v2)
+  const audioPath = path.join(audioDir, `audio-${noteId}.mp3`);
+
+  console.log(`🎧 Requesting audio from ElevenLabs for note: ${noteId}`);
 
   const response = await axios.post(
     `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
     {
       text: script,
-      model_id: "eleven_monolingual_v1",
+      model_id: "eleven_multilingual_v2",
       voice_settings: { stability: 0.5, similarity_boost: 0.75 },
     },
     {
@@ -325,13 +325,13 @@ Write naturally as spoken words only — no bullet points or markdown.`;
         Accept: "audio/mpeg",
       },
       responseType: "arraybuffer",
-      timeout: 60000,
+      timeout: 90000, // 90s for audio generation
     }
   );
 
   fs.writeFileSync(audioPath, Buffer.from(response.data as ArrayBuffer));
   console.log(`🎧 Audio saved: ${audioPath}`);
-  return `/uploads/audio-${noteId}.mp3`;
+  return `/generated_audio/audio-${noteId}.mp3`;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
