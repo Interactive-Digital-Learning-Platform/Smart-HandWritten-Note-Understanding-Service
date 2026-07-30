@@ -78,7 +78,7 @@ export const extractTextFromImage = async (
           ],
         },
       ],
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "qwen/qwen3.6-27b", // Only vision model available on this Groq account
       temperature: 0.1, // Low temperature for higher accuracy in transcription
       max_tokens: 1024,
     });
