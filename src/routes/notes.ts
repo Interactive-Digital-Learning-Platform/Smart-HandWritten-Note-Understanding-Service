@@ -13,18 +13,18 @@ const router = Router();
 
 /**
  * POST /api/notes/upload
- * Upload a handwritten note image (no auto-processing)
- * Body: multipart/form-data — fields: "image" (file), "userId" (string), "title" (optional string)
+ * Upload one or multiple handwritten note page images (no auto-processing).
+ * Body: multipart/form-data — fields: "images" or "image", "userId", "title"
  */
-router.post("/upload", upload.single("image"), uploadNote);
+router.post("/upload", upload.any(), uploadNote);
 
 /**
  * POST /api/notes/upload-and-process
- * Upload AND immediately trigger OCR + AI analysis pipeline
- * This is the primary endpoint used by the mobile app.
+ * Upload one or multiple note page images AND immediately trigger OCR + AI analysis pipeline.
+ * Primary endpoint used by the mobile app.
  * Returns 202 with pollUrl — client polls GET /api/notes/:id for completion.
  */
-router.post("/upload-and-process", upload.single("image"), uploadAndProcess);
+router.post("/upload-and-process", upload.any(), uploadAndProcess);
 
 /**
  * GET /api/notes
@@ -52,4 +52,3 @@ router.post("/:id/process", processNote);
 router.delete("/:id", deleteNote);
 
 export default router;
-

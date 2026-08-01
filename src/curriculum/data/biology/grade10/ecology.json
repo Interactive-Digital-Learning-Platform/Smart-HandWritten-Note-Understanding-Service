@@ -1,0 +1,219 @@
+{
+  "lessonId": "bio-g10-ecology",
+  "subject": "Biology",
+  "grade": 10,
+  "unit": "Environmental Biology",
+  "lessonName": "Ecology and Ecosystems",
+  "textbookReference": "Grade 10 Biology — Chapter 8: Ecology, Section 8.1–8.4",
+  "matchingKeywords": [
+    "ecology", "ecosystem", "food chain", "food web", "habitat",
+    "population", "community", "biotic", "abiotic", "environment",
+    "producer", "consumer", "decomposer", "trophic level"
+  ],
+  "learningOutcomes": [
+    {
+      "id": "bio-g10-eco-lo-01",
+      "description": "Define ecology, ecosystem, habitat, population, community, and biosphere",
+      "requiredConcepts": ["bio-g10-eco-001", "bio-g10-eco-002", "bio-g10-eco-003", "bio-g10-eco-004"]
+    },
+    {
+      "id": "bio-g10-eco-lo-02",
+      "description": "Distinguish between biotic and abiotic factors and give examples",
+      "requiredConcepts": ["bio-g10-eco-005", "bio-g10-eco-006"]
+    },
+    {
+      "id": "bio-g10-eco-lo-03",
+      "description": "Describe food chains, food webs, and trophic levels",
+      "requiredConcepts": ["bio-g10-eco-007", "bio-g10-eco-008", "bio-g10-eco-009"]
+    },
+    {
+      "id": "bio-g10-eco-lo-04",
+      "description": "Explain the roles of producers, consumers, and decomposers in an ecosystem",
+      "requiredConcepts": ["bio-g10-eco-010", "bio-g10-eco-011", "bio-g10-eco-012"]
+    },
+    {
+      "id": "bio-g10-eco-lo-05",
+      "description": "Explain energy flow and the 10% rule in ecosystems",
+      "requiredConcepts": ["bio-g10-eco-013", "bio-g10-eco-014"]
+    },
+    {
+      "id": "bio-g10-eco-lo-06",
+      "description": "Describe nutrient cycling (carbon cycle, nitrogen cycle)",
+      "requiredConcepts": ["bio-g10-eco-015", "bio-g10-eco-016"]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "bio-g10-eco-001",
+      "name": "Definition of Ecology",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["ecology", "study of interactions", "organisms and environment"]
+    },
+    {
+      "id": "bio-g10-eco-002",
+      "name": "Definition of Ecosystem",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["ecosystem", "biotic and abiotic", "community and environment", "ecological system"]
+    },
+    {
+      "id": "bio-g10-eco-003",
+      "name": "Habitat and Niche",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["habitat", "niche", "living place", "ecological niche", "role in ecosystem"]
+    },
+    {
+      "id": "bio-g10-eco-004",
+      "name": "Population and Community",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["population", "community", "species", "group of organisms", "same species", "different species"]
+    },
+    {
+      "id": "bio-g10-eco-005",
+      "name": "Biotic Factors",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["biotic", "living factors", "predation", "competition", "parasitism", "symbiosis"]
+    },
+    {
+      "id": "bio-g10-eco-006",
+      "name": "Abiotic Factors",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["abiotic", "non-living", "temperature", "light", "water", "soil", "pH", "humidity"]
+    },
+    {
+      "id": "bio-g10-eco-007",
+      "name": "Food Chain",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "diagram",
+      "keywords": ["food chain", "feeding relationship", "linear", "arrow shows energy flow"]
+    },
+    {
+      "id": "bio-g10-eco-008",
+      "name": "Food Web",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "diagram",
+      "keywords": ["food web", "interconnected food chains", "complex feeding", "network"]
+    },
+    {
+      "id": "bio-g10-eco-009",
+      "name": "Trophic Levels",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["trophic level", "feeding level", "first trophic", "second trophic", "primary", "secondary", "tertiary"]
+    },
+    {
+      "id": "bio-g10-eco-010",
+      "name": "Producers (Autotrophs)",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["producer", "autotroph", "green plants", "photosynthesis", "make own food", "first trophic level"]
+    },
+    {
+      "id": "bio-g10-eco-011",
+      "name": "Consumers (Heterotrophs)",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["consumer", "heterotroph", "primary consumer", "secondary consumer", "tertiary consumer", "herbivore", "carnivore", "omnivore"]
+    },
+    {
+      "id": "bio-g10-eco-012",
+      "name": "Decomposers",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["decomposer", "bacteria", "fungi", "decay", "breakdown", "nutrient recycling", "saprotroph"]
+    },
+    {
+      "id": "bio-g10-eco-013",
+      "name": "Energy Flow in Ecosystem",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["energy flow", "unidirectional", "sun", "solar energy", "energy transfer", "energy pyramid"]
+    },
+    {
+      "id": "bio-g10-eco-014",
+      "name": "10% Rule of Energy Transfer",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["10% rule", "ten percent", "energy loss", "heat", "energy pyramid", "Lindeman"]
+    },
+    {
+      "id": "bio-g10-eco-015",
+      "name": "Carbon Cycle",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["carbon cycle", "CO2", "photosynthesis", "respiration", "combustion", "fossil fuels", "decomposition"]
+    },
+    {
+      "id": "bio-g10-eco-016",
+      "name": "Nitrogen Cycle",
+      "weight": 3,
+      "isFrequentlyTested": false,
+      "category": "process",
+      "keywords": ["nitrogen cycle", "nitrogen fixation", "nitrification", "denitrification", "legumes", "Rhizobium"]
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Ecology",
+      "definition": "The scientific study of the interactions between organisms and their environment.",
+      "conceptId": "bio-g10-eco-001"
+    },
+    {
+      "term": "Ecosystem",
+      "definition": "A community of living organisms (biotic) interacting with non-living components (abiotic) in a given area.",
+      "conceptId": "bio-g10-eco-002"
+    },
+    {
+      "term": "Habitat",
+      "definition": "The natural environment or place where an organism lives.",
+      "conceptId": "bio-g10-eco-003"
+    },
+    {
+      "term": "Food Chain",
+      "definition": "A linear sequence showing the transfer of energy from one organism to the next through feeding.",
+      "conceptId": "bio-g10-eco-007"
+    },
+    {
+      "term": "Producer",
+      "definition": "An organism (usually a green plant) that makes its own food through photosynthesis and forms the base of a food chain.",
+      "conceptId": "bio-g10-eco-010"
+    },
+    {
+      "term": "Decomposer",
+      "definition": "An organism such as bacteria or fungi that breaks down dead organic matter, recycling nutrients back into the ecosystem.",
+      "conceptId": "bio-g10-eco-012"
+    }
+  ],
+  "formulae": [],
+  "expectedDiagrams": [
+    "A simple food chain with arrows showing direction of energy flow",
+    "A food web diagram showing interconnected food chains in a Sri Lankan ecosystem",
+    "Energy pyramid (pyramid of energy) showing energy loss at each trophic level",
+    "Carbon cycle diagram showing photosynthesis, respiration, combustion, and decomposition"
+  ],
+  "examKeywords": [
+    "ecology", "ecosystem", "food chain", "food web", "producer", "consumer",
+    "decomposer", "trophic level", "biotic", "abiotic", "energy flow",
+    "10% rule", "carbon cycle", "habitat", "population", "community"
+  ]
+}

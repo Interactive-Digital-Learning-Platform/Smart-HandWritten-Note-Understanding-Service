@@ -5,12 +5,16 @@ import path from "path";
 import { config } from "./config/config";
 import { connectDB } from "./config/database";
 import { errorHandler } from "./middleware/errorHandler";
+import { loadCurriculum } from "./curriculum";
 
 // ─── Route imports ──────────────────────────────────────────────────────────
 import healthRouter from "./routes/health";
 import notesRouter from "./routes/notes";
 import materialsRouter from "./routes/materials";
 import analysisRouter from "./routes/analysis";
+import curriculumRouter from "./routes/curriculum";
+import profileRouter from "./routes/profile";
+import teacherRouter from "./routes/teacher";
 
 // ─── App setup ──────────────────────────────────────────────────────────────
 
@@ -53,6 +57,9 @@ app.use("/api/health", healthRouter);
 app.use("/api/notes", notesRouter);
 app.use("/api/materials", materialsRouter);
 app.use("/api/analyze", analysisRouter);
+app.use("/api/curriculum", curriculumRouter);
+app.use("/api/profile", profileRouter);
+app.use("/api/teacher", teacherRouter);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────
 
@@ -73,12 +80,16 @@ const startServer = async (): Promise<void> => {
   try {
     await connectDB();
 
+    // ── Load Curriculum Knowledge Base ────────────────────────────────────
+    await loadCurriculum();
+
     app.listen(config.port, () => {
       console.log("\n========================================");
       console.log("🚀 Smart Note Understanding Service");
       console.log(`📡 Running on: http://localhost:${config.port}`);
       console.log(`🌍 Environment: ${config.nodeEnv}`);
       console.log(`❤️  Health: http://localhost:${config.port}/api/health`);
+      console.log(`📚 Curriculum: http://localhost:${config.port}/api/curriculum/stats`);
       console.log("========================================\n");
     });
   } catch (error) {

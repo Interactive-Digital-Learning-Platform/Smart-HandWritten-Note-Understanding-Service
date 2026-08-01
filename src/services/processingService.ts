@@ -1,8 +1,7 @@
-import path from "path";
-import { Note, INote } from "../models/Note";
-import { extractTextFromImage } from "./ocrService";
-import { analyzeNoteContent } from "./analysisService";
-import { generateMaterials } from "./materialsService";
+import { Note, INote, IAnalysis } from "../models/Note";
+import { runPipeline } from "../pipeline";
+import { PipelineContext } from "../pipeline/types";
+import { updateProfileFromAnalysis } from "./profileService";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -15,65 +14,105 @@ export interface ProcessingResult {
   error?: string;
 }
 
-// ─── Helper: resolve image file path from imageUrl ─────────────────────────
+// ─── Context → IAnalysis Mapper ─────────────────────────────────────────────
 
 /**
- * Converts a stored imageUrl like "/uploads/note-123.jpg"
- * into an absolute file system path.
+ * Converts the final PipelineContext into the IAnalysis shape
+ * stored in the Note MongoDB document.
+ *
+ * Maps new pipeline fields to the expanded IAnalysis interface
+ * AND maintains backward-compatible legacy fields for existing
+ * mobile app consumers.
  */
-const resolveImagePath = (imageUrl: string): string => {
-  const relativePart = imageUrl.startsWith("/")
-    ? imageUrl.slice(1)
-    : imageUrl;
-  return path.resolve(relativePart);
-};
+const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
+  const subject = ctx.matchedLesson?.subject
+    ?? ctx.subjectDetection?.subject
+    ?? "Unknown";
 
-// ─── Step 1: OCR ────────────────────────────────────────────────────────────
+  const topic = ctx.matchedLesson?.lessonName
+    ?? ctx.subjectDetection?.topicHint
+    ?? "Unknown";
 
-const runOcr = async (note: INote): Promise<string> => {
-  console.log(`📷 [Step 1/2] OCR — note: ${note._id}`);
-  const imagePath = resolveImagePath(note.imageUrl);
-  const result = await extractTextFromImage(imagePath);
+  const gradeLevel = ctx.subjectDetection?.grade
+    ? `Grade ${ctx.subjectDetection.grade}`
+    : "Unknown";
 
-  if (!result.success || !result.text) {
-    throw new Error(result.error || "OCR returned empty text");
-  }
+  // ── Found / missing concept names ───────────────────────────────────────
+  const keyConcepts = (ctx.conceptMatches ?? [])
+    .filter((m) => m.found)
+    .map((m) => m.concept.name);
 
-  console.log(`✅ OCR done — ${result.text.length} chars extracted`);
-  return result.text;
-};
+  const missingConceptNames = (ctx.conceptMatches ?? [])
+    .filter((m) => !m.found)
+    .map((m) => m.concept.name);
 
-// ─── Step 2: AI Analysis ────────────────────────────────────────────────────
+  // ── Legacy learningGaps (backward compat for mobile) ────────────────────
+  const learningGaps = (ctx.explainableGaps ?? []).map((g) => ({
+    concept: g.missingConcepts.map((c) => c.name).join(", ") || g.learningOutcome.description,
+    severity: (g.missingConcepts[0]?.severity ?? "medium") as "low" | "medium" | "high",
+    suggestion: g.recommendation,
+  }));
 
-const runAnalysis = async (
-  note: INote,
-  rawText: string
-): Promise<INote["analysis"]> => {
-  console.log(`🤖 [Step 2/2] AI Analysis — note: ${note._id}`);
-  const result = await analyzeNoteContent(rawText);
+  // ── New explainable gaps ─────────────────────────────────────────────────
+  const explainableGaps = (ctx.explainableGaps ?? []).map((g) => ({
+    outcomeId: g.learningOutcome.id,
+    outcomeDescription: g.learningOutcome.description,
+    status: g.status,
+    evidence: g.evidence,
+    missingConcepts: g.missingConcepts,
+    recommendation: g.recommendation,
+  }));
 
-  if (!result.success || !result.analysis) {
-    throw new Error(result.error || "AI analysis returned no result");
-  }
+  // ── Overall completeness: prefer weighted coverage ───────────────────────
+  const overallCompleteness =
+    ctx.coverageScores?.weightedCoverage ??
+    ctx.coverageScores?.simpleCoverage ??
+    0;
 
-  console.log(
-    `✅ Analysis done — ${result.analysis.subject} / ${result.analysis.topic} ` +
-      `(${result.analysis.overallCompleteness}% complete, ` +
-      `${result.analysis.learningGaps.length} gaps)`
-  );
+  return {
+    // Core identification
+    subject,
+    topic,
+    gradeLevel,
 
-  return result.analysis;
+    // Curriculum KB match
+    lessonId: ctx.matchedLessonId,
+    lessonMatchConfidence: ctx.lessonMatchConfidence,
+    lessonMatchMethod: ctx.lessonMatchMethod,
+
+    // OCR quality
+    ocrConfidence: ctx.ocrCleaning?.confidenceScore,
+    ocrLowQualityWarning: ctx.ocrCleaning?.lowQualityWarning,
+
+    // Coverage
+    keyConcepts,
+    missingConcepts: missingConceptNames,
+    coverageScores: ctx.coverageScores,
+    overallCompleteness,
+
+    // Gaps
+    learningGaps,
+    explainableGaps,
+
+    // Strengths & exam readiness
+    strengthAreas: ctx.strengthAreas ?? [],
+    examReadiness: ctx.examReadiness,
+
+    // Pipeline metadata
+    pipelineVersion: ctx.pipelineVersion,
+    qualityWarnings: ctx.qualityWarnings ?? [],
+    analyzedAt: new Date(),
+  };
 };
 
 // ─── Main Pipeline ──────────────────────────────────────────────────────────
 
 /**
- * Full processing pipeline for a handwritten note:
- *   Step 1 — OCR  (Microsoft TrOCR via HuggingFace)
- *   Step 2 — AI Analysis  (Groq — subject, topic, gaps, completeness)
+ * Full processing pipeline for a handwritten note.
  *
- * Runs asynchronously and updates the Note document in MongoDB at each step.
- * The mobile app polls GET /api/notes/:id to track status.
+ * Delegates all processing to the new 10-stage Hybrid Pipeline.
+ * After the pipeline completes, maps the PipelineContext back to the
+ * IAnalysis shape and saves it to MongoDB.
  *
  * Status transitions: uploaded → processing → analyzed | failed
  *
@@ -113,45 +152,58 @@ export const processNote = async (
     note.status = "processing";
     await note.save();
 
-    console.log(`\n${"─".repeat(50)}`);
-    console.log(`🔄 Pipeline started`);
-    console.log(`   Note ID : ${noteId}`);
-    console.log(`   Title   : ${note.title}`);
-    console.log(`   Image   : ${note.imageUrl}`);
-    console.log(`${"─".repeat(50)}`);
+    // ── Run the Hybrid Pipeline ─────────────────────────────────────────────
+    const imageUrls = note.imageUrls && note.imageUrls.length > 0
+      ? note.imageUrls
+      : [note.imageUrl];
 
-    // ── Step 1: OCR ─────────────────────────────────────────────────────────
-    const rawText = await runOcr(note);
+    const pipelineResult = await runPipeline({
+      noteId,
+      userId: note.userId,
+      imageUrl: note.imageUrl,
+      imageUrls,
+    });
+
+    if (!pipelineResult.success || !pipelineResult.context) {
+      throw new Error(
+        pipelineResult.error ?? "Pipeline completed with no context"
+      );
+    }
+
+    const ctx = pipelineResult.context;
+
+    // ── Persist OCR text ────────────────────────────────────────────────────
+    const rawText = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
     note.rawText = rawText;
-    await note.save();
 
-    // ── Step 2: AI Analysis ─────────────────────────────────────────────────
-    const analysis = await runAnalysis(note, rawText);
+    // ── Persist analysis ────────────────────────────────────────────────────
+    const analysis = contextToAnalysis(ctx);
     note.analysis = analysis;
     note.status = "analyzed";
     await note.save();
 
-    // ── Step 3: Generate All Learning Materials ──────────────────────────────
-    console.log(`📚 [Step 3/3] Generating learning materials...`);
-    let materialsGenerated = 0;
-    try {
-      const matResult = await generateMaterials(noteId);
-      materialsGenerated = matResult.succeeded;
-    } catch (matErr) {
-      // Material generation failures do NOT fail the whole pipeline
-      console.warn(`⚠️  Materials generation had errors (non-fatal):`, matErr);
-    }
+    // ── Update Student Profile (non-fatal) ───────────────────────────
+    await updateProfileFromAnalysis(ctx);
 
-    console.log(`\n✅ Pipeline complete for note: ${noteId}`);
-    console.log(`${"─".repeat(50)}\n`);
+    console.log(
+      `✅ Processing complete for note ${noteId}: ` +
+        `${analysis.subject} / ${analysis.topic} — ` +
+        `${analysis.overallCompleteness}% coverage, ` +
+        `${analysis.learningGaps.length} gaps`
+    );
 
-    return { success: true, noteId, rawText, analysis, materialsGenerated };
-
+    return {
+      success: true,
+      noteId,
+      rawText,
+      analysis,
+      materialsGenerated: ctx.materialsGenerated ?? 0,
+    };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown processing error";
 
-    console.error(`\n❌ Pipeline failed for note ${noteId}: ${message}\n`);
+    console.error(`\n❌ Processing failed for note ${noteId}: ${message}\n`);
 
     if (note) {
       note.status = "failed";

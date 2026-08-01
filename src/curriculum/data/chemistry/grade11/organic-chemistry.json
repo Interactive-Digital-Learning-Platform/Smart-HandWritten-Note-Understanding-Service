@@ -1,0 +1,216 @@
+{
+  "lessonId": "chem-g11-organic",
+  "subject": "Chemistry",
+  "grade": 11,
+  "unit": "Organic Chemistry",
+  "lessonName": "Introduction to Organic Chemistry and Hydrocarbons",
+  "textbookReference": "Grade 11 Chemistry — Chapter 7: Organic Chemistry, Section 7.1–7.4",
+  "matchingKeywords": [
+    "organic chemistry", "hydrocarbon", "alkane", "alkene", "alkyne",
+    "carbon compound", "functional group", "methane", "ethane", "propane",
+    "benzene", "homologous series", "isomer", "structural formula"
+  ],
+  "learningOutcomes": [
+    {
+      "id": "chem-g11-org-lo-01",
+      "description": "Define organic chemistry and explain the unique bonding properties of carbon",
+      "requiredConcepts": ["chem-g11-org-001", "chem-g11-org-002"]
+    },
+    {
+      "id": "chem-g11-org-lo-02",
+      "description": "Define and give examples of homologous series",
+      "requiredConcepts": ["chem-g11-org-003"]
+    },
+    {
+      "id": "chem-g11-org-lo-03",
+      "description": "Name and write structural formulae for alkanes (C1–C5)",
+      "requiredConcepts": ["chem-g11-org-004", "chem-g11-org-005"]
+    },
+    {
+      "id": "chem-g11-org-lo-04",
+      "description": "Name and write structural formulae for alkenes and describe their reactions",
+      "requiredConcepts": ["chem-g11-org-006", "chem-g11-org-007"]
+    },
+    {
+      "id": "chem-g11-org-lo-05",
+      "description": "Explain isomerism and draw structural isomers",
+      "requiredConcepts": ["chem-g11-org-008"]
+    },
+    {
+      "id": "chem-g11-org-lo-06",
+      "description": "Describe important functional groups: alcohol, carboxylic acid, ester",
+      "requiredConcepts": ["chem-g11-org-009", "chem-g11-org-010", "chem-g11-org-011"]
+    },
+    {
+      "id": "chem-g11-org-lo-07",
+      "description": "Explain combustion, substitution, and addition reactions of hydrocarbons",
+      "requiredConcepts": ["chem-g11-org-012", "chem-g11-org-013", "chem-g11-org-014"]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "chem-g11-org-001",
+      "name": "Definition of Organic Chemistry",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["organic chemistry", "carbon compounds", "study of carbon", "organic compounds"]
+    },
+    {
+      "id": "chem-g11-org-002",
+      "name": "Bonding Properties of Carbon",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["carbon bonding", "four bonds", "tetravalent", "covalent bonds", "carbon chain", "self-linking"]
+    },
+    {
+      "id": "chem-g11-org-003",
+      "name": "Homologous Series",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["homologous series", "same general formula", "differ by CH2", "same functional group", "gradation in properties"]
+    },
+    {
+      "id": "chem-g11-org-004",
+      "name": "Alkanes",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["alkane", "saturated hydrocarbon", "single bond", "CnH2n+2", "methane", "ethane", "propane", "butane", "pentane"]
+    },
+    {
+      "id": "chem-g11-org-005",
+      "name": "Structural Formulae of Alkanes",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "diagram",
+      "keywords": ["structural formula", "displayed formula", "CH4", "C2H6", "C3H8", "carbon skeleton", "draw alkane"]
+    },
+    {
+      "id": "chem-g11-org-006",
+      "name": "Alkenes",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["alkene", "unsaturated hydrocarbon", "double bond", "CnH2n", "ethene", "propene", "C=C"]
+    },
+    {
+      "id": "chem-g11-org-007",
+      "name": "Addition Reactions of Alkenes",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["addition reaction", "bromine water", "decolourize", "HBr", "H2", "hydrogenation", "halogenation", "unsaturated test"]
+    },
+    {
+      "id": "chem-g11-org-008",
+      "name": "Isomerism",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["isomer", "isomerism", "same molecular formula", "different structural formula", "structural isomers", "chain isomers"]
+    },
+    {
+      "id": "chem-g11-org-009",
+      "name": "Alcohols",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["alcohol", "-OH group", "hydroxyl group", "methanol", "ethanol", "propanol", "-ol", "CnH2n+1OH"]
+    },
+    {
+      "id": "chem-g11-org-010",
+      "name": "Carboxylic Acids",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["carboxylic acid", "-COOH group", "methanoic acid", "ethanoic acid", "acetic acid", "-oic acid", "weak acid"]
+    },
+    {
+      "id": "chem-g11-org-011",
+      "name": "Esters",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["ester", "esterification", "acid + alcohol", "fruit smell", "-COO-", "ethyl ethanoate", "sweet smell"]
+    },
+    {
+      "id": "chem-g11-org-012",
+      "name": "Combustion of Hydrocarbons",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["combustion", "burning", "complete combustion", "CO2 + H2O", "incomplete combustion", "carbon monoxide", "soot"]
+    },
+    {
+      "id": "chem-g11-org-013",
+      "name": "Substitution Reactions of Alkanes",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["substitution", "halogenation", "UV light", "chlorination", "chloroalkane", "free radical", "photochemical"]
+    },
+    {
+      "id": "chem-g11-org-014",
+      "name": "Test for Unsaturation (Bromine Water)",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "experiment",
+      "keywords": ["bromine water", "decolourize", "orange to colourless", "test for alkene", "unsaturation test", "Br2"]
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Organic Chemistry",
+      "definition": "The branch of chemistry concerned with the study of carbon-containing compounds and their reactions.",
+      "conceptId": "chem-g11-org-001"
+    },
+    {
+      "term": "Homologous Series",
+      "definition": "A series of organic compounds with the same general formula and functional group, differing by a CH₂ unit, with gradually changing properties.",
+      "conceptId": "chem-g11-org-003"
+    },
+    {
+      "term": "Alkane",
+      "definition": "A saturated hydrocarbon with only single C-C bonds. General formula: CₙH₂ₙ₊₂.",
+      "conceptId": "chem-g11-org-004"
+    },
+    {
+      "term": "Alkene",
+      "definition": "An unsaturated hydrocarbon containing at least one C=C double bond. General formula: CₙH₂ₙ.",
+      "conceptId": "chem-g11-org-006"
+    },
+    {
+      "term": "Isomers",
+      "definition": "Compounds with the same molecular formula but different structural arrangements of atoms.",
+      "conceptId": "chem-g11-org-008"
+    },
+    {
+      "term": "Esterification",
+      "definition": "The reaction between a carboxylic acid and an alcohol (with acid catalyst) to form an ester and water.",
+      "conceptId": "chem-g11-org-011"
+    }
+  ],
+  "formulae": [
+    "Alkane general formula: CₙH₂ₙ₊₂",
+    "Alkene general formula: CₙH₂ₙ",
+    "Alkyne general formula: CₙH₂ₙ₋₂",
+    "Complete combustion: CₙH₂ₙ₊₂ + O₂ → CO₂ + H₂O",
+    "Esterification: Carboxylic Acid + Alcohol → Ester + Water",
+    "Alcohol functional group: -OH",
+    "Carboxylic acid functional group: -COOH"
+  ],
+  "expectedDiagrams": [
+    "Structural formula of methane, ethane, propane, butane",
+    "Structural formula of ethene (C=C double bond)",
+    "Structural isomers of butane (n-butane and isobutane)",
+    "Functional group structures: -OH, -COOH, -COO-"
+  ],
+  "examKeywords": [
+    "alkane", "alkene", "hydrocarbon", "organic", "saturated", "unsaturated",
+    "functional group", "alcohol", "carboxylic acid", "ester", "isomer",
+    "combustion", "addition reaction", "bromine water", "structural formula"
+  ]
+}

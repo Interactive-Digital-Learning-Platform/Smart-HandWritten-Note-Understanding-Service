@@ -1,0 +1,220 @@
+{
+  "lessonId": "phy-g11-waves",
+  "subject": "Physics",
+  "grade": 11,
+  "unit": "Waves and Sound",
+  "lessonName": "Wave Motion and Sound",
+  "textbookReference": "Grade 11 Physics — Chapter 5: Waves, Section 5.1–5.5",
+  "matchingKeywords": [
+    "wave", "sound", "frequency", "wavelength", "amplitude", "wave motion",
+    "transverse wave", "longitudinal wave", "speed of sound", "wave speed",
+    "period", "echo", "resonance", "pitch", "loudness", "intensity"
+  ],
+  "learningOutcomes": [
+    {
+      "id": "phy-g11-wav-lo-01",
+      "description": "Define wave motion and describe key properties: amplitude, wavelength, frequency, and period",
+      "requiredConcepts": ["phy-g11-wav-001", "phy-g11-wav-002", "phy-g11-wav-003", "phy-g11-wav-004"]
+    },
+    {
+      "id": "phy-g11-wav-lo-02",
+      "description": "Distinguish between transverse and longitudinal waves with examples",
+      "requiredConcepts": ["phy-g11-wav-005", "phy-g11-wav-006"]
+    },
+    {
+      "id": "phy-g11-wav-lo-03",
+      "description": "Apply the wave speed equation v = fλ to solve problems",
+      "requiredConcepts": ["phy-g11-wav-007", "phy-g11-wav-008"]
+    },
+    {
+      "id": "phy-g11-wav-lo-04",
+      "description": "Explain the properties of sound waves: pitch, loudness, and quality",
+      "requiredConcepts": ["phy-g11-wav-009", "phy-g11-wav-010", "phy-g11-wav-011"]
+    },
+    {
+      "id": "phy-g11-wav-lo-05",
+      "description": "Describe the phenomena of reflection (echo), refraction, and diffraction of waves",
+      "requiredConcepts": ["phy-g11-wav-012", "phy-g11-wav-013", "phy-g11-wav-014"]
+    },
+    {
+      "id": "phy-g11-wav-lo-06",
+      "description": "Explain resonance and its applications",
+      "requiredConcepts": ["phy-g11-wav-015"]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "phy-g11-wav-001",
+      "name": "Amplitude",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["amplitude", "maximum displacement", "height of wave", "A", "crest to midpoint"]
+    },
+    {
+      "id": "phy-g11-wav-002",
+      "name": "Wavelength",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["wavelength", "lambda", "λ", "distance between crests", "one complete wave", "metre"]
+    },
+    {
+      "id": "phy-g11-wav-003",
+      "name": "Frequency",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["frequency", "f", "hertz", "Hz", "waves per second", "number of oscillations", "cycles per second"]
+    },
+    {
+      "id": "phy-g11-wav-004",
+      "name": "Period",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["period", "T", "time for one wave", "seconds per cycle", "T = 1/f", "time period"]
+    },
+    {
+      "id": "phy-g11-wav-005",
+      "name": "Transverse Waves",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["transverse wave", "perpendicular", "vibration at right angles", "light wave", "water wave", "EM wave", "crest trough"]
+    },
+    {
+      "id": "phy-g11-wav-006",
+      "name": "Longitudinal Waves",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["longitudinal wave", "compression", "rarefaction", "parallel", "sound wave", "along direction of travel"]
+    },
+    {
+      "id": "phy-g11-wav-007",
+      "name": "Wave Speed Equation",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "formula",
+      "keywords": ["v = fλ", "wave speed", "v = f lambda", "velocity equals frequency times wavelength", "wave equation"]
+    },
+    {
+      "id": "phy-g11-wav-008",
+      "name": "Speed of Sound",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["speed of sound", "340 m/s", "330 m/s", "in air", "medium", "faster in solid", "slower in gas"]
+    },
+    {
+      "id": "phy-g11-wav-009",
+      "name": "Pitch",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["pitch", "frequency of sound", "high pitch", "low pitch", "high frequency", "shrillness"]
+    },
+    {
+      "id": "phy-g11-wav-010",
+      "name": "Loudness",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["loudness", "amplitude of sound", "intensity", "decibel", "dB", "volume"]
+    },
+    {
+      "id": "phy-g11-wav-011",
+      "name": "Quality (Timbre) of Sound",
+      "weight": 2,
+      "isFrequentlyTested": false,
+      "category": "definition",
+      "keywords": ["quality", "timbre", "waveform", "harmonics", "overtones", "tone quality"]
+    },
+    {
+      "id": "phy-g11-wav-012",
+      "name": "Reflection of Waves (Echo)",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["reflection", "echo", "reflected wave", "law of reflection", "rebound", "sonar", "ultrasound"]
+    },
+    {
+      "id": "phy-g11-wav-013",
+      "name": "Refraction of Waves",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["refraction", "change of speed", "change of medium", "direction change", "bending of waves"]
+    },
+    {
+      "id": "phy-g11-wav-014",
+      "name": "Diffraction of Waves",
+      "weight": 3,
+      "isFrequentlyTested": false,
+      "category": "definition",
+      "keywords": ["diffraction", "bending around obstacles", "spreading of waves", "gap width", "wavelength"]
+    },
+    {
+      "id": "phy-g11-wav-015",
+      "name": "Resonance",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["resonance", "natural frequency", "forced vibration", "maximum amplitude", "resonant frequency"]
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Wave",
+      "definition": "A disturbance that transfers energy from one place to another without transferring matter.",
+      "conceptId": "phy-g11-wav-001"
+    },
+    {
+      "term": "Amplitude",
+      "definition": "The maximum displacement of a particle from its rest position, measured in metres.",
+      "conceptId": "phy-g11-wav-001"
+    },
+    {
+      "term": "Wavelength",
+      "definition": "The distance between two consecutive points in phase (e.g., crest to crest), measured in metres.",
+      "conceptId": "phy-g11-wav-002"
+    },
+    {
+      "term": "Frequency",
+      "definition": "The number of complete waves passing a point per second, measured in hertz (Hz).",
+      "conceptId": "phy-g11-wav-003"
+    },
+    {
+      "term": "Transverse Wave",
+      "definition": "A wave in which particles vibrate perpendicular to the direction of wave travel. Example: light waves.",
+      "conceptId": "phy-g11-wav-005"
+    },
+    {
+      "term": "Longitudinal Wave",
+      "definition": "A wave in which particles vibrate parallel to the direction of wave travel. Example: sound waves.",
+      "conceptId": "phy-g11-wav-006"
+    },
+    {
+      "term": "Resonance",
+      "definition": "The large amplitude vibration that occurs when an object is driven at its natural frequency.",
+      "conceptId": "phy-g11-wav-015"
+    }
+  ],
+  "formulae": [
+    "v = fλ (Wave Speed = Frequency × Wavelength)",
+    "f = 1/T (Frequency = 1 / Period)",
+    "T = 1/f (Period = 1 / Frequency)",
+    "Speed of sound in air ≈ 340 m/s at room temperature"
+  ],
+  "expectedDiagrams": [
+    "Transverse wave diagram labelling amplitude, wavelength, crest, trough, rest position",
+    "Longitudinal wave diagram labelling compression and rarefaction",
+    "Comparison diagram of transverse vs longitudinal waves"
+  ],
+  "examKeywords": [
+    "wave", "transverse", "longitudinal", "frequency", "wavelength",
+    "amplitude", "period", "v=fλ", "sound", "echo", "resonance",
+    "pitch", "loudness", "refraction", "diffraction", "speed of sound"
+  ]
+}

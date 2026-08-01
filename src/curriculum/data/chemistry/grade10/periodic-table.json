@@ -1,0 +1,205 @@
+{
+  "lessonId": "chem-g10-periodic-table",
+  "subject": "Chemistry",
+  "grade": 10,
+  "unit": "Atomic Structure and Periodicity",
+  "lessonName": "The Periodic Table",
+  "textbookReference": "Grade 10 Chemistry — Chapter 3: The Periodic Table, Section 3.1–3.4",
+  "matchingKeywords": [
+    "periodic table", "element", "group", "period", "atomic number",
+    "electron configuration", "valency", "metal", "non-metal",
+    "Mendeleev", "periodic law", "atomic mass"
+  ],
+  "learningOutcomes": [
+    {
+      "id": "chem-g10-pt-lo-01",
+      "description": "Explain how elements are arranged in the modern periodic table and state the periodic law",
+      "requiredConcepts": ["chem-g10-pt-001", "chem-g10-pt-002"]
+    },
+    {
+      "id": "chem-g10-pt-lo-02",
+      "description": "Define and identify groups and periods, and explain their significance",
+      "requiredConcepts": ["chem-g10-pt-003", "chem-g10-pt-004"]
+    },
+    {
+      "id": "chem-g10-pt-lo-03",
+      "description": "Relate electron configuration to the position of elements in the periodic table",
+      "requiredConcepts": ["chem-g10-pt-005", "chem-g10-pt-006"]
+    },
+    {
+      "id": "chem-g10-pt-lo-04",
+      "description": "Describe trends in the periodic table: atomic radius, electronegativity, metallic character",
+      "requiredConcepts": ["chem-g10-pt-007", "chem-g10-pt-008", "chem-g10-pt-009"]
+    },
+    {
+      "id": "chem-g10-pt-lo-05",
+      "description": "Classify elements as metals, non-metals, and metalloids and describe their properties",
+      "requiredConcepts": ["chem-g10-pt-010", "chem-g10-pt-011", "chem-g10-pt-012"]
+    },
+    {
+      "id": "chem-g10-pt-lo-06",
+      "description": "Identify and describe properties of important groups: alkali metals, halogens, noble gases",
+      "requiredConcepts": ["chem-g10-pt-013", "chem-g10-pt-014", "chem-g10-pt-015"]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "chem-g10-pt-001",
+      "name": "Modern Periodic Table Structure",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["periodic table", "arrangement", "increasing atomic number", "rows", "columns", "modern periodic table"]
+    },
+    {
+      "id": "chem-g10-pt-002",
+      "name": "Periodic Law",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "law",
+      "keywords": ["periodic law", "properties repeat", "periodic function", "atomic number", "recurring properties"]
+    },
+    {
+      "id": "chem-g10-pt-003",
+      "name": "Groups (Vertical Columns)",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["group", "vertical column", "same valency", "similar properties", "group number", "family"]
+    },
+    {
+      "id": "chem-g10-pt-004",
+      "name": "Periods (Horizontal Rows)",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["period", "horizontal row", "same number of shells", "energy levels", "period number"]
+    },
+    {
+      "id": "chem-g10-pt-005",
+      "name": "Electron Configuration and Position",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["electron configuration", "electron arrangement", "shells", "2,8,8", "valence electrons", "outer shell"]
+    },
+    {
+      "id": "chem-g10-pt-006",
+      "name": "Valency from Periodic Table",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["valency", "combining power", "valence electrons", "group number", "bonding capacity"]
+    },
+    {
+      "id": "chem-g10-pt-007",
+      "name": "Atomic Radius Trend",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["atomic radius", "atom size", "increases down group", "decreases across period", "nuclear charge"]
+    },
+    {
+      "id": "chem-g10-pt-008",
+      "name": "Electronegativity Trend",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["electronegativity", "electron attracting", "increases across period", "decreases down group", "fluorine"]
+    },
+    {
+      "id": "chem-g10-pt-009",
+      "name": "Metallic Character Trend",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["metallic character", "increases down group", "decreases across period", "metal to non-metal"]
+    },
+    {
+      "id": "chem-g10-pt-010",
+      "name": "Properties of Metals",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["metal", "shiny", "lustre", "conductor", "malleable", "ductile", "sonorous", "high melting point"]
+    },
+    {
+      "id": "chem-g10-pt-011",
+      "name": "Properties of Non-metals",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["non-metal", "dull", "insulator", "brittle", "low melting point", "poor conductor"]
+    },
+    {
+      "id": "chem-g10-pt-012",
+      "name": "Metalloids",
+      "weight": 2,
+      "isFrequentlyTested": false,
+      "category": "definition",
+      "keywords": ["metalloid", "semi-metal", "silicon", "germanium", "semiconductor", "properties of both"]
+    },
+    {
+      "id": "chem-g10-pt-013",
+      "name": "Alkali Metals (Group I)",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["alkali metals", "Group I", "Group 1", "lithium", "sodium", "potassium", "reactive", "soft", "one valence electron"]
+    },
+    {
+      "id": "chem-g10-pt-014",
+      "name": "Halogens (Group VII)",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["halogen", "Group VII", "Group 7", "fluorine", "chlorine", "bromine", "iodine", "seven valence", "diatomic"]
+    },
+    {
+      "id": "chem-g10-pt-015",
+      "name": "Noble Gases (Group VIII/0)",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["noble gas", "Group VIII", "Group 0", "inert", "stable", "full outer shell", "helium", "neon", "argon"]
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Periodic Table",
+      "definition": "A tabular arrangement of chemical elements organized by increasing atomic number, showing periodic trends in properties.",
+      "conceptId": "chem-g10-pt-001"
+    },
+    {
+      "term": "Group",
+      "definition": "A vertical column in the periodic table containing elements with the same number of valence electrons and similar chemical properties.",
+      "conceptId": "chem-g10-pt-003"
+    },
+    {
+      "term": "Period",
+      "definition": "A horizontal row in the periodic table containing elements with the same number of electron shells.",
+      "conceptId": "chem-g10-pt-004"
+    },
+    {
+      "term": "Valency",
+      "definition": "The combining capacity of an element, determined by the number of electrons it can lose, gain, or share to complete its outer shell.",
+      "conceptId": "chem-g10-pt-006"
+    },
+    {
+      "term": "Electronegativity",
+      "definition": "The ability of an atom to attract shared electrons in a chemical bond towards itself.",
+      "conceptId": "chem-g10-pt-008"
+    }
+  ],
+  "formulae": [],
+  "expectedDiagrams": [
+    "Outline of the periodic table showing groups and periods",
+    "Trends diagram showing arrows for atomic radius, electronegativity, metallic character",
+    "Electron configuration diagrams for elements in the first 3 periods"
+  ],
+  "examKeywords": [
+    "periodic table", "group", "period", "atomic number", "electron configuration",
+    "valency", "metal", "non-metal", "alkali metals", "halogens", "noble gases",
+    "atomic radius", "electronegativity", "trend"
+  ]
+}

@@ -5,11 +5,35 @@ import { LearningMaterial } from "../models/LearningMaterial";
 import { sendSuccess, sendError, AppError } from "../middleware/errorHandler";
 import { processNote as runPipeline } from "../services/processingService";
 
+/**
+ * Helper to extract all uploaded Multer files from req.file or req.files
+ * supporting single file, array of files ("images"), or fields object.
+ */
+const extractUploadedFiles = (req: Request): Express.Multer.File[] => {
+  const files: Express.Multer.File[] = [];
+
+  if (req.file) {
+    files.push(req.file);
+  } else if (Array.isArray(req.files)) {
+    files.push(...req.files);
+  } else if (req.files && typeof req.files === "object") {
+    for (const key of Object.keys(req.files)) {
+      const fieldFiles = (req.files as Record<string, Express.Multer.File[]>)[key];
+      if (Array.isArray(fieldFiles)) {
+        files.push(...fieldFiles);
+      }
+    }
+  }
+
+  return files;
+};
+
 // ─── Upload Note ──────────────────────────────────────────────────────────
 
 /**
  * POST /api/notes/upload
- * Accepts a note image, stores it, creates a Note document with status "uploaded"
+ * Accepts one or more note image pages, stores them, creates a Note document.
+ * Body: multipart/form-data — fields: "images" or "image", "userId", "title"
  */
 export const uploadNote = async (
   req: Request,
@@ -17,8 +41,14 @@ export const uploadNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.file) {
-      sendError(res, "No image file provided. Use field name 'image'.", 400);
+    const uploadedFiles = extractUploadedFiles(req);
+
+    if (uploadedFiles.length === 0) {
+      sendError(
+        res,
+        "No image file(s) provided. Use field name 'images' or 'image'.",
+        400
+      );
       return;
     }
 
@@ -29,13 +59,18 @@ export const uploadNote = async (
       return;
     }
 
-    // Build the image URL — in production this would be a cloud URL
-    const imageUrl = `/uploads/${path.basename(req.file.path)}`;
+    const imageUrls = uploadedFiles.map(
+      (file) => `/uploads/${path.basename(file.path)}`
+    );
+    const primaryImageUrl = imageUrls[0];
+    const pageCount = imageUrls.length;
 
     const note = await Note.create({
       userId,
       title: title || "Untitled Note",
-      imageUrl,
+      imageUrl: primaryImageUrl,
+      imageUrls,
+      pageCount,
       rawText: "",
       status: "uploaded",
     });
@@ -45,11 +80,13 @@ export const uploadNote = async (
       {
         noteId: note._id,
         imageUrl: note.imageUrl,
+        imageUrls: note.imageUrls,
+        pageCount: note.pageCount,
         status: note.status,
         title: note.title,
         createdAt: note.createdAt,
       },
-      "Note uploaded successfully. Ready for processing.",
+      `Note uploaded successfully (${pageCount} page(s)). Ready for processing.`,
       201
     );
   } catch (error) {
@@ -159,12 +196,7 @@ export const deleteNote = async (
 
 /**
  * POST /api/notes/:id/process
- * Triggers the async processing pipeline for a note:
- *   1. OCR  — extracts raw text from the image (Phase 2)
- *   2. AI Analysis — detects gaps and generates structured content (Phase 3)
- *
- * Returns 202 Accepted immediately. The client should poll
- * GET /api/notes/:id to check when status changes to "analyzed" or "failed".
+ * Triggers the async processing pipeline for a note.
  */
 export const processNote = async (
   req: Request,
@@ -189,13 +221,11 @@ export const processNote = async (
       return;
     }
 
-    // ── Fire-and-forget: run pipeline in background ─────────────────────
-    // We do NOT await this — it runs async so we can return 202 immediately.
+    // Fire-and-forget: run pipeline in background
     runPipeline(id as string).catch((err) => {
       console.error(`Background pipeline error for note ${id}:`, err);
     });
 
-    // ── Return immediately ───────────────────────────────────────────────
     sendSuccess(
       res,
       {
@@ -215,8 +245,7 @@ export const processNote = async (
 
 /**
  * POST /api/notes/upload-and-process
- * Convenience endpoint: uploads the image AND immediately triggers the pipeline.
- * Returns 202 with noteId so the client can poll.
+ * Convenience endpoint: uploads one or more note pages AND immediately triggers the pipeline.
  */
 export const uploadAndProcess = async (
   req: Request,
@@ -224,8 +253,14 @@ export const uploadAndProcess = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!req.file) {
-      sendError(res, "No image file provided. Use field name 'image'.", 400);
+    const uploadedFiles = extractUploadedFiles(req);
+
+    if (uploadedFiles.length === 0) {
+      sendError(
+        res,
+        "No image file(s) provided. Use field name 'images' or 'image'.",
+        400
+      );
       return;
     }
 
@@ -236,12 +271,18 @@ export const uploadAndProcess = async (
       return;
     }
 
-    const imageUrl = `/uploads/${path.basename(req.file.path)}`;
+    const imageUrls = uploadedFiles.map(
+      (file) => `/uploads/${path.basename(file.path)}`
+    );
+    const primaryImageUrl = imageUrls[0];
+    const pageCount = imageUrls.length;
 
     const note = await Note.create({
       userId,
       title: title || "Untitled Note",
-      imageUrl,
+      imageUrl: primaryImageUrl,
+      imageUrls,
+      pageCount,
       rawText: "",
       status: "uploaded",
     });
@@ -258,12 +299,14 @@ export const uploadAndProcess = async (
       {
         noteId,
         imageUrl: note.imageUrl,
+        imageUrls: note.imageUrls,
+        pageCount: note.pageCount,
         status: "processing",
         title: note.title,
         pollUrl: `/api/notes/${noteId}`,
         createdAt: note.createdAt,
       },
-      "Note uploaded and processing started. Poll pollUrl to track progress.",
+      `Note uploaded (${pageCount} page(s)) and processing started. Poll pollUrl to track progress.`,
       202
     );
   } catch (error) {

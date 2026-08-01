@@ -1,0 +1,235 @@
+{
+  "lessonId": "phy-g10-force-motion",
+  "subject": "Physics",
+  "grade": 10,
+  "unit": "Mechanics",
+  "lessonName": "Force and Motion",
+  "textbookReference": "Grade 10 Physics — Chapter 3: Force and Motion, Section 3.1–3.5",
+  "matchingKeywords": [
+    "force", "motion", "Newton", "velocity", "acceleration",
+    "speed", "distance", "displacement", "friction", "gravity",
+    "inertia", "momentum", "mass", "weight", "Newton's laws"
+  ],
+  "learningOutcomes": [
+    {
+      "id": "phy-g10-fm-lo-01",
+      "description": "Define and distinguish between scalar and vector quantities, speed and velocity, distance and displacement",
+      "requiredConcepts": ["phy-g10-fm-001", "phy-g10-fm-002", "phy-g10-fm-003"]
+    },
+    {
+      "id": "phy-g10-fm-lo-02",
+      "description": "Define acceleration and perform calculations using equations of motion",
+      "requiredConcepts": ["phy-g10-fm-004", "phy-g10-fm-005"]
+    },
+    {
+      "id": "phy-g10-fm-lo-03",
+      "description": "State and explain Newton's three laws of motion with examples",
+      "requiredConcepts": ["phy-g10-fm-006", "phy-g10-fm-007", "phy-g10-fm-008"]
+    },
+    {
+      "id": "phy-g10-fm-lo-04",
+      "description": "Define and calculate force using F = ma",
+      "requiredConcepts": ["phy-g10-fm-009", "phy-g10-fm-007"]
+    },
+    {
+      "id": "phy-g10-fm-lo-05",
+      "description": "Explain friction and its effects on motion",
+      "requiredConcepts": ["phy-g10-fm-010", "phy-g10-fm-011"]
+    },
+    {
+      "id": "phy-g10-fm-lo-06",
+      "description": "Distinguish between mass and weight, and explain gravitational acceleration",
+      "requiredConcepts": ["phy-g10-fm-012", "phy-g10-fm-013"]
+    },
+    {
+      "id": "phy-g10-fm-lo-07",
+      "description": "Interpret distance-time and velocity-time graphs",
+      "requiredConcepts": ["phy-g10-fm-014", "phy-g10-fm-015"]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "phy-g10-fm-001",
+      "name": "Speed and Velocity",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["speed", "velocity", "rate of change", "distance/time", "displacement/time", "m/s", "scalar", "vector"]
+    },
+    {
+      "id": "phy-g10-fm-002",
+      "name": "Distance and Displacement",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["distance", "displacement", "scalar", "vector", "total path", "shortest path", "direction"]
+    },
+    {
+      "id": "phy-g10-fm-003",
+      "name": "Scalar and Vector Quantities",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["scalar", "vector", "magnitude", "direction", "scalar quantity", "vector quantity"]
+    },
+    {
+      "id": "phy-g10-fm-004",
+      "name": "Acceleration",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["acceleration", "change in velocity", "a = (v-u)/t", "m/s²", "deceleration", "retardation"]
+    },
+    {
+      "id": "phy-g10-fm-005",
+      "name": "Equations of Motion (SUVAT)",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "formula",
+      "keywords": ["equations of motion", "v = u + at", "s = ut + ½at²", "v² = u² + 2as", "SUVAT", "kinematic"]
+    },
+    {
+      "id": "phy-g10-fm-006",
+      "name": "Newton's First Law (Inertia)",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "law",
+      "keywords": ["Newton's first law", "inertia", "law of inertia", "rest or uniform motion", "unbalanced force", "net force zero"]
+    },
+    {
+      "id": "phy-g10-fm-007",
+      "name": "Newton's Second Law (F = ma)",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "law",
+      "keywords": ["Newton's second law", "F = ma", "force equals mass times acceleration", "net force", "resultant force"]
+    },
+    {
+      "id": "phy-g10-fm-008",
+      "name": "Newton's Third Law (Action-Reaction)",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "law",
+      "keywords": ["Newton's third law", "action and reaction", "equal and opposite", "action reaction pairs", "every action"]
+    },
+    {
+      "id": "phy-g10-fm-009",
+      "name": "Definition of Force",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["force", "push", "pull", "Newton", "N", "cause of acceleration", "interaction"]
+    },
+    {
+      "id": "phy-g10-fm-010",
+      "name": "Friction",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["friction", "frictional force", "resistive force", "surface", "rough", "smooth", "opposing motion"]
+    },
+    {
+      "id": "phy-g10-fm-011",
+      "name": "Types and Effects of Friction",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["static friction", "kinetic friction", "sliding friction", "rolling friction", "advantages", "disadvantages", "heat", "wear"]
+    },
+    {
+      "id": "phy-g10-fm-012",
+      "name": "Mass vs Weight",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["mass", "weight", "kg", "Newton", "W = mg", "gravitational force", "scalar vs vector"]
+    },
+    {
+      "id": "phy-g10-fm-013",
+      "name": "Gravitational Acceleration (g)",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["gravitational acceleration", "g = 9.8", "g = 10", "free fall", "acceleration due to gravity"]
+    },
+    {
+      "id": "phy-g10-fm-014",
+      "name": "Distance-Time Graphs",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "diagram",
+      "keywords": ["distance-time graph", "d-t graph", "gradient = speed", "stationary", "constant speed", "slope"]
+    },
+    {
+      "id": "phy-g10-fm-015",
+      "name": "Velocity-Time Graphs",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "diagram",
+      "keywords": ["velocity-time graph", "v-t graph", "gradient = acceleration", "area = distance", "displacement", "slope"]
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Speed",
+      "definition": "The rate of change of distance with time. A scalar quantity measured in m/s. Speed = Distance/Time.",
+      "conceptId": "phy-g10-fm-001"
+    },
+    {
+      "term": "Velocity",
+      "definition": "The rate of change of displacement with time. A vector quantity (has direction) measured in m/s.",
+      "conceptId": "phy-g10-fm-001"
+    },
+    {
+      "term": "Acceleration",
+      "definition": "The rate of change of velocity with time, measured in m/s². a = (v − u)/t.",
+      "conceptId": "phy-g10-fm-004"
+    },
+    {
+      "term": "Force",
+      "definition": "A push or pull that can change an object's state of rest or motion, measured in newtons (N).",
+      "conceptId": "phy-g10-fm-009"
+    },
+    {
+      "term": "Newton's First Law",
+      "definition": "An object remains at rest or in uniform motion in a straight line unless acted upon by an unbalanced external force (Law of Inertia).",
+      "conceptId": "phy-g10-fm-006"
+    },
+    {
+      "term": "Newton's Second Law",
+      "definition": "The resultant force on an object is equal to the product of its mass and acceleration. F = ma.",
+      "conceptId": "phy-g10-fm-007"
+    },
+    {
+      "term": "Newton's Third Law",
+      "definition": "For every action, there is an equal and opposite reaction.",
+      "conceptId": "phy-g10-fm-008"
+    },
+    {
+      "term": "Friction",
+      "definition": "A resistive force that opposes the relative motion between two surfaces in contact.",
+      "conceptId": "phy-g10-fm-010"
+    }
+  ],
+  "formulae": [
+    "Speed = Distance / Time",
+    "Velocity = Displacement / Time",
+    "a = (v − u) / t",
+    "v = u + at",
+    "s = ut + ½at²",
+    "v² = u² + 2as",
+    "F = ma (Newton's Second Law)",
+    "W = mg (Weight)"
+  ],
+  "expectedDiagrams": [
+    "Distance-time graph showing stationary, constant speed, and changing speed",
+    "Velocity-time graph showing constant velocity, acceleration, deceleration, and area under curve",
+    "Free body diagram showing forces acting on an object",
+    "Action-reaction force pair diagram"
+  ],
+  "examKeywords": [
+    "force", "motion", "velocity", "acceleration", "Newton", "F=ma",
+    "inertia", "friction", "mass", "weight", "gravity", "SUVAT",
+    "distance-time", "velocity-time", "graph", "speed"
+  ]
+}

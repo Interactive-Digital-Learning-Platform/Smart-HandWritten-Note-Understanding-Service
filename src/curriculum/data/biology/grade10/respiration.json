@@ -1,0 +1,222 @@
+{
+  "lessonId": "bio-g10-respiration",
+  "subject": "Biology",
+  "grade": 10,
+  "unit": "Cellular Processes",
+  "lessonName": "Cellular Respiration",
+  "textbookReference": "Grade 10 Biology — Chapter 5: Cellular Respiration, Section 5.1–5.3",
+  "matchingKeywords": [
+    "respiration", "cellular respiration", "aerobic respiration", "anaerobic respiration",
+    "breathing", "energy release", "glucose breakdown", "ATP production",
+    "mitochondria", "glycolysis", "Krebs cycle"
+  ],
+  "learningOutcomes": [
+    {
+      "id": "bio-g10-resp-lo-01",
+      "description": "Define cellular respiration and distinguish it from breathing",
+      "requiredConcepts": ["bio-g10-resp-001", "bio-g10-resp-002"]
+    },
+    {
+      "id": "bio-g10-resp-lo-02",
+      "description": "Write and explain the overall chemical equation for aerobic respiration",
+      "requiredConcepts": ["bio-g10-resp-003", "bio-g10-resp-004", "bio-g10-resp-005"]
+    },
+    {
+      "id": "bio-g10-resp-lo-03",
+      "description": "Describe the stages of aerobic respiration: glycolysis, Krebs cycle, and electron transport chain",
+      "requiredConcepts": ["bio-g10-resp-006", "bio-g10-resp-007", "bio-g10-resp-008"]
+    },
+    {
+      "id": "bio-g10-resp-lo-04",
+      "description": "Explain anaerobic respiration in animals (lactic acid fermentation) and in yeast (alcoholic fermentation)",
+      "requiredConcepts": ["bio-g10-resp-009", "bio-g10-resp-010", "bio-g10-resp-011"]
+    },
+    {
+      "id": "bio-g10-resp-lo-05",
+      "description": "Compare aerobic and anaerobic respiration",
+      "requiredConcepts": ["bio-g10-resp-012"]
+    },
+    {
+      "id": "bio-g10-resp-lo-06",
+      "description": "Describe the role of mitochondria in cellular respiration",
+      "requiredConcepts": ["bio-g10-resp-013"]
+    },
+    {
+      "id": "bio-g10-resp-lo-07",
+      "description": "Explain the importance of ATP as the energy currency of cells",
+      "requiredConcepts": ["bio-g10-resp-014"]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "bio-g10-resp-001",
+      "name": "Definition of Cellular Respiration",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["cellular respiration", "cell respiration", "energy release", "breakdown of glucose", "metabolic process"]
+    },
+    {
+      "id": "bio-g10-resp-002",
+      "name": "Difference between Breathing and Respiration",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["breathing", "ventilation", "gas exchange", "mechanical process", "chemical process", "breathing vs respiration"]
+    },
+    {
+      "id": "bio-g10-resp-003",
+      "name": "Chemical Equation of Aerobic Respiration",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "formula",
+      "keywords": ["C6H12O6", "6O2", "6CO2", "6H2O", "ATP", "equation", "glucose + oxygen"]
+    },
+    {
+      "id": "bio-g10-resp-004",
+      "name": "Glucose as Respiratory Substrate",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["glucose", "respiratory substrate", "fuel", "sugar", "organic molecule", "C6H12O6"]
+    },
+    {
+      "id": "bio-g10-resp-005",
+      "name": "Role of Oxygen in Aerobic Respiration",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["oxygen", "O2", "final electron acceptor", "aerobic", "oxidation"]
+    },
+    {
+      "id": "bio-g10-resp-006",
+      "name": "Glycolysis",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["glycolysis", "glucose splitting", "cytoplasm", "pyruvate", "2 ATP", "anaerobic stage"]
+    },
+    {
+      "id": "bio-g10-resp-007",
+      "name": "Krebs Cycle (Citric Acid Cycle)",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["Krebs cycle", "citric acid cycle", "TCA cycle", "matrix", "mitochondrial matrix", "acetyl CoA"]
+    },
+    {
+      "id": "bio-g10-resp-008",
+      "name": "Electron Transport Chain (ETC)",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["electron transport chain", "ETC", "oxidative phosphorylation", "inner membrane", "cristae", "34 ATP", "most ATP"]
+    },
+    {
+      "id": "bio-g10-resp-009",
+      "name": "Anaerobic Respiration",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["anaerobic", "without oxygen", "fermentation", "oxygen debt", "incomplete breakdown"]
+    },
+    {
+      "id": "bio-g10-resp-010",
+      "name": "Lactic Acid Fermentation",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["lactic acid", "muscle fatigue", "cramp", "animals", "lactic acid fermentation", "muscle cells"]
+    },
+    {
+      "id": "bio-g10-resp-011",
+      "name": "Alcoholic Fermentation",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "process",
+      "keywords": ["alcoholic fermentation", "ethanol", "yeast", "alcohol", "CO2", "bread", "brewing"]
+    },
+    {
+      "id": "bio-g10-resp-012",
+      "name": "Comparison: Aerobic vs Anaerobic Respiration",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "fact",
+      "keywords": ["aerobic vs anaerobic", "comparison", "38 ATP vs 2 ATP", "complete vs incomplete", "with oxygen vs without"]
+    },
+    {
+      "id": "bio-g10-resp-013",
+      "name": "Mitochondria Structure and Role",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "diagram",
+      "keywords": ["mitochondria", "mitochondrion", "powerhouse", "cristae", "matrix", "double membrane", "inner membrane"]
+    },
+    {
+      "id": "bio-g10-resp-014",
+      "name": "ATP as Energy Currency",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["ATP", "adenosine triphosphate", "energy currency", "energy carrier", "ADP", "phosphorylation"]
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Cellular Respiration",
+      "definition": "The process by which cells break down glucose in the presence or absence of oxygen to release energy in the form of ATP.",
+      "conceptId": "bio-g10-resp-001"
+    },
+    {
+      "term": "Aerobic Respiration",
+      "definition": "Respiration that occurs in the presence of oxygen, completely breaking down glucose into CO₂ and H₂O, producing 38 ATP.",
+      "conceptId": "bio-g10-resp-003"
+    },
+    {
+      "term": "Anaerobic Respiration",
+      "definition": "Respiration that occurs without oxygen, incompletely breaking down glucose and producing only 2 ATP.",
+      "conceptId": "bio-g10-resp-009"
+    },
+    {
+      "term": "Glycolysis",
+      "definition": "The first stage of respiration occurring in the cytoplasm, where glucose is split into two pyruvate molecules, producing 2 ATP.",
+      "conceptId": "bio-g10-resp-006"
+    },
+    {
+      "term": "Krebs Cycle",
+      "definition": "The second stage of aerobic respiration occurring in the mitochondrial matrix, where pyruvate derivatives are further oxidized.",
+      "conceptId": "bio-g10-resp-007"
+    },
+    {
+      "term": "Mitochondria",
+      "definition": "A double-membrane organelle known as the 'powerhouse of the cell' where aerobic respiration (Krebs cycle and ETC) takes place.",
+      "conceptId": "bio-g10-resp-013"
+    },
+    {
+      "term": "ATP",
+      "definition": "Adenosine triphosphate — the universal energy currency of cells, produced during respiration and used for cellular activities.",
+      "conceptId": "bio-g10-resp-014"
+    },
+    {
+      "term": "Lactic Acid Fermentation",
+      "definition": "Anaerobic respiration in animal muscle cells where glucose is converted to lactic acid, causing muscle fatigue.",
+      "conceptId": "bio-g10-resp-010"
+    }
+  ],
+  "formulae": [
+    "C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + 38 ATP (aerobic respiration)",
+    "Glucose + Oxygen → Carbon Dioxide + Water + Energy",
+    "C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂ + 2 ATP (alcoholic fermentation)",
+    "C₆H₁₂O₆ → 2C₃H₆O₃ + 2 ATP (lactic acid fermentation)"
+  ],
+  "expectedDiagrams": [
+    "Structure of a mitochondrion (showing outer membrane, inner membrane, cristae, matrix)",
+    "Overview diagram of aerobic respiration stages (glycolysis → Krebs → ETC)",
+    "Comparison table of aerobic vs anaerobic respiration"
+  ],
+  "examKeywords": [
+    "respiration", "aerobic", "anaerobic", "glycolysis", "Krebs cycle",
+    "electron transport chain", "mitochondria", "ATP", "lactic acid",
+    "fermentation", "glucose", "oxygen", "CO2", "cytoplasm", "matrix"
+  ]
+}

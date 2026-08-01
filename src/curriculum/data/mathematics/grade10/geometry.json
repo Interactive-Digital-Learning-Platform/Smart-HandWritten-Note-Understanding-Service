@@ -1,0 +1,192 @@
+{
+  "lessonId": "math-g10-geometry",
+  "subject": "Mathematics",
+  "grade": 10,
+  "unit": "Geometry",
+  "lessonName": "Properties of Triangles and Circles",
+  "textbookReference": "Grade 10 Mathematics — Chapter 5: Geometry, Section 5.1–5.4",
+  "matchingKeywords": [
+    "geometry", "triangle", "circle", "angle", "theorem",
+    "Pythagoras", "congruent", "similar", "area", "perimeter",
+    "circumference", "radius", "diameter", "chord", "tangent"
+  ],
+  "learningOutcomes": [
+    {
+      "id": "math-g10-geo-lo-01",
+      "description": "Classify triangles and apply angle properties of triangles",
+      "requiredConcepts": ["math-g10-geo-001", "math-g10-geo-002", "math-g10-geo-003"]
+    },
+    {
+      "id": "math-g10-geo-lo-02",
+      "description": "Apply the Pythagoras theorem to solve problems involving right-angled triangles",
+      "requiredConcepts": ["math-g10-geo-004", "math-g10-geo-005"]
+    },
+    {
+      "id": "math-g10-geo-lo-03",
+      "description": "Understand congruency and similarity conditions for triangles",
+      "requiredConcepts": ["math-g10-geo-006", "math-g10-geo-007"]
+    },
+    {
+      "id": "math-g10-geo-lo-04",
+      "description": "Define circle properties and apply circle theorems",
+      "requiredConcepts": ["math-g10-geo-008", "math-g10-geo-009", "math-g10-geo-010"]
+    },
+    {
+      "id": "math-g10-geo-lo-05",
+      "description": "Calculate area and perimeter of triangles and circles",
+      "requiredConcepts": ["math-g10-geo-011", "math-g10-geo-012", "math-g10-geo-013"]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "math-g10-geo-001",
+      "name": "Types of Triangles",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["equilateral", "isosceles", "scalene", "right-angled", "acute", "obtuse", "triangle types"]
+    },
+    {
+      "id": "math-g10-geo-002",
+      "name": "Angle Sum Property of Triangles",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "law",
+      "keywords": ["angle sum", "180 degrees", "interior angles", "triangle angles", "sum of angles"]
+    },
+    {
+      "id": "math-g10-geo-003",
+      "name": "Exterior Angle Theorem",
+      "weight": 3,
+      "isFrequentlyTested": true,
+      "category": "law",
+      "keywords": ["exterior angle", "sum of remote interior", "opposite interior angles", "exterior angle theorem"]
+    },
+    {
+      "id": "math-g10-geo-004",
+      "name": "Pythagoras Theorem",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "formula",
+      "keywords": ["Pythagoras", "a² + b² = c²", "hypotenuse", "right triangle", "Pythagorean theorem"]
+    },
+    {
+      "id": "math-g10-geo-005",
+      "name": "Applying Pythagoras Theorem",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "calculation",
+      "keywords": ["find hypotenuse", "find side", "right-angled triangle", "Pythagoras calculation", "missing side"]
+    },
+    {
+      "id": "math-g10-geo-006",
+      "name": "Congruent Triangles",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["congruent", "congruency", "SSS", "SAS", "ASA", "AAS", "RHS", "same shape and size", "identical"]
+    },
+    {
+      "id": "math-g10-geo-007",
+      "name": "Similar Triangles",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["similar", "similarity", "same shape", "proportional sides", "equal angles", "AA", "scale factor"]
+    },
+    {
+      "id": "math-g10-geo-008",
+      "name": "Circle Components",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "definition",
+      "keywords": ["radius", "diameter", "chord", "arc", "sector", "segment", "tangent", "circumference", "centre"]
+    },
+    {
+      "id": "math-g10-geo-009",
+      "name": "Angle at Centre Theorem",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "law",
+      "keywords": ["angle at centre", "twice angle at circumference", "central angle", "inscribed angle", "circle theorem"]
+    },
+    {
+      "id": "math-g10-geo-010",
+      "name": "Angle in a Semicircle",
+      "weight": 4,
+      "isFrequentlyTested": true,
+      "category": "law",
+      "keywords": ["angle in semicircle", "90 degrees", "diameter subtends", "right angle", "Thales theorem"]
+    },
+    {
+      "id": "math-g10-geo-011",
+      "name": "Area of a Triangle",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "formula",
+      "keywords": ["area of triangle", "½ × base × height", "½bh", "triangle area", "base times height"]
+    },
+    {
+      "id": "math-g10-geo-012",
+      "name": "Circumference of a Circle",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "formula",
+      "keywords": ["circumference", "2πr", "πd", "perimeter of circle", "distance around circle"]
+    },
+    {
+      "id": "math-g10-geo-013",
+      "name": "Area of a Circle",
+      "weight": 5,
+      "isFrequentlyTested": true,
+      "category": "formula",
+      "keywords": ["area of circle", "πr²", "pi r squared", "circle area"]
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Triangle",
+      "definition": "A polygon with three sides and three angles whose interior angles sum to 180°.",
+      "conceptId": "math-g10-geo-001"
+    },
+    {
+      "term": "Pythagoras Theorem",
+      "definition": "In a right-angled triangle, the square of the hypotenuse equals the sum of the squares of the other two sides: a² + b² = c².",
+      "conceptId": "math-g10-geo-004"
+    },
+    {
+      "term": "Congruent Triangles",
+      "definition": "Triangles that have exactly the same shape and size — all corresponding sides and angles are equal.",
+      "conceptId": "math-g10-geo-006"
+    },
+    {
+      "term": "Similar Triangles",
+      "definition": "Triangles that have the same shape but different sizes — corresponding angles are equal and corresponding sides are proportional.",
+      "conceptId": "math-g10-geo-007"
+    },
+    {
+      "term": "Circumference",
+      "definition": "The distance around the boundary of a circle, calculated as C = 2πr or C = πd.",
+      "conceptId": "math-g10-geo-012"
+    }
+  ],
+  "formulae": [
+    "a² + b² = c² (Pythagoras Theorem)",
+    "Area of Triangle = ½ × base × height",
+    "Circumference = 2πr = πd",
+    "Area of Circle = πr²",
+    "Sum of interior angles of a triangle = 180°",
+    "Exterior angle = sum of two remote interior angles"
+  ],
+  "expectedDiagrams": [
+    "Right-angled triangle labelled with hypotenuse and sides for Pythagoras theorem",
+    "Circle with radius, diameter, chord, tangent, arc, and sector labelled",
+    "Diagrams showing angle at centre and angle at circumference",
+    "Congruent and similar triangle diagrams with corresponding parts marked"
+  ],
+  "examKeywords": [
+    "triangle", "Pythagoras", "congruent", "similar", "circle",
+    "radius", "diameter", "circumference", "area", "angle",
+    "theorem", "right angle", "hypotenuse", "tangent", "chord"
+  ]
+}
