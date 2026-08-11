@@ -89,12 +89,22 @@ confidence: 0–100 how confident you are in this match`;
   return null;
 };
 
+import { qdrantService } from "../../services/qdrantService";
+
 // ─── Stage Runner ──────────────────────────────────────────────────────────
 
 export const runLessonIdentification = async (
   ctx: PipelineContext
 ): Promise<void> => {
   console.log(`  [Stage 4] Lesson Identification...`);
+
+  // Check official Qdrant Knowledge Base status
+  const kbStats = await qdrantService.getCollectionStats();
+  if (kbStats.isAvailable) {
+    console.log(
+      `  [Stage 4] 📚 Official Qdrant Vector KB connected ("${kbStats.collection}" — ${kbStats.totalPoints} points)`
+    );
+  }
 
   if (!ctx.subjectDetection) {
     throw new Error("Stage 4 requires subjectDetection from Stage 3");

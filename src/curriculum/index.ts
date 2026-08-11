@@ -223,6 +223,26 @@ export const getLessonsBySubject = (
   grade?: number
 ): CurriculumLesson[] => {
   const curriculum = getCurriculum();
+
+  // If subject is "Science", combine Biology, Chemistry, Physics, and Science
+  if (subject.toLowerCase() === "science") {
+    const combined: CurriculumLesson[] = [];
+    const scienceSubdisciplines = ["Science", "Biology", "Chemistry", "Physics"];
+    for (const sub of scienceSubdisciplines) {
+      const sData = curriculum.subjects[sub];
+      if (sData) {
+        if (grade !== undefined) {
+          combined.push(...(sData.grades[grade] ?? []));
+        } else {
+          for (const gLessons of Object.values(sData.grades)) {
+            combined.push(...gLessons);
+          }
+        }
+      }
+    }
+    return combined;
+  }
+
   const subjectData = curriculum.subjects[subject];
 
   if (!subjectData) return [];

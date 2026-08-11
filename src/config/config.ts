@@ -33,4 +33,17 @@ export const config = {
   elevenlabs: {
     apiKey: process.env.ELEVENLABS_API_KEY || "",
   },
+
+  qdrant: {
+    url: process.env.QDRANT_DB_URL || "http://localhost:6333",
+    collection: process.env.QDRANT_COLLECTION || "pdf_knowledge_base",
+  },
+
+  pdfIngestion: {
+    url: process.env.PDF_INGESTION_URL || "http://localhost:8001",
+  },
+
+  gateway: {
+    url: process.env.GATEWAY_URL || "http://localhost:8080",
+  },
 };

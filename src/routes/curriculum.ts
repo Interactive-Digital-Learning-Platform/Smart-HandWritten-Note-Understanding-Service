@@ -9,6 +9,7 @@ import {
   isCurriculumLoaded,
 } from "../curriculum";
 import { sendSuccess, sendError } from "../middleware/errorHandler";
+import { qdrantService } from "../services/qdrantService";
 
 const router = Router();
 
@@ -182,6 +183,44 @@ router.get("/search", (req: Request, res: Response) => {
     });
   } catch (error) {
     sendError(res, "Failed to search curriculum", 500);
+  }
+});
+
+/**
+ * Returns stats for the official Qdrant vector collection (pdf_knowledge_base).
+ */
+router.get("/qdrant-stats", async (_req: Request, res: Response) => {
+  try {
+    const stats = await qdrantService.getCollectionStats();
+    sendSuccess(res, stats);
+  } catch (error) {
+    sendError(res, "Failed to retrieve Qdrant stats", 500);
+  }
+});
+
+// ─── GET /api/curriculum/qdrant-search?q=photosynthesis ──────────────────────
+
+/**
+ * Searches the official Qdrant vector KB points for keyword / text matches.
+ */
+router.get("/qdrant-search", async (req: Request, res: Response) => {
+  try {
+    const { q, limit } = req.query;
+    if (!q || typeof q !== "string") {
+      sendError(res, "Query parameter 'q' is required", 400);
+      return;
+    }
+
+    const limitNum = limit ? parseInt(limit as string, 10) : 10;
+    const results = await qdrantService.searchByKeywordPayload(q, limitNum);
+
+    sendSuccess(res, {
+      query: q,
+      count: results.length,
+      results,
+    });
+  } catch (error) {
+    sendError(res, "Failed to search Qdrant knowledge base", 500);
   }
 });
 

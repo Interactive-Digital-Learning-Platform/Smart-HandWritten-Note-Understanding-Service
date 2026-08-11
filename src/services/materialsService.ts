@@ -5,6 +5,8 @@ import path from "path";
 import { config } from "../config/config";
 import { Note } from "../models/Note";
 import { LearningMaterial, MaterialType, IFlashcard, IDefinition, IMindMapNode } from "../models/LearningMaterial";
+import { findLesson, isCurriculumLoaded } from "../curriculum/index";
+import { CurriculumLesson } from "../curriculum/types";
 
 // ─── Groq client ────────────────────────────────────────────────────────────
 
@@ -84,10 +86,89 @@ const parseJson = <T>(raw: string): T => {
   return JSON.parse(stripped) as T;
 };
 
-// ─── Context builder ────────────────────────────────────────────────────────
+// ─── Context builders ───────────────────────────────────────────────────────
 
 const buildContext = (subject: string, topic: string, gradeLevel: string, rawText: string) =>
   `Subject: ${subject} | Topic: ${topic} | Grade: ${gradeLevel}\n\nStudent's Notes:\n"""\n${rawText}\n"""`;
+
+/**
+ * Looks up the matching curriculum lesson and formats its content as a
+ * structured text block that can be injected into an AI prompt.
+ * Returns null when the curriculum KB is unavailable or no lesson matches.
+ */
+const buildCurriculumContext = (
+  subject: string,
+  topic: string,
+  gradeLevel: string
+): string | null => {
+  if (!isCurriculumLoaded()) return null;
+
+  const grade = parseInt(gradeLevel, 10);
+  const searchResult = findLesson(subject, topic, isNaN(grade) ? undefined : grade);
+
+  if (!searchResult) return null;
+
+  const lesson: CurriculumLesson = searchResult.lesson;
+
+  const lines: string[] = [];
+
+  lines.push(`=== Curriculum Knowledge Base: ${lesson.subject} G${lesson.grade} — ${lesson.lessonName} ===`);
+  lines.push(`Unit: ${lesson.unit}`);
+  if (lesson.textbookReference) {
+    lines.push(`Textbook Reference: ${lesson.textbookReference}`);
+  }
+  lines.push("");
+
+  // Learning Outcomes
+  if (lesson.learningOutcomes.length > 0) {
+    lines.push("Learning Outcomes:");
+    lesson.learningOutcomes.forEach((lo, i) => {
+      lines.push(`  ${i + 1}. ${lo.description}`);
+    });
+    lines.push("");
+  }
+
+  // Required Concepts (sorted by weight descending so critical ones come first)
+  if (lesson.concepts.length > 0) {
+    lines.push("Required Concepts (weight 5=critical → 1=supplementary):");
+    const sorted = [...lesson.concepts].sort((a, b) => b.weight - a.weight);
+    sorted.forEach((c) => {
+      const examFlag = c.isFrequentlyTested ? " ⭐ exam favourite" : "";
+      lines.push(`  • [${c.category}] ${c.name} (weight ${c.weight}${examFlag})`);
+    });
+    lines.push("");
+  }
+
+  // Key Definitions
+  if (lesson.definitions.length > 0) {
+    lines.push("Key Definitions:");
+    lesson.definitions.forEach((d) => {
+      lines.push(`  ${d.term}: ${d.definition}`);
+    });
+    lines.push("");
+  }
+
+  // Formulae
+  if (lesson.formulae.length > 0) {
+    lines.push("Important Formulae / Equations:");
+    lesson.formulae.forEach((f) => lines.push(`  • ${f}`));
+    lines.push("");
+  }
+
+  // Expected Diagrams
+  if (lesson.expectedDiagrams.length > 0) {
+    lines.push("Diagrams Students Should Know:");
+    lesson.expectedDiagrams.forEach((d) => lines.push(`  • ${d}`));
+    lines.push("");
+  }
+
+  // Exam keywords hint
+  if (lesson.examKeywords.length > 0) {
+    lines.push(`Exam Keywords: ${lesson.examKeywords.join(", ")}`);
+  }
+
+  return lines.join("\n");
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MATERIAL GENERATORS
@@ -101,18 +182,51 @@ export const generateStructuredNotes = async (
   topic: string,
   gradeLevel: string
 ): Promise<string> => {
-  const system = `You are an expert educator for Sri Lanka's school curriculum.
+  const curriculumContext = buildCurriculumContext(subject, topic, gradeLevel);
+
+  if (curriculumContext) {
+    // ── Curriculum-enriched path ─────────────────────────────────────────
+    const system = `You are an expert educator for Sri Lanka's school curriculum.
+You have been given TWO sources of information:
+  1. The student's own handwritten notes (extracted via OCR)
+  2. The official curriculum knowledge base for this lesson
+
+Your task: Synthesise BOTH sources into a single, comprehensive, well-structured set of markdown study notes.
+Rules:
+  - Use # for the main topic heading, ## for major sections, ### for sub-sections.
+  - Incorporate ALL required concepts from the curriculum (especially weight 4–5 and ⭐ exam favourites).
+  - Preserve correct facts from the student's notes and silently fix any errors.
+  - Include all key definitions, formulae, and diagram descriptions from the curriculum.
+  - Clearly separate sections so the student can navigate the notes easily.
+  - Do NOT add any preamble or explanation — output ONLY the markdown notes.`;
+
+    const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+
+---
+
+${curriculumContext}
+
+---
+
+Using BOTH the student's notes above AND the curriculum knowledge base, generate comprehensive, well-structured markdown study notes for this topic.
+Start with a # heading for the topic. Organise logically by section (matching the learning outcomes where possible). Use bullet points, bold key terms, and include formulae in code blocks where appropriate.`;
+
+    return await askGroq(system, user);
+  } else {
+    // ── Fallback: student notes only ────────────────────────────────────
+    const system = `You are an expert educator for Sri Lanka's school curriculum.
 Convert student notes into clean, well-structured markdown notes.
 Use # for main heading, ## for subheadings, bullet points for details.
 Expand thin notes with correct, curriculum-aligned content.
 Do NOT add any explanation — output ONLY the markdown notes.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+    const user = `${buildContext(subject, topic, gradeLevel, rawText)}
 
 Convert these into well-structured markdown study notes.
 Start with a # heading for the topic, then organize logically with sections and bullet points.`;
 
-  return await askGroq(system, user);
+    return await askGroq(system, user);
+  }
 };
 
 // ─── 2. Key Definitions ─────────────────────────────────────────────────────
@@ -338,28 +452,51 @@ Write naturally as spoken words only — no bullet points or markdown.`;
 // ORCHESTRATOR — Generate all 7 materials for a note
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ─── Override type (used by the pipeline stage before DB save) ──────────────
+
+export interface NoteDataOverride {
+  rawText: string;
+  subject: string;
+  topic: string;
+  gradeLevel: string;
+  userId: string;
+}
+
 /**
- * Generates all 7 learning material types for a given note.
+ * Generates learning material types for a given note.
  * Each material is saved to the LearningMaterial collection.
  * Failures on individual materials are caught and reported — other types continue.
  *
- * @param noteId - MongoDB ObjectId string
- * @param types  - Optional subset of types to generate (defaults to all 7)
+ * @param noteId   - MongoDB ObjectId string
+ * @param types    - Optional subset of types to generate (defaults to all 7)
+ * @param override - Optional in-memory note data (used by pipeline Stage 9 before note.analysis is persisted)
  */
 export const generateMaterials = async (
   noteId: string,
-  types?: MaterialType[]
+  types?: MaterialType[],
+  override?: NoteDataOverride
 ): Promise<GenerateAllResult> => {
-  // ── Fetch note with analysis ───────────────────────────────────────────────
-  const note = await Note.findById(noteId);
+  // ── Fetch note with analysis (or use pipeline override) ──────────────────
+  let subject: string;
+  let topic: string;
+  let gradeLevel: string;
+  let rawText: string;
+  let userId: string;
 
-  if (!note) throw new Error(`Note not found: ${noteId}`);
-  if (!note.analysis) throw new Error("Note has no analysis. Run OCR + AI analysis first.");
-  if (!note.rawText) throw new Error("Note has no extracted text.");
-
-  const { subject, topic, gradeLevel } = note.analysis;
-  const { rawText } = note;
-  const userId = note.userId;
+  if (override) {
+    // Called from pipeline Stage 9 — note.analysis not yet written to DB
+    ({ subject, topic, gradeLevel, rawText, userId } = override);
+  } else {
+    const note = await Note.findById(noteId);
+    if (!note) throw new Error(`Note not found: ${noteId}`);
+    if (!note.analysis) throw new Error("Note has no analysis. Run OCR + AI analysis first.");
+    if (!note.rawText) throw new Error("Note has no extracted text.");
+    subject = note.analysis.subject;
+    topic = note.analysis.topic;
+    gradeLevel = note.analysis.gradeLevel;
+    rawText = note.rawText;
+    userId = note.userId;
+  }
 
   const allTypes: MaterialType[] = types ?? [
     "structured_notes",

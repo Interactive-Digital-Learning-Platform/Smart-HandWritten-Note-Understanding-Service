@@ -19,7 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { PipelineContext, MaterialPriorities } from "../types";
-import { generateMaterials } from "../../services/materialsService";
+import { generateMaterials, NoteDataOverride } from "../../services/materialsService";
 import { MaterialType } from "../../models/LearningMaterial";
 
 // ─── Severity Analysis ─────────────────────────────────────────────────────
@@ -80,12 +80,26 @@ export const runMaterialGeneration = async (
   console.log(`  [Stage 9] Types: ${priorities.typesToGenerate.join(", ")}`);
 
   try {
-    // generateMaterials reads from the Note model (which has been updated
-    // in the pipeline — the Note.analysis field is updated before this runs
-    // from processingService). Pass the selected types array.
+    // Build an override so generateMaterials doesn't need to re-read note.analysis
+    // from MongoDB — at this point in the pipeline it hasn't been saved yet.
+    const subject = ctx.matchedLesson?.subject ?? ctx.subjectDetection?.subject ?? "Unknown";
+    const topic   = ctx.matchedLesson?.lessonName ?? ctx.subjectDetection?.topicHint ?? "Unknown";
+    const grade   = ctx.subjectDetection?.grade;
+    const gradeLevel = grade ? `Grade ${grade}` : "Unknown";
+    const rawText = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
+
+    const override: NoteDataOverride = {
+      rawText,
+      subject,
+      topic,
+      gradeLevel,
+      userId: ctx.userId,
+    };
+
     const result = await generateMaterials(
       ctx.noteId,
-      priorities.typesToGenerate as MaterialType[]
+      priorities.typesToGenerate as MaterialType[],
+      override
     );
     ctx.materialsGenerated = result?.results?.length ?? 0;
     console.log(`  [Stage 9] ✅ Generated ${ctx.materialsGenerated} material(s)`);
