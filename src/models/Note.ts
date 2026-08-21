@@ -63,10 +63,17 @@ export interface IAnalysis {
   topic: string;
   gradeLevel: string;
 
-  // ── Curriculum KB match ────────────────────────────────────────────────
+  // ── Curriculum KB match & Ingested Textbook ────────────────────────────
   lessonId?: string;               // KB lesson ID if matched
   lessonMatchConfidence?: number;  // 0–1 confidence in the KB match
-  lessonMatchMethod?: string;      // "exact" | "keyword" | "fuzzy" | "ai-assisted"
+  lessonMatchMethod?: string;      // "exact" | "keyword" | "fuzzy" | "ai-assisted" | "pdf-ingestion-grounded" | "pdf-ingestion-dynamic"
+  textbookReference?: string;      // Source textbook PDF filename and pages
+  textbookPassages?: Array<{
+    text: string;
+    filename: string;
+    pages: number[];
+    score: number;
+  }>;
 
   // ── OCR quality ────────────────────────────────────────────────────────
   ocrConfidence?: number;          // 0–100
@@ -187,6 +194,8 @@ const AnalysisSchema = new Schema<IAnalysis>(
     lessonId: { type: String },
     lessonMatchConfidence: { type: Number },
     lessonMatchMethod: { type: String },
+    textbookReference: { type: String },
+    textbookPassages: { type: [Schema.Types.Mixed], default: [] },
 
     // OCR quality
     ocrConfidence: { type: Number },
@@ -213,6 +222,7 @@ const AnalysisSchema = new Schema<IAnalysis>(
   },
   { _id: false }
 );
+
 
 const NoteSchema = new Schema<INote>(
   {

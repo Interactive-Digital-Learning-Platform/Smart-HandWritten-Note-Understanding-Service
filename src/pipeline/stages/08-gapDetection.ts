@@ -77,10 +77,10 @@ const generateRecommendations = async (
   const prompt = `You are an expert ${subject} teacher helping a Sri Lankan O/L student.
 
 The student is studying: "${lessonName}"
-${textbookRef ? `Textbook reference: ${textbookRef}` : ""}
+${textbookRef ? `Official Textbook Reference: ${textbookRef}` : ""}
 
 For each learning gap below, write ONE concise, actionable study recommendation (1–2 sentences).
-Mention specific study actions (e.g., "Draw the diagram", "Memorize the equation", "Re-read section X").
+Mention specific study actions (e.g., "Draw the diagram", "Memorize the equation", "Re-read section X") and reference the textbook/pages if available.
 
 Gaps:
 ${gapList}
@@ -88,22 +88,26 @@ ${gapList}
 Respond ONLY with a JSON array of strings, one per gap:
 ["recommendation for gap 1", "recommendation for gap 2", ...]`;
 
+
   try {
     const completion = await groq.chat.completions.create({
       model: config.groq.model,
       temperature: 0.3,
-      max_tokens: 512,
+      max_tokens: 2048,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const raw =
-      completion.choices[0]?.message?.content
-        ?.trim()
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/, "")
-        .trim() ?? "[]";
+    let raw = completion.choices[0]?.message?.content?.trim() ?? "[]";
+    raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+    const stripped = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
 
-    const parsed = JSON.parse(raw);
+    const jsonMatch = stripped.match(/\[[\s\S]*\]/);
+    const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
+
+    const parsed = JSON.parse(jsonStr);
 
     if (Array.isArray(parsed)) {
       return parsed.map((r) =>

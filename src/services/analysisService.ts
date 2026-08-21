@@ -91,13 +91,16 @@ what you can detect.`;
  * Handles cases where the model wraps JSON in markdown code fences.
  */
 const extractJson = (content: string): RawAnalysis => {
-  // Strip markdown fences if present
-  const stripped = content
+  let cleaned = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const stripped = cleaned
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
 
-  return JSON.parse(stripped) as RawAnalysis;
+  const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+  const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
+
+  return JSON.parse(jsonStr) as RawAnalysis;
 };
 
 // ─── Validator ──────────────────────────────────────────────────────────────

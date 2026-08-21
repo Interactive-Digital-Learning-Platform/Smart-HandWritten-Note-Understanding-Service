@@ -221,8 +221,8 @@ export const processNote = async (
       return;
     }
 
-    // Fire-and-forget: run pipeline in background
-    runPipeline(id as string).catch((err) => {
+    // Fire-and-forget: run pipeline in background (force=true so already analyzed notes can be re-analyzed)
+    runPipeline(id as string, true).catch((err) => {
       console.error(`Background pipeline error for note ${id}:`, err);
     });
 

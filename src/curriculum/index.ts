@@ -212,7 +212,11 @@ export const isCurriculumLoaded = (): boolean => curriculumIndex !== null;
  * Returns all available subject names.
  */
 export const getAllSubjects = (): string[] => {
-  return Object.keys(getCurriculum().subjects);
+  const subjects = Object.keys(getCurriculum().subjects);
+  if (!subjects.some(s => s.toLowerCase() === "science")) {
+    subjects.unshift("Science");
+  }
+  return subjects;
 };
 
 /**
@@ -311,10 +315,15 @@ export const findLesson = (
 
   const topicLower = topic.toLowerCase().trim();
 
-  // ── 1. Exact match on lessonName ──────────────────────────────────────
+  // ── 1. Exact or substring match on lessonName or unit ──────────────────
   for (const lesson of candidates) {
-    if (lesson.lessonName.toLowerCase() === topicLower) {
+    const lName = lesson.lessonName.toLowerCase();
+    const uName = lesson.unit.toLowerCase();
+    if (lName === topicLower || topicLower.includes(lName) || (topicLower.length >= 5 && lName.includes(topicLower))) {
       return { lesson, confidence: 1.0, matchMethod: "exact" };
+    }
+    if (uName === topicLower || topicLower.includes(uName) || (topicLower.length >= 5 && uName.includes(topicLower))) {
+      return { lesson, confidence: 0.95, matchMethod: "exact" };
     }
   }
 
@@ -381,6 +390,27 @@ export const searchLessons = (topic: string): LessonSearchResult[] => {
   const topicLower = topic.toLowerCase().trim();
 
   for (const lesson of getAllLessons()) {
+    const lName = lesson.lessonName.toLowerCase();
+    const uName = lesson.unit.toLowerCase();
+
+    // Direct match on lesson name or unit
+    if (lName === topicLower || topicLower.includes(lName) || (topicLower.length >= 5 && lName.includes(topicLower))) {
+      results.push({
+        lesson,
+        confidence: 1.0,
+        matchMethod: "exact",
+      });
+      continue;
+    }
+    if (uName === topicLower || topicLower.includes(uName) || (topicLower.length >= 5 && uName.includes(topicLower))) {
+      results.push({
+        lesson,
+        confidence: 0.95,
+        matchMethod: "exact",
+      });
+      continue;
+    }
+
     // Check matchingKeywords
     const keywordHits = lesson.matchingKeywords.filter(
       (kw) =>

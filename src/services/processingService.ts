@@ -75,10 +75,12 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     topic,
     gradeLevel,
 
-    // Curriculum KB match
+    // Curriculum KB match & Ingested Textbook
     lessonId: ctx.matchedLessonId,
     lessonMatchConfidence: ctx.lessonMatchConfidence,
     lessonMatchMethod: ctx.lessonMatchMethod,
+    textbookReference: ctx.matchedLesson?.textbookReference,
+    textbookPassages: ctx.textbookPassages,
 
     // OCR quality
     ocrConfidence: ctx.ocrCleaning?.confidenceScore,
@@ -119,7 +121,8 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
  * @param noteId - MongoDB ObjectId string of the note to process
  */
 export const processNote = async (
-  noteId: string
+  noteId: string,
+  force: boolean = false
 ): Promise<ProcessingResult> => {
   let note: INote | null = null;
 
@@ -139,7 +142,7 @@ export const processNote = async (
       };
     }
 
-    if (note.status === "analyzed") {
+    if (note.status === "analyzed" && !force) {
       return {
         success: true,
         noteId,
@@ -162,6 +165,7 @@ export const processNote = async (
       userId: note.userId,
       imageUrl: note.imageUrl,
       imageUrls,
+      rawOcrText: note.rawText || undefined,
     });
 
     if (!pipelineResult.success || !pipelineResult.context) {

@@ -22,15 +22,15 @@ const groq = new Groq({ apiKey: config.groq.apiKey });
 // ─── Prompt ────────────────────────────────────────────────────────────────
 
 const buildPrompt = (text: string, availableSubjects: string[]): string => `
-You are an expert at identifying academic subjects in Sri Lankan G.C.E. O/L student notes.
+You are an expert at identifying academic subjects and lesson topics in Sri Lankan G.C.E. O/L student notes.
 
 The available subjects in our curriculum database are:
 ${availableSubjects.map((s) => `  - ${s}`).join("\n")}
 
 Analyze the following student notes and identify:
-1. The academic subject (MUST be one from the list above, or "Unknown" if none match)
-2. The grade level (10 or 11, or 0 if unclear)
-3. The specific topic/lesson being studied (your best guess, 1–5 words)
+1. The academic subject (MUST be one from the list above, e.g. "Science", "Biology", "Chemistry", "Physics", "Mathematics", etc.)
+2. The grade level (10 or 11, or 0 if unclear; infer 10 or 11 if topic is standard O/L syllabus)
+3. The specific topic / lesson title being studied. If the notes contain a heading or title (such as "Chemical Basis of life", "Photosynthesis", "The Periodic Table", etc.), use that exact title/topic name (1–6 words).
 4. Your confidence in the subject identification (0–100)
 
 STUDENT NOTES:
@@ -40,18 +40,18 @@ ${text.slice(0, 1500)}
 
 Respond ONLY with this JSON (no markdown, no explanation):
 {
-  "subject": "Biology",
+  "subject": "Science",
   "grade": 10,
-  "topicHint": "Photosynthesis",
-  "confidence": 92,
-  "rawGradeText": "Grade 10"
+  "topicHint": "Chemical Basis of Life",
+  "confidence": 95,
+  "rawGradeText": ""
 }
 
 Rules:
-- subject must exactly match one of the available subjects, or "Unknown"
-- grade must be 10, 11, or 0 (0 = unable to determine)
-- topicHint: the most specific topic you can identify, 1–5 words
-- confidence: 0–100, how certain you are about the subject
+- subject must match one of the available subjects above, or "Unknown"
+- grade: 10, 11, or 0 (infer 10 or 11 based on standard O/L syllabus)
+- topicHint: the lesson title or primary topic from the notes (1–6 words)
+- confidence: 0–100, how certain you are about the subject and topic
 - rawGradeText: the exact text in the notes that indicated the grade (or "")`;
 
 // ─── Stage Runner ──────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ export const runSubjectDetection = async (
     const completion = await groq.chat.completions.create({
       model: config.groq.model,
       temperature: 0.1,
-      max_tokens: 256,
+      max_tokens: 1500,
       messages: [
         {
           role: "user",
@@ -92,19 +92,28 @@ export const runSubjectDetection = async (
       ],
     });
 
-    const raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    let raw = completion.choices[0]?.message?.content?.trim() ?? "";
+    raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
     const stripped = raw
       .replace(/^```(?:json)?\s*/i, "")
       .replace(/\s*```$/, "")
       .trim();
 
-    const parsed = JSON.parse(stripped);
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+    const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
 
-    // Validate subject is in our KB
-    const subject =
-      typeof parsed.subject === "string" && availableSubjects.includes(parsed.subject)
-        ? parsed.subject
-        : "Unknown";
+    const parsed = JSON.parse(jsonStr);
+
+    // Validate subject is in our KB (case-insensitive)
+    let subject = "Unknown";
+    if (typeof parsed.subject === "string" && parsed.subject.trim()) {
+      const match = availableSubjects.find(
+        (s) => s.toLowerCase() === parsed.subject.trim().toLowerCase()
+      );
+      if (match) {
+        subject = match;
+      }
+    }
 
     const grade =
       typeof parsed.grade === "number" && [10, 11].includes(parsed.grade)

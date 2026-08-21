@@ -70,6 +70,7 @@ export const runPipeline = async (input: {
   userId: string;
   imageUrl: string;
   imageUrls?: string[];
+  rawOcrText?: string;
 }): Promise<PipelineResult> => {
   const pipelineStart = Date.now();
 
@@ -85,10 +86,12 @@ export const runPipeline = async (input: {
     userId: input.userId,
     imageUrl: pages[0],
     imageUrls: pages,
+    rawOcrText: input.rawOcrText,
     pipelineVersion: PIPELINE_VERSION,
     startedAt: new Date(),
     stageResults: [],
   };
+
 
   // ── Execute stages in sequence ─────────────────────────────────────────
   for (const stage of STAGES) {

@@ -186,42 +186,53 @@ router.get("/search", (req: Request, res: Response) => {
   }
 });
 
+// ─── GET /api/curriculum/documents ─────────────────────────────────────────
+
 /**
- * Returns stats for the official Qdrant vector collection (pdf_knowledge_base).
+ * Returns all official ingested PDF textbook documents from the knowledge base.
  */
-router.get("/qdrant-stats", async (_req: Request, res: Response) => {
+router.get("/documents", async (_req: Request, res: Response) => {
   try {
+    const docs = await qdrantService.getIngestedDocuments();
     const stats = await qdrantService.getCollectionStats();
-    sendSuccess(res, stats);
+
+    sendSuccess(res, {
+      totalPoints: stats.totalPoints,
+      documentCount: docs.length,
+      documents: docs,
+    });
   } catch (error) {
-    sendError(res, "Failed to retrieve Qdrant stats", 500);
+    sendError(res, "Failed to retrieve ingested documents", 500);
   }
 });
 
-// ─── GET /api/curriculum/qdrant-search?q=photosynthesis ──────────────────────
+// ─── GET /api/curriculum/pdf-search?q=photosynthesis ─────────────────────────
 
 /**
- * Searches the official Qdrant vector KB points for keyword / text matches.
+ * Searches the official PDF Ingestion Knowledge Base with dense vector similarity.
  */
-router.get("/qdrant-search", async (req: Request, res: Response) => {
+router.get("/pdf-search", async (req: Request, res: Response) => {
   try {
-    const { q, limit } = req.query;
+    const { q, limit, filename } = req.query;
     if (!q || typeof q !== "string") {
       sendError(res, "Query parameter 'q' is required", 400);
       return;
     }
 
-    const limitNum = limit ? parseInt(limit as string, 10) : 10;
-    const results = await qdrantService.searchByKeywordPayload(q, limitNum);
+    const limitNum = limit ? parseInt(limit as string, 10) : 8;
+    const filenameStr = typeof filename === "string" ? filename : undefined;
+
+    const passages = await qdrantService.searchKnowledgeBase(q, limitNum, undefined, filenameStr);
 
     sendSuccess(res, {
       query: q,
-      count: results.length,
-      results,
+      count: passages.length,
+      passages,
     });
   } catch (error) {
-    sendError(res, "Failed to search Qdrant knowledge base", 500);
+    sendError(res, "Failed to search PDF knowledge base", 500);
   }
 });
 
 export default router;
+

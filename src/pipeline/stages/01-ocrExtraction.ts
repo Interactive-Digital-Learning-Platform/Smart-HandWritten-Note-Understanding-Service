@@ -40,9 +40,17 @@ const resolveImagePath = (imageUrl: string): string => {
 export const runOcrExtraction = async (
   ctx: PipelineContext
 ): Promise<void> => {
+  if (ctx.rawOcrText && ctx.rawOcrText.trim().length > 0) {
+    console.log(
+      `  [Stage 1] ⚡ Pre-extracted OCR text provided (${ctx.rawOcrText.length} chars), skipping vision OCR`
+    );
+    return;
+  }
+
   const pages = ctx.imageUrls && ctx.imageUrls.length > 0
     ? ctx.imageUrls
     : [ctx.imageUrl];
+
 
   console.log(
     `  [Stage 1] OCR Extraction — note: ${ctx.noteId} (${pages.length} page(s))`

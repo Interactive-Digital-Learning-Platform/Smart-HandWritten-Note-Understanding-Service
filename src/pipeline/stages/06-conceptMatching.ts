@@ -104,22 +104,25 @@ Return one entry per concept, all ${unmatchedConcepts.length} concepts:`;
     const completion = await groq.chat.completions.create({
       model: config.groq.model,
       temperature: 0.1,
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const raw =
-      completion.choices[0]?.message?.content
-        ?.trim()
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/, "")
-        .trim() ?? "[]";
+    let raw = completion.choices[0]?.message?.content?.trim() ?? "[]";
+    raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+    const stripped = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
+
+    const jsonMatch = stripped.match(/\[[\s\S]*\]/);
+    const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
 
     const parsed: Array<{
       index: number;
       found: boolean;
       evidence: string;
-    }> = JSON.parse(raw);
+    }> = JSON.parse(jsonStr);
 
     for (const entry of parsed) {
       const concept = unmatchedConcepts[entry.index - 1];

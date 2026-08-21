@@ -77,14 +77,22 @@ const askGroq = async (systemPrompt: string, userPrompt: string): Promise<string
   throw new Error(`Groq failed after ${MAX_RETRIES} attempts`);
 };
 
-// JSON extraction — strips any markdown fences if present
 const parseJson = <T>(raw: string): T => {
-  const stripped = raw
+  let cleaned = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const stripped = cleaned
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
-  return JSON.parse(stripped) as T;
+
+  const jsonMatch = stripped.match(/[\{\[][\s\S]*[\}\]]/);
+  const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
+
+  return JSON.parse(jsonStr) as T;
 };
+
+// ─── Context builders ───────────────────────────────────────────────────────
+
+import { qdrantService } from "./qdrantService";
 
 // ─── Context builders ───────────────────────────────────────────────────────
 
@@ -92,82 +100,103 @@ const buildContext = (subject: string, topic: string, gradeLevel: string, rawTex
   `Subject: ${subject} | Topic: ${topic} | Grade: ${gradeLevel}\n\nStudent's Notes:\n"""\n${rawText}\n"""`;
 
 /**
- * Looks up the matching curriculum lesson and formats its content as a
- * structured text block that can be injected into an AI prompt.
- * Returns null when the curriculum KB is unavailable or no lesson matches.
+ * Looks up the matching curriculum from the ingested PDF knowledge base (Qdrant)
+ * and the static curriculum KB, formatting its content as a structured text block
+ * that can be injected into an AI prompt.
  */
-const buildCurriculumContext = (
+const buildCurriculumContext = async (
   subject: string,
   topic: string,
-  gradeLevel: string
-): string | null => {
-  if (!isCurriculumLoaded()) return null;
-
-  const grade = parseInt(gradeLevel, 10);
-  const searchResult = findLesson(subject, topic, isNaN(grade) ? undefined : grade);
-
-  if (!searchResult) return null;
-
-  const lesson: CurriculumLesson = searchResult.lesson;
-
+  gradeLevel: string,
+  rawText?: string
+): Promise<string | null> => {
   const lines: string[] = [];
 
-  lines.push(`=== Curriculum Knowledge Base: ${lesson.subject} G${lesson.grade} — ${lesson.lessonName} ===`);
-  lines.push(`Unit: ${lesson.unit}`);
-  if (lesson.textbookReference) {
-    lines.push(`Textbook Reference: ${lesson.textbookReference}`);
-  }
-  lines.push("");
+  // ── 1. Fetch official ingested PDF textbook passages from Qdrant ────────
+  try {
+    const textbookCtx = await qdrantService.getCurriculumTextbookContext(
+      subject,
+      topic,
+      rawText
+    );
 
-  // Learning Outcomes
-  if (lesson.learningOutcomes.length > 0) {
-    lines.push("Learning Outcomes:");
-    lesson.learningOutcomes.forEach((lo, i) => {
-      lines.push(`  ${i + 1}. ${lo.description}`);
-    });
-    lines.push("");
-  }
-
-  // Required Concepts (sorted by weight descending so critical ones come first)
-  if (lesson.concepts.length > 0) {
-    lines.push("Required Concepts (weight 5=critical → 1=supplementary):");
-    const sorted = [...lesson.concepts].sort((a, b) => b.weight - a.weight);
-    sorted.forEach((c) => {
-      const examFlag = c.isFrequentlyTested ? " ⭐ exam favourite" : "";
-      lines.push(`  • [${c.category}] ${c.name} (weight ${c.weight}${examFlag})`);
-    });
-    lines.push("");
+    if (textbookCtx.isAvailable && textbookCtx.passages.length > 0) {
+      lines.push(`=== Official Ingested Textbook Knowledge Base ===`);
+      if (textbookCtx.textbookReference) {
+        lines.push(`Source Textbook: ${textbookCtx.textbookReference}`);
+      }
+      lines.push("\nRelevant Textbook Passages:");
+      textbookCtx.passages.forEach((p, idx) => {
+        lines.push(
+          `--- [Passage ${idx + 1} | ${p.filename} (Page ${p.pages.join(", ") || p.page_start || "?"})] ---\n${p.text}`
+        );
+      });
+      lines.push("");
+    }
+  } catch (err) {
+    console.warn("⚠️ Error retrieving textbook passages for material generation:", err);
   }
 
-  // Key Definitions
-  if (lesson.definitions.length > 0) {
-    lines.push("Key Definitions:");
-    lesson.definitions.forEach((d) => {
-      lines.push(`  ${d.term}: ${d.definition}`);
-    });
-    lines.push("");
+  // ── 2. Supplement with static curriculum knowledge if loaded ────────────
+  if (isCurriculumLoaded()) {
+    const grade = parseInt(gradeLevel, 10);
+    const searchResult = findLesson(subject, topic, isNaN(grade) ? undefined : grade);
+
+    if (searchResult) {
+      const lesson: CurriculumLesson = searchResult.lesson;
+      lines.push(`=== Curriculum Syllabus: ${lesson.subject} G${lesson.grade} — ${lesson.lessonName} ===`);
+      lines.push(`Unit: ${lesson.unit}`);
+      if (lesson.textbookReference) {
+        lines.push(`Syllabus Reference: ${lesson.textbookReference}`);
+      }
+      lines.push("");
+
+      // Learning Outcomes
+      if (lesson.learningOutcomes.length > 0) {
+        lines.push("Learning Outcomes:");
+        lesson.learningOutcomes.forEach((lo, i) => {
+          lines.push(`  ${i + 1}. ${lo.description}`);
+        });
+        lines.push("");
+      }
+
+      // Required Concepts
+      if (lesson.concepts.length > 0) {
+        lines.push("Required Concepts (weight 5=critical → 1=supplementary):");
+        const sorted = [...lesson.concepts].sort((a, b) => b.weight - a.weight);
+        sorted.forEach((c) => {
+          const examFlag = c.isFrequentlyTested ? " ⭐ exam favourite" : "";
+          lines.push(`  • [${c.category}] ${c.name} (weight ${c.weight}${examFlag})`);
+        });
+        lines.push("");
+      }
+
+      // Key Definitions
+      if (lesson.definitions.length > 0) {
+        lines.push("Key Definitions:");
+        lesson.definitions.forEach((d) => {
+          lines.push(`  ${d.term}: ${d.definition}`);
+        });
+        lines.push("");
+      }
+
+      // Formulae
+      if (lesson.formulae.length > 0) {
+        lines.push("Important Formulae / Equations:");
+        lesson.formulae.forEach((f) => lines.push(`  • ${f}`));
+        lines.push("");
+      }
+
+      // Expected Diagrams
+      if (lesson.expectedDiagrams.length > 0) {
+        lines.push("Diagrams Students Should Know:");
+        lesson.expectedDiagrams.forEach((d) => lines.push(`  • ${d}`));
+        lines.push("");
+      }
+    }
   }
 
-  // Formulae
-  if (lesson.formulae.length > 0) {
-    lines.push("Important Formulae / Equations:");
-    lesson.formulae.forEach((f) => lines.push(`  • ${f}`));
-    lines.push("");
-  }
-
-  // Expected Diagrams
-  if (lesson.expectedDiagrams.length > 0) {
-    lines.push("Diagrams Students Should Know:");
-    lesson.expectedDiagrams.forEach((d) => lines.push(`  • ${d}`));
-    lines.push("");
-  }
-
-  // Exam keywords hint
-  if (lesson.examKeywords.length > 0) {
-    lines.push(`Exam Keywords: ${lesson.examKeywords.join(", ")}`);
-  }
-
-  return lines.join("\n");
+  return lines.length > 0 ? lines.join("\n") : null;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -182,7 +211,8 @@ export const generateStructuredNotes = async (
   topic: string,
   gradeLevel: string
 ): Promise<string> => {
-  const curriculumContext = buildCurriculumContext(subject, topic, gradeLevel);
+  const curriculumContext = await buildCurriculumContext(subject, topic, gradeLevel, rawText);
+
 
   if (curriculumContext) {
     // ── Curriculum-enriched path ─────────────────────────────────────────

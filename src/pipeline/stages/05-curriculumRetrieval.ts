@@ -42,7 +42,10 @@ export const runCurriculumRetrieval = async (
   const lesson = ctx.matchedLesson;
 
   console.log(
-    `  [Stage 5] ✅ Lesson ready: "${lesson.lessonName}" — ` +
-      `${lesson.concepts.length} concepts, ${lesson.learningOutcomes.length} LOs`
+    `  [Stage 5] ✅ Lesson ready: "${lesson.lessonName}" (${lesson.subject} G${lesson.grade}) — ` +
+      `${lesson.concepts.length} concepts, ${lesson.learningOutcomes.length} LOs` +
+      (lesson.textbookReference ? ` [Ref: ${lesson.textbookReference}]` : "") +
+      (ctx.textbookPassages?.length ? ` (${ctx.textbookPassages.length} PDF passages)` : "")
   );
 };
+

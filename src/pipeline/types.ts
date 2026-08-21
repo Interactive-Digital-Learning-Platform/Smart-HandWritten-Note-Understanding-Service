@@ -195,6 +195,12 @@ export interface PipelineContext {
   matchedLesson?: CurriculumLesson;
   lessonMatchConfidence?: number;
   lessonMatchMethod?: string;
+  textbookPassages?: Array<{
+    text: string;
+    filename: string;
+    pages: number[];
+    score: number;
+  }>;
 
   // ── Stage 6: Concept Matching ─────────────────────────────────────────────
   conceptMatches?: ConceptMatch[];
