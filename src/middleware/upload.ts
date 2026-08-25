@@ -31,8 +31,16 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: FileFilterCallback
 ) => {
-  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/heic"];
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+  ];
+  const mime = file.mimetype?.toLowerCase();
+  if (allowedMimeTypes.includes(mime) || mime?.startsWith("image/")) {
     cb(null, true);
   } else {
     cb(

@@ -42,36 +42,46 @@ interface StageDefinition {
   critical: boolean;
 }
 
-const STAGES: StageDefinition[] = [
-  { name: "ocr_extraction",      run: runOcrExtraction,      critical: true  },
-  { name: "ocr_cleaning",        run: runOcrCleaning,        critical: false },
-  { name: "subject_detection",   run: runSubjectDetection,   critical: false },
+const ANALYSIS_STAGES: StageDefinition[] = [
+  { name: "ocr_extraction",        run: runOcrExtraction,        critical: true  },
+  { name: "ocr_cleaning",          run: runOcrCleaning,          critical: false },
+  { name: "subject_detection",     run: runSubjectDetection,     critical: false },
   { name: "lesson_identification", run: runLessonIdentification, critical: false },
   { name: "curriculum_retrieval",  run: runCurriculumRetrieval,  critical: false },
-  { name: "concept_matching",    run: runConceptMatching,    critical: false },
-  { name: "coverage_calculation",run: runCoverageCalculation, critical: false },
-  { name: "gap_detection",       run: runGapDetection,       critical: false },
-  { name: "material_generation", run: runMaterialGeneration, critical: false },
-  { name: "quality_verification",run: runQualityVerification, critical: false },
+  { name: "concept_matching",      run: runConceptMatching,      critical: false },
+  { name: "coverage_calculation",  run: runCoverageCalculation,  critical: false },
+  { name: "gap_detection",         run: runGapDetection,         critical: false },
+  { name: "quality_verification",  run: runQualityVerification,  critical: false },
 ];
+
+export interface PipelineOptions {
+  /** If true, runs material generation asynchronously in background so analysis returns immediately */
+  asyncMaterialGeneration?: boolean;
+  /** Callback fired immediately when core analysis stages (1-9) are completed */
+  onAnalysisReady?: (ctx: PipelineContext) => Promise<void> | void;
+}
 
 // ─── Pipeline Runner ───────────────────────────────────────────────────────
 
 /**
- * Executes the full 10-stage hybrid processing pipeline for a single note.
+ * Executes the hybrid processing pipeline for a single note.
  *
  * @param input.noteId    - MongoDB ObjectId of the Note document
  * @param input.userId    - The user who uploaded the note
  * @param input.imageUrl  - Path/URL to the uploaded image file
+ * @param options         - Pipeline options (asyncMaterialGeneration, onAnalysisReady)
  * @returns PipelineResult with the final context or an error
  */
-export const runPipeline = async (input: {
-  noteId: string;
-  userId: string;
-  imageUrl: string;
-  imageUrls?: string[];
-  rawOcrText?: string;
-}): Promise<PipelineResult> => {
+export const runPipeline = async (
+  input: {
+    noteId: string;
+    userId: string;
+    imageUrl: string;
+    imageUrls?: string[];
+    rawOcrText?: string;
+  },
+  options?: PipelineOptions
+): Promise<PipelineResult> => {
   const pipelineStart = Date.now();
 
   const pages = input.imageUrls && input.imageUrls.length > 0 ? input.imageUrls : [input.imageUrl];
@@ -92,9 +102,8 @@ export const runPipeline = async (input: {
     stageResults: [],
   };
 
-
-  // ── Execute stages in sequence ─────────────────────────────────────────
-  for (const stage of STAGES) {
+  // ── Execute core analysis stages in sequence ───────────────────────────
+  for (const stage of ANALYSIS_STAGES) {
     const stageStart = Date.now();
 
     try {
@@ -141,6 +150,51 @@ export const runPipeline = async (input: {
     }
   }
 
+  // ── Analysis Ready Callback ────────────────────────────────────────────
+  if (options?.onAnalysisReady) {
+    try {
+      await Promise.resolve(options.onAnalysisReady(ctx));
+    } catch (cbErr) {
+      console.error(`⚠️ Error in onAnalysisReady callback for note ${input.noteId}:`, cbErr);
+    }
+  }
+
+  // ── Study Material Generation ──────────────────────────────────────────
+  const runMaterials = async () => {
+    const matStart = Date.now();
+    try {
+      await Promise.resolve(runMaterialGeneration(ctx));
+      ctx.stageResults.push({
+        stage: "material_generation",
+        success: true,
+        durationMs: Date.now() - matStart,
+      });
+    } catch (matErr) {
+      const errorMsg = matErr instanceof Error ? matErr.message : String(matErr);
+      console.warn(`  ⚠️  Stage "material_generation" failed: ${errorMsg}`);
+      ctx.stageResults.push({
+        stage: "material_generation",
+        success: false,
+        durationMs: Date.now() - matStart,
+        error: errorMsg,
+      });
+    }
+  };
+
+  if (options?.asyncMaterialGeneration) {
+    // Fire and forget material generation in background
+    runMaterials()
+      .then(() => {
+        console.log(`📚 Background materials generation complete for note: ${input.noteId}`);
+      })
+      .catch((err) => {
+        console.error(`❌ Background materials generation error for note ${input.noteId}:`, err);
+      });
+  } else {
+    // Await material generation synchronously (e.g. for standalone tests/scripts)
+    await runMaterials();
+  }
+
   // ── Done ───────────────────────────────────────────────────────────────
   ctx.totalDurationMs = Date.now() - pipelineStart;
 
@@ -148,7 +202,7 @@ export const runPipeline = async (input: {
     .map((r) => `  ${r.stage}: ${r.durationMs}ms ${r.success ? "✅" : "❌"}`)
     .join("\n");
 
-  console.log(`\n🎉 Pipeline COMPLETE — ${ctx.totalDurationMs}ms total`);
+  console.log(`\n🎉 Pipeline Analysis COMPLETE — ${ctx.totalDurationMs}ms total`);
   console.log(`Stage timings:\n${stageTimings}`);
 
   const warnings = ctx.qualityWarnings ?? [];

@@ -160,13 +160,41 @@ export const processNote = async (
       ? note.imageUrls
       : [note.imageUrl];
 
-    const pipelineResult = await runPipeline({
-      noteId,
-      userId: note.userId,
-      imageUrl: note.imageUrl,
-      imageUrls,
-      rawOcrText: note.rawText || undefined,
-    });
+    const pipelineResult = await runPipeline(
+      {
+        noteId,
+        userId: note.userId,
+        imageUrl: note.imageUrl,
+        imageUrls,
+        rawOcrText: note.rawText || undefined,
+      },
+      {
+        asyncMaterialGeneration: true,
+        onAnalysisReady: async (ctx) => {
+          if (!note) return;
+
+          // ── Persist OCR text ──────────────────────────────────────────────
+          const rawText = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
+          note.rawText = rawText;
+
+          // ── Persist analysis & mark as analyzed immediately ───────────────
+          const analysis = contextToAnalysis(ctx);
+          note.analysis = analysis;
+          note.status = "analyzed";
+          await note.save();
+
+          // ── Update Student Profile (non-fatal) ─────────────────────────────
+          await updateProfileFromAnalysis(ctx);
+
+          console.log(
+            `✅ Note analysis complete & saved for note ${noteId}: ` +
+              `${analysis.subject} / ${analysis.topic} — ` +
+              `${analysis.overallCompleteness}% coverage, ` +
+              `${analysis.learningGaps.length} gaps`
+          );
+        },
+      }
+    );
 
     if (!pipelineResult.success || !pipelineResult.context) {
       throw new Error(
@@ -175,26 +203,8 @@ export const processNote = async (
     }
 
     const ctx = pipelineResult.context;
-
-    // ── Persist OCR text ────────────────────────────────────────────────────
     const rawText = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
-    note.rawText = rawText;
-
-    // ── Persist analysis ────────────────────────────────────────────────────
-    const analysis = contextToAnalysis(ctx);
-    note.analysis = analysis;
-    note.status = "analyzed";
-    await note.save();
-
-    // ── Update Student Profile (non-fatal) ───────────────────────────
-    await updateProfileFromAnalysis(ctx);
-
-    console.log(
-      `✅ Processing complete for note ${noteId}: ` +
-        `${analysis.subject} / ${analysis.topic} — ` +
-        `${analysis.overallCompleteness}% coverage, ` +
-        `${analysis.learningGaps.length} gaps`
-    );
+    const analysis = note.analysis || contextToAnalysis(ctx);
 
     return {
       success: true,

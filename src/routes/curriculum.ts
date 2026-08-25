@@ -10,6 +10,7 @@ import {
 } from "../curriculum";
 import { sendSuccess, sendError } from "../middleware/errorHandler";
 import { qdrantService } from "../services/qdrantService";
+import { curriculumDbService } from "../services/curriculumDbService";
 
 const router = Router();
 
@@ -19,13 +20,20 @@ const router = Router();
  * Returns a summary of the loaded curriculum KB.
  * Useful for health checks and debugging.
  */
-router.get("/stats", (_req: Request, res: Response) => {
+router.get("/stats", async (_req: Request, res: Response) => {
   try {
     if (!isCurriculumLoaded()) {
       sendError(res, "Curriculum KB has not been loaded yet", 503);
       return;
     }
-    sendSuccess(res, getCurriculumStats());
+    const dbHealth = await curriculumDbService.checkDatabaseHealth();
+    const qdrantStats = await qdrantService.getCollectionStats();
+
+    sendSuccess(res, {
+      ...getCurriculumStats(),
+      database: dbHealth,
+      qdrant: qdrantStats,
+    });
   } catch (error) {
     sendError(res, "Failed to retrieve curriculum stats", 500);
   }
@@ -189,7 +197,7 @@ router.get("/search", (req: Request, res: Response) => {
 // ─── GET /api/curriculum/documents ─────────────────────────────────────────
 
 /**
- * Returns all official ingested PDF textbook documents from the knowledge base.
+ * Returns all official ingested PDF textbook documents directly from PostgreSQL database.
  */
 router.get("/documents", async (_req: Request, res: Response) => {
   try {
@@ -206,10 +214,27 @@ router.get("/documents", async (_req: Request, res: Response) => {
   }
 });
 
+// ─── GET /api/curriculum/jobs ──────────────────────────────────────────────
+
+/**
+ * Returns all completed ingestion jobs directly from Neon PostgreSQL.
+ */
+router.get("/jobs", async (_req: Request, res: Response) => {
+  try {
+    const jobs = await curriculumDbService.getCompletedCurriculumJobs();
+    sendSuccess(res, {
+      count: jobs.length,
+      jobs,
+    });
+  } catch (error) {
+    sendError(res, "Failed to retrieve curriculum ingestion jobs", 500);
+  }
+});
+
 // ─── GET /api/curriculum/pdf-search?q=photosynthesis ─────────────────────────
 
 /**
- * Searches the official PDF Ingestion Knowledge Base with dense vector similarity.
+ * Searches the official PDF Ingestion Knowledge Base in Qdrant directly.
  */
 router.get("/pdf-search", async (req: Request, res: Response) => {
   try {
@@ -235,4 +260,3 @@ router.get("/pdf-search", async (req: Request, res: Response) => {
 });
 
 export default router;
-

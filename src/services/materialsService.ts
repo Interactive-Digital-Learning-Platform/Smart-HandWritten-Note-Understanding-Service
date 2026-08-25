@@ -492,6 +492,9 @@ export interface NoteDataOverride {
   userId: string;
 }
 
+// ─── Active Generations Concurrency Set ─────────────────────────────────────
+const activeGenerations = new Set<string>();
+
 /**
  * Generates learning material types for a given note.
  * Each material is saved to the LearningMaterial collection.
@@ -506,120 +509,131 @@ export const generateMaterials = async (
   types?: MaterialType[],
   override?: NoteDataOverride
 ): Promise<GenerateAllResult> => {
-  // ── Fetch note with analysis (or use pipeline override) ──────────────────
-  let subject: string;
-  let topic: string;
-  let gradeLevel: string;
-  let rawText: string;
-  let userId: string;
-
-  if (override) {
-    // Called from pipeline Stage 9 — note.analysis not yet written to DB
-    ({ subject, topic, gradeLevel, rawText, userId } = override);
-  } else {
-    const note = await Note.findById(noteId);
-    if (!note) throw new Error(`Note not found: ${noteId}`);
-    if (!note.analysis) throw new Error("Note has no analysis. Run OCR + AI analysis first.");
-    if (!note.rawText) throw new Error("Note has no extracted text.");
-    subject = note.analysis.subject;
-    topic = note.analysis.topic;
-    gradeLevel = note.analysis.gradeLevel;
-    rawText = note.rawText;
-    userId = note.userId;
+  if (activeGenerations.has(noteId)) {
+    console.log(`ℹ️ Material generation already in progress for note ${noteId}, skipping duplicate call.`);
+    return { noteId, results: [], succeeded: 0, failed: 0 };
   }
 
-  const allTypes: MaterialType[] = types ?? [
-    "structured_notes",
-    "definitions",
-    "flashcards",
-    "mindmap",
-    "revision_summary",
-    "learning_points",
-    "audio",
-  ];
+  activeGenerations.add(noteId);
 
-  const results: MaterialResult[] = [];
+  try {
+    // ── Fetch note with analysis (or use pipeline override) ──────────────────
+    let subject: string;
+    let topic: string;
+    let gradeLevel: string;
+    let rawText: string;
+    let userId: string;
 
-  console.log(`\n📚 Generating ${allTypes.length} material(s) for note: ${noteId}`);
-
-  for (const type of allTypes) {
-    try {
-      console.log(`  ⚙️  Generating: ${type}...`);
-
-      let updateData: Partial<{
-        textContent: string;
-        flashcards: IFlashcard[];
-        definitions: IDefinition[];
-        mindMap: IMindMapNode;
-        audioUrl: string;
-      }> = {};
-
-      switch (type) {
-        case "structured_notes": {
-          const text = await generateStructuredNotes(rawText, subject, topic, gradeLevel);
-          updateData = { textContent: text };
-          break;
-        }
-        case "definitions": {
-          const defs = await generateDefinitions(rawText, subject, topic, gradeLevel);
-          updateData = { definitions: defs };
-          break;
-        }
-        case "flashcards": {
-          const cards = await generateFlashcards(rawText, subject, topic, gradeLevel);
-          updateData = { flashcards: cards };
-          break;
-        }
-        case "mindmap": {
-          const map = await generateMindMap(rawText, subject, topic, gradeLevel);
-          updateData = { mindMap: map };
-          break;
-        }
-        case "revision_summary": {
-          const text = await generateRevisionSummary(rawText, subject, topic, gradeLevel);
-          updateData = { textContent: text };
-          break;
-        }
-        case "learning_points": {
-          const text = await generateLearningPoints(rawText, subject, topic, gradeLevel);
-          updateData = { textContent: text };
-          break;
-        }
-        case "audio": {
-          const url = await generateAudio(rawText, subject, topic, gradeLevel, noteId);
-          updateData = { audioUrl: url };
-          break;
-        }
-      }
-
-      // ── Upsert into MongoDB (unique per noteId + type) ──────────────────────
-      await LearningMaterial.findOneAndUpdate(
-        { noteId, type },
-        {
-          $set: {
-            noteId,
-            userId,
-            type,
-            generatedAt: new Date(),
-            ...updateData,
-          },
-        },
-        { upsert: true, returnDocument: "after" }
-      );
-
-      console.log(`  ✅ ${type} done`);
-      results.push({ type, success: true });
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`  ❌ ${type} failed: ${errorMsg}`);
-      results.push({ type, success: false, error: errorMsg });
+    if (override) {
+      // Called from pipeline Stage 9 — note.analysis not yet written to DB
+      ({ subject, topic, gradeLevel, rawText, userId } = override);
+    } else {
+      const note = await Note.findById(noteId);
+      if (!note) throw new Error(`Note not found: ${noteId}`);
+      if (!note.analysis) throw new Error("Note has no analysis. Run OCR + AI analysis first.");
+      if (!note.rawText) throw new Error("Note has no extracted text.");
+      subject = note.analysis.subject;
+      topic = note.analysis.topic;
+      gradeLevel = note.analysis.gradeLevel;
+      rawText = note.rawText;
+      userId = note.userId;
     }
+
+    const allTypes: MaterialType[] = types ?? [
+      "structured_notes",
+      "definitions",
+      "flashcards",
+      "mindmap",
+      "revision_summary",
+      "learning_points",
+      "audio",
+    ];
+
+    const results: MaterialResult[] = [];
+
+    console.log(`\n📚 Generating ${allTypes.length} material(s) for note: ${noteId}`);
+
+    for (const type of allTypes) {
+      try {
+        console.log(`  ⚙️  Generating: ${type}...`);
+
+        let updateData: Partial<{
+          textContent: string;
+          flashcards: IFlashcard[];
+          definitions: IDefinition[];
+          mindMap: IMindMapNode;
+          audioUrl: string;
+        }> = {};
+
+        switch (type) {
+          case "structured_notes": {
+            const text = await generateStructuredNotes(rawText, subject, topic, gradeLevel);
+            updateData = { textContent: text };
+            break;
+          }
+          case "definitions": {
+            const defs = await generateDefinitions(rawText, subject, topic, gradeLevel);
+            updateData = { definitions: defs };
+            break;
+          }
+          case "flashcards": {
+            const cards = await generateFlashcards(rawText, subject, topic, gradeLevel);
+            updateData = { flashcards: cards };
+            break;
+          }
+          case "mindmap": {
+            const map = await generateMindMap(rawText, subject, topic, gradeLevel);
+            updateData = { mindMap: map };
+            break;
+          }
+          case "revision_summary": {
+            const text = await generateRevisionSummary(rawText, subject, topic, gradeLevel);
+            updateData = { textContent: text };
+            break;
+          }
+          case "learning_points": {
+            const text = await generateLearningPoints(rawText, subject, topic, gradeLevel);
+            updateData = { textContent: text };
+            break;
+          }
+          case "audio": {
+            const url = await generateAudio(rawText, subject, topic, gradeLevel, noteId);
+            updateData = { audioUrl: url };
+            break;
+          }
+        }
+
+        // ── Upsert into MongoDB (unique per noteId + type) ──────────────────────
+        await LearningMaterial.findOneAndUpdate(
+          { noteId, type },
+          {
+            $set: {
+              noteId,
+              userId,
+              type,
+              generatedAt: new Date(),
+              ...updateData,
+            },
+          },
+          { upsert: true, returnDocument: "after" }
+        );
+
+        console.log(`  ✅ ${type} done`);
+        results.push({ type, success: true });
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error(`  ❌ ${type} failed: ${errorMsg}`);
+        results.push({ type, success: false, error: errorMsg });
+      }
+    }
+
+    const succeeded = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    console.log(`\n📚 Materials done — ${succeeded} succeeded, ${failed} failed\n`);
+
+    return { noteId, results, succeeded, failed };
+  } finally {
+    activeGenerations.delete(noteId);
   }
-
-  const succeeded = results.filter(r => r.success).length;
-  const failed = results.filter(r => !r.success).length;
-
-  console.log(`\n📚 Materials done — ${succeeded} succeeded, ${failed} failed\n`);
-
-  return { noteId, results, succeeded, failed };
 };

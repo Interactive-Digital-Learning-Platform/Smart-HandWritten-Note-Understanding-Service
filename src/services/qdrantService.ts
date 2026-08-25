@@ -2,6 +2,7 @@ import axios from "axios";
 import Groq from "groq-sdk";
 import { config } from "../config/config";
 import { CurriculumLesson } from "../curriculum/types";
+import { curriculumDbService } from "./curriculumDbService";
 
 export interface QdrantCollectionInfo {
   collection: string;
@@ -17,7 +18,9 @@ export interface IngestedDocumentInfo {
   job_id: string;
   total_chunks: number;
   page_count: number;
-  pages: number[];
+  pages?: number[];
+  status?: string;
+  completed_at?: string | null;
 }
 
 export interface IngestionSearchChunk {
@@ -43,22 +46,20 @@ export interface CurriculumRetrievalContext {
 const groq = new Groq({ apiKey: config.groq.apiKey });
 
 /**
- * Client service to query the official PDF Ingestion Service and Qdrant Vector Knowledge Base
- * (collection: pdf_knowledge_base) populated from ingested textbooks, teacher guides, and syllabi.
+ * Service to query the Qdrant Vector Knowledge Base (collection: pdf_knowledge_base)
+ * and Neon PostgreSQL database directly for ingested textbooks, teacher guides, and syllabi.
  */
 export class QdrantService {
   private qdrantBaseUrl: string;
-  private pdfIngestionBaseUrl: string;
   private collectionName: string;
 
   constructor() {
     this.qdrantBaseUrl = config.qdrant.url.replace(/\/+$/, "");
-    this.pdfIngestionBaseUrl = config.pdfIngestion.url.replace(/\/+$/, "");
     this.collectionName = config.qdrant.collection;
   }
 
   /**
-   * Fetches status and statistics for the official pdf_knowledge_base collection.
+   * Fetches status and statistics for the official pdf_knowledge_base collection in Qdrant.
    */
   public async getCollectionStats(): Promise<QdrantCollectionInfo> {
     try {
@@ -94,69 +95,45 @@ export class QdrantService {
   }
 
   /**
-   * Performs dense vector similarity search across the ingested PDF knowledge base.
-   * Calls the PDF-Ingestion-Backend-Service /ingest/search endpoint with nomic-embed-text embeddings.
+   * Performs dense/payload search across the ingested PDF knowledge base directly via Qdrant REST.
    */
   public async searchKnowledgeBase(
     query: string,
     limit: number = 8,
-    scoreThreshold?: number,
+    _scoreThreshold?: number,
     filename?: string
   ): Promise<IngestionSearchChunk[]> {
     if (!query || !query.trim()) return [];
-
-    // Strategy 1: Call PDF Ingestion Backend Service /ingest/search
-    try {
-      const response = await axios.post(
-        `${this.pdfIngestionBaseUrl}/ingest/search`,
-        {
-          query: query.trim(),
-          limit,
-          score_threshold: scoreThreshold,
-          filename,
-        },
-        { timeout: 8000 }
-      );
-
-      if (response.data?.results && Array.isArray(response.data.results)) {
-        return response.data.results.map((r: any) => ({
-          id: String(r.id),
-          score: Number(r.score) || 0,
-          text: r.text || r.payload?.text || "",
-          filename: r.filename || r.payload?.filename || "",
-          pages: Array.isArray(r.pages) ? r.pages : (r.payload?.pages || []),
-          page_start: Number(r.page_start || r.payload?.page_start || 0),
-          chunk_index: Number(r.chunk_index || r.payload?.chunk_index || 0),
-          payload: r.payload || {},
-        }));
-      }
-    } catch (err) {
-      console.warn(
-        `⚠️ PDF Ingestion search endpoint failed (${this.pdfIngestionBaseUrl}/ingest/search), trying fallback:`,
-        err instanceof Error ? err.message : String(err)
-      );
-    }
-
-    // Strategy 2: Fallback keyword search on Qdrant REST
-    return this.searchByKeywordPayload(query, limit);
+    return this.searchByKeywordPayload(query, limit, filename);
   }
 
   /**
-   * Lists all ingested PDF textbook documents from the knowledge base.
+   * Lists all ingested PDF textbook documents by querying the PostgreSQL database directly,
+   * with fallback to Qdrant vector storage if database is unreachable.
    */
   public async getIngestedDocuments(): Promise<IngestedDocumentInfo[]> {
+    // Strategy 1: Fetch directly from PostgreSQL database (jobs table)
     try {
-      const response = await axios.get(
-        `${this.pdfIngestionBaseUrl}/ingest/documents`,
-        { timeout: 4000 }
-      );
-      if (response.data?.documents) {
-        return response.data.documents;
+      const dbDocs = await curriculumDbService.getUniqueCurriculumTextbooks();
+      if (dbDocs && dbDocs.length > 0) {
+        return dbDocs.map((doc) => ({
+          filename: doc.filename,
+          job_id: doc.job_id,
+          total_chunks: doc.chunks_created,
+          page_count: doc.pages_processed,
+          pages: [],
+          status: doc.status,
+          completed_at: doc.completed_at,
+        }));
       }
-    } catch {
-      // Fallback
+    } catch (dbErr) {
+      console.warn(
+        "⚠️ Direct PostgreSQL textbook retrieval error, checking Qdrant:",
+        dbErr instanceof Error ? dbErr.message : String(dbErr)
+      );
     }
 
+    // Strategy 2: Fallback to Qdrant point scroll
     try {
       const scrollRes = await this.scrollPoints(200);
       const docsMap = new Map<string, IngestedDocumentInfo>();
@@ -178,13 +155,15 @@ export class QdrantService {
 
         const doc = docsMap.get(fn)!;
         pages.forEach((p) => {
-          if (!doc.pages.includes(p)) doc.pages.push(p);
+          if (!doc.pages?.includes(p)) doc.pages?.push(p);
         });
       }
 
       for (const doc of docsMap.values()) {
-        doc.pages.sort((a, b) => a - b);
-        doc.page_count = doc.pages.length;
+        if (doc.pages) {
+          doc.pages.sort((a, b) => a - b);
+          doc.page_count = doc.pages.length;
+        }
       }
 
       return Array.from(docsMap.values());
@@ -388,21 +367,33 @@ Rules:
    */
   public async searchByKeywordPayload(
     keyword: string,
-    limit: number = 10
+    limit: number = 10,
+    targetFilename?: string
   ): Promise<IngestionSearchChunk[]> {
     try {
       const scrollResult = await this.scrollPoints(100);
       const lowerKey = keyword.toLowerCase();
+      const keywords = lowerKey.split(/\s+/).filter((k) => k.length > 2);
 
       const matched = scrollResult.points.filter((pt) => {
         const text = (pt.payload.text || "").toLowerCase();
         const filename = (pt.payload.filename || "").toLowerCase();
-        return text.includes(lowerKey) || filename.includes(lowerKey);
+
+        if (targetFilename && !filename.includes(targetFilename.toLowerCase())) {
+          return false;
+        }
+
+        if (text.includes(lowerKey) || filename.includes(lowerKey)) {
+          return true;
+        }
+
+        // Check keyword intersections
+        return keywords.some((k) => text.includes(k));
       });
 
       return matched.slice(0, limit).map((pt) => ({
         id: String(pt.id),
-        score: 0.7,
+        score: 0.75,
         text: pt.payload.text || "",
         filename: pt.payload.filename || "",
         pages: pt.payload.pages || [],
@@ -417,4 +408,3 @@ Rules:
 }
 
 export const qdrantService = new QdrantService();
-

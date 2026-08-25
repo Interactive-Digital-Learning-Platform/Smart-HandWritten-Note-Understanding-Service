@@ -6,6 +6,7 @@ import { config } from "./config/config";
 import { connectDB } from "./config/database";
 import { errorHandler } from "./middleware/errorHandler";
 import { loadCurriculum } from "./curriculum";
+import { curriculumDbService } from "./services/curriculumDbService";
 
 // ─── Route imports ──────────────────────────────────────────────────────────
 import healthRouter from "./routes/health";
@@ -82,6 +83,14 @@ const startServer = async (): Promise<void> => {
 
     // ── Load Curriculum Knowledge Base ────────────────────────────────────
     await loadCurriculum();
+
+    // ── Verify Neon PostgreSQL Curriculum DB Connection ──────────────────
+    const dbHealth = await curriculumDbService.checkDatabaseHealth();
+    if (dbHealth.isConnected) {
+      console.log(`🐘 Curriculum PostgreSQL DB connected (${dbHealth.totalJobs} jobs, ${dbHealth.doneJobs} completed)`);
+    } else {
+      console.warn(`⚠️ Curriculum PostgreSQL DB unreachable: ${dbHealth.error || "unknown"}`);
+    }
 
     app.listen(config.port, () => {
       console.log("\n========================================");

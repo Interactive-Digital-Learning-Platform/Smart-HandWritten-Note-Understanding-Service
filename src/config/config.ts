@@ -40,8 +40,11 @@ export const config = {
     collection: process.env.QDRANT_COLLECTION || "pdf_knowledge_base",
   },
 
-  pdfIngestion: {
-    url: process.env.PDF_INGESTION_URL || "http://localhost:8001",
+  curriculumDb: {
+    url:
+      process.env.CURRICULUM_DB_URL ||
+      process.env.DB_URL ||
+      "postgresql://neondb_owner:npg_6qliOG7utYab@ep-twilight-mode-apd0prh5-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require",
   },
 
   gateway: {

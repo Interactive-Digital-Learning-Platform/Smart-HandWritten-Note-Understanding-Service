@@ -100,7 +100,7 @@ import { qdrantService } from "../../services/qdrantService";
 export const runLessonIdentification = async (
   ctx: PipelineContext
 ): Promise<void> => {
-  console.log(`  [Stage 4] Lesson Identification (PDF Ingestion & Curriculum)...`);
+  console.log(`  [Stage 4] Lesson Identification (Curriculum DB & Qdrant Vector KB)...`);
 
   if (!ctx.subjectDetection) {
     throw new Error("Stage 4 requires subjectDetection from Stage 3");
