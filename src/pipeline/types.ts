@@ -181,6 +181,12 @@ export interface PipelineContext {
   imageUrl: string;
   imageUrls?: string[];
 
+  // ── Optional User Hints (from UI upload) ──────────────────────────────────
+  userSubject?: string;
+  userGrade?: number;
+  userTopic?: string;
+  userLessonId?: string;
+
   // ── Stage 1: OCR Extraction ───────────────────────────────────────────────
   rawOcrText?: string;
 

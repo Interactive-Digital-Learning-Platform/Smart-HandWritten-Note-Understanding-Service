@@ -109,6 +109,10 @@ export interface INote extends Document {
   pageCount: number;        // total number of pages in this note
   rawText: string;          // extracted OCR text (combined across all pages)
   status: NoteStatus;
+  userSubject?: string;     // optional user-selected subject (e.g., "Science")
+  userGrade?: number;       // optional user-selected grade (e.g., 10)
+  userTopic?: string;       // optional user-selected topic / lesson name
+  userLessonId?: string;    // optional user-selected lesson ID
   analysis?: IAnalysis;
   errorMessage?: string;
   createdAt: Date;
@@ -237,6 +241,10 @@ const NoteSchema = new Schema<INote>(
       enum: ["uploaded", "processing", "analyzed", "failed"],
       default: "uploaded",
     },
+    userSubject: { type: String },
+    userGrade: { type: Number },
+    userTopic: { type: String },
+    userLessonId: { type: String },
     analysis: { type: AnalysisSchema, default: undefined },
     errorMessage: { type: String },
   },

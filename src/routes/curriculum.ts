@@ -231,6 +231,27 @@ router.get("/jobs", async (_req: Request, res: Response) => {
   }
 });
 
+// ─── GET /api/curriculum/chapters ──────────────────────────────────────────
+
+/**
+ * Returns all registered textbook chapters with Book Page and PDF Page boundaries.
+ */
+router.get("/chapters", (req: Request, res: Response) => {
+  try {
+    const { subject, grade } = req.query;
+    const gradeNum = grade ? parseInt(grade as string, 10) : undefined;
+    const subjectStr = typeof subject === "string" ? subject : undefined;
+
+    const chapters = curriculumDbService.getAvailableTextbookChapters(subjectStr, gradeNum);
+    sendSuccess(res, {
+      count: chapters.length,
+      chapters,
+    });
+  } catch (error) {
+    sendError(res, "Failed to retrieve textbook chapters", 500);
+  }
+});
+
 // ─── GET /api/curriculum/pdf-search?q=photosynthesis ─────────────────────────
 
 /**
@@ -238,16 +259,20 @@ router.get("/jobs", async (_req: Request, res: Response) => {
  */
 router.get("/pdf-search", async (req: Request, res: Response) => {
   try {
-    const { q, limit, filename } = req.query;
+    const { q, limit, filename, minPage, maxPage } = req.query;
     if (!q || typeof q !== "string") {
       sendError(res, "Query parameter 'q' is required", 400);
       return;
     }
 
     const limitNum = limit ? parseInt(limit as string, 10) : 8;
-    const filenameStr = typeof filename === "string" ? filename : undefined;
+    const bounds = {
+      filename: typeof filename === "string" ? filename : undefined,
+      minPage: minPage ? parseInt(minPage as string, 10) : undefined,
+      maxPage: maxPage ? parseInt(maxPage as string, 10) : undefined,
+    };
 
-    const passages = await qdrantService.searchKnowledgeBase(q, limitNum, undefined, filenameStr);
+    const passages = await qdrantService.searchKnowledgeBase(q, limitNum, bounds);
 
     sendSuccess(res, {
       query: q,

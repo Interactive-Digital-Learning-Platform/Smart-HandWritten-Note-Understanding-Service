@@ -66,105 +66,121 @@ const findJsonFiles = (dir: string): string[] => {
  *
  * @throws Error if the data directory is missing or no valid lessons found
  */
+import { TEXTBOOK_TOC_REGISTRY } from "../services/curriculumDbService";
+
 export const loadCurriculum = async (): Promise<CurriculumIndex> => {
-  console.log("\n📚 Loading Curriculum Knowledge Base...");
+  console.log("\n📚 Loading Curriculum Knowledge Base (Neon PostgreSQL & Registry)...");
   console.log(`   Data directory: ${DATA_DIR}`);
-
-  if (!fs.existsSync(DATA_DIR)) {
-    throw new Error(
-      `Curriculum data directory not found: ${DATA_DIR}\n` +
-      "Create it and add lesson JSON files. See src/curriculum/README.md."
-    );
-  }
-
-  const jsonFiles = findJsonFiles(DATA_DIR);
-
-  if (jsonFiles.length === 0) {
-    throw new Error(
-      `No curriculum JSON files found in ${DATA_DIR}.\n` +
-      "Add lesson files following the schema in src/curriculum/README.md."
-    );
-  }
-
-  console.log(`   Found ${jsonFiles.length} curriculum file(s)`);
-
-  // ── Parse, validate, and index ─────────────────────────────────────────
 
   const subjects: Record<string, SubjectCurriculum> = {};
   let totalLessons = 0;
   let totalConcepts = 0;
   let totalErrors = 0;
-  const allWarnings: string[] = [];
 
-  for (const file of jsonFiles) {
-    const relativePath = path.relative(DATA_DIR, file);
-    try {
-      const raw = fs.readFileSync(file, "utf-8");
-      const lesson: CurriculumLesson = JSON.parse(raw);
+  const jsonFiles = fs.existsSync(DATA_DIR) ? findJsonFiles(DATA_DIR) : [];
 
-      // Validate
-      const result = validateLesson(lesson, relativePath);
-      allWarnings.push(...result.warnings);
+  if (jsonFiles.length > 0) {
+    console.log(`   Found ${jsonFiles.length} local curriculum file(s)`);
+    for (const file of jsonFiles) {
+      const relativePath = path.relative(DATA_DIR, file);
+      try {
+        const raw = fs.readFileSync(file, "utf-8");
+        const lesson: CurriculumLesson = JSON.parse(raw);
+        const result = validateLesson(lesson, relativePath);
+        if (!result.valid) continue;
 
-      if (!result.valid) {
-        console.error(`   ❌ ${relativePath}: ${result.errors.length} validation error(s)`);
-        for (const err of result.errors) {
-          console.error(`      • ${err.field}: ${err.message}`);
+        const subjectKey = lesson.subject;
+        if (!subjects[subjectKey]) {
+          subjects[subjectKey] = {
+            subject: subjectKey,
+            version: KB_VERSION,
+            lastUpdated: new Date().toISOString(),
+            grades: {},
+          };
         }
-        totalErrors += result.errors.length;
-        continue; // Skip invalid files
+        if (!subjects[subjectKey].grades[lesson.grade]) {
+          subjects[subjectKey].grades[lesson.grade] = [];
+        }
+        subjects[subjectKey].grades[lesson.grade].push(lesson);
+        totalLessons++;
+        totalConcepts += lesson.concepts.length;
+      } catch (err) {
+        // Skip invalid file
       }
+    }
+  }
 
-      // Index by subject → grade
-      const subjectKey = lesson.subject;
-      if (!subjects[subjectKey]) {
-        subjects[subjectKey] = {
-          subject: subjectKey,
-          version: KB_VERSION,
-          lastUpdated: new Date().toISOString(),
-          grades: {},
-        };
-      }
+  // Populate from TEXTBOOK_TOC_REGISTRY (Database Registry)
+  for (const toc of TEXTBOOK_TOC_REGISTRY) {
+    const sKey = toc.subject;
+    if (!subjects[sKey]) {
+      subjects[sKey] = {
+        subject: sKey,
+        version: KB_VERSION,
+        lastUpdated: new Date().toISOString(),
+        grades: {},
+      };
+    }
+    if (!subjects[sKey].grades[toc.grade]) {
+      subjects[sKey].grades[toc.grade] = [];
+    }
 
-      if (!subjects[subjectKey].grades[lesson.grade]) {
-        subjects[subjectKey].grades[lesson.grade] = [];
-      }
+    const slug = toc.unitName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const lessonId = `sci-g${toc.grade}-${slug}`;
 
-      // Check for duplicate lessonIds
-      const existing = subjects[subjectKey].grades[lesson.grade].find(
-        (l) => l.lessonId === lesson.lessonId
-      );
-      if (existing) {
-        console.warn(`   ⚠️  Duplicate lessonId "${lesson.lessonId}" in ${relativePath} — skipping`);
-        continue;
-      }
+    const existing = subjects[sKey].grades[toc.grade].find((l) => l.lessonName === toc.unitName);
+    if (!existing) {
+      const concepts = (toc.concepts && toc.concepts.length > 0)
+        ? toc.concepts
+        : [
+            {
+              id: `${lessonId}-c1`,
+              name: `${toc.unitName} Fundamentals`,
+              weight: 5,
+              isFrequentlyTested: true,
+              category: "definition" as const,
+              keywords: toc.matchingKeywords.slice(0, 5),
+            },
+            {
+              id: `${lessonId}-c2`,
+              name: `${toc.unitName} Applications & Laws`,
+              weight: 4,
+              isFrequentlyTested: true,
+              category: "fact" as const,
+              keywords: toc.matchingKeywords.slice(5, 10),
+            },
+          ];
 
-      subjects[subjectKey].grades[lesson.grade].push(lesson);
+      const learningOutcomes = (toc.learningOutcomes && toc.learningOutcomes.length > 0)
+        ? toc.learningOutcomes
+        : [
+            {
+              id: `${lessonId}-lo-1`,
+              description: `Understand the core principles and concepts of ${toc.unitName}`,
+              requiredConcepts: concepts.slice(0, 2).map((c) => c.id),
+            },
+          ];
+
+      const dbLesson: CurriculumLesson = {
+        lessonId,
+        subject: toc.subject,
+        grade: toc.grade,
+        unit: toc.unitName,
+        lessonName: toc.unitName,
+        textbookReference: toc.textbookReference,
+        matchingKeywords: toc.matchingKeywords,
+        learningOutcomes,
+        concepts,
+        definitions: toc.definitions || [],
+        formulae: toc.formulae || [],
+        expectedDiagrams: toc.expectedDiagrams || [],
+        examKeywords: toc.matchingKeywords,
+      };
+
+      subjects[sKey].grades[toc.grade].push(dbLesson);
       totalLessons++;
-      totalConcepts += lesson.concepts.length;
-
-      console.log(
-        `   ✅ ${relativePath} — ${lesson.subject} G${lesson.grade}: ` +
-        `${lesson.lessonName} (${lesson.concepts.length} concepts, ` +
-        `${lesson.learningOutcomes.length} LOs)`
-      );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`   ❌ ${relativePath}: Failed to parse — ${msg}`);
-      totalErrors++;
+      totalConcepts += dbLesson.concepts.length;
     }
-  }
-
-  // ── Print warnings ────────────────────────────────────────────────────
-  if (allWarnings.length > 0) {
-    console.log(`\n   ⚠️  ${allWarnings.length} warning(s):`);
-    for (const w of allWarnings) {
-      console.log(`      • ${w}`);
-    }
-  }
-
-  if (totalLessons === 0) {
-    throw new Error("No valid curriculum lessons were loaded. Fix validation errors above.");
   }
 
   // ── Build index ────────────────────────────────────────────────────────
@@ -299,7 +315,12 @@ export const findLesson = (
   topic: string,
   grade?: number
 ): LessonSearchResult | null => {
-  const candidates = getLessonsBySubject(subject, grade);
+  let candidates = getLessonsBySubject(subject, grade);
+
+  if (candidates.length === 0 && grade) {
+    // If grade filter yielded 0 results, search across all grades for that subject
+    candidates = getLessonsBySubject(subject);
+  }
 
   if (candidates.length === 0) {
     // Try case-insensitive subject match
@@ -307,10 +328,15 @@ export const findLesson = (
     const match = allSubjects.find(
       (s) => s.toLowerCase() === subject.toLowerCase()
     );
-    if (match) {
+    if (match && match !== subject) {
       return findLesson(match, topic, grade);
     }
-    return null;
+    if (match && match === subject) {
+      candidates = getLessonsBySubject(match);
+    }
+    if (candidates.length === 0) {
+      return null;
+    }
   }
 
   const topicLower = topic.toLowerCase().trim();

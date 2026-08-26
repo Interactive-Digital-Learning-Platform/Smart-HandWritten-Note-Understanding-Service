@@ -52,7 +52,7 @@ export const uploadNote = async (
       return;
     }
 
-    const { userId, title } = req.body;
+    const { userId, title, subject, grade, topic, lessonName, lessonId } = req.body;
 
     if (!userId) {
       sendError(res, "userId is required in the request body", 400);
@@ -65,14 +65,21 @@ export const uploadNote = async (
     const primaryImageUrl = imageUrls[0];
     const pageCount = imageUrls.length;
 
+    const parsedGrade = grade ? parseInt(String(grade), 10) : undefined;
+    const userTopic = topic || lessonName || undefined;
+
     const note = await Note.create({
       userId,
-      title: title || "Untitled Note",
+      title: title || (userTopic ? `${userTopic} Note` : "Untitled Note"),
       imageUrl: primaryImageUrl,
       imageUrls,
       pageCount,
       rawText: "",
       status: "uploaded",
+      userSubject: subject || undefined,
+      userGrade: !isNaN(parsedGrade as number) ? parsedGrade : undefined,
+      userTopic,
+      userLessonId: lessonId || undefined,
     });
 
     sendSuccess(
@@ -84,6 +91,9 @@ export const uploadNote = async (
         pageCount: note.pageCount,
         status: note.status,
         title: note.title,
+        userSubject: note.userSubject,
+        userGrade: note.userGrade,
+        userTopic: note.userTopic,
         createdAt: note.createdAt,
       },
       `Note uploaded successfully (${pageCount} page(s)). Ready for processing.`,

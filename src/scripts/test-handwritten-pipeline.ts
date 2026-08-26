@@ -25,7 +25,7 @@ async function runTest() {
   // 2. Run Pipeline
   const result = await runPipeline(
     {
-      noteId: "test-science-note-101",
+      noteId: "650000000000000000000001",
       userId: "test-user-dlk",
       imageUrl: img1,
       imageUrls: [img1, img2],

@@ -80,7 +80,12 @@ The student is studying: "${lessonName}"
 ${textbookRef ? `Official Textbook Reference: ${textbookRef}` : ""}
 
 For each learning gap below, write ONE concise, actionable study recommendation (1–2 sentences).
-Mention specific study actions (e.g., "Draw the diagram", "Memorize the equation", "Re-read section X") and reference the textbook/pages if available.
+Mention specific study actions (e.g., "Draw the diagram", "Memorize the equation", "Review the table") and reference the textbook/chapter pages.
+
+IMPORTANT CITATION RULES:
+1. ONLY reference page numbers within the chapter page range specified in the Textbook Reference above (e.g., Book Pages 1–22 / PDF Pages 15–36).
+2. Never invent or cite page numbers outside this chapter's range.
+3. Format page references clearly, e.g.: "Refer to Book Page X (PDF Page Y)" or "Review pages in Unit ${lessonName}".
 
 Gaps:
 ${gapList}

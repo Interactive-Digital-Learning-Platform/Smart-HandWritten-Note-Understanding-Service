@@ -2,7 +2,7 @@ import axios from "axios";
 import Groq from "groq-sdk";
 import { config } from "../config/config";
 import { CurriculumLesson } from "../curriculum/types";
-import { curriculumDbService } from "./curriculumDbService";
+import { curriculumDbService, ChapterPageBounds } from "./curriculumDbService";
 
 export interface QdrantCollectionInfo {
   collection: string;
@@ -34,10 +34,21 @@ export interface IngestionSearchChunk {
   payload?: Record<string, unknown>;
 }
 
+export interface SearchPageBounds {
+  minPage?: number;
+  maxPage?: number;
+  filename?: string;
+  bookPageStart?: number;
+  bookPageEnd?: number;
+  unitName?: string;
+  textbookReference?: string;
+}
+
 export interface CurriculumRetrievalContext {
   isAvailable: boolean;
   sourceTextbook?: string;
   textbookReference?: string;
+  chapterBounds?: ChapterPageBounds | null;
   passages: IngestionSearchChunk[];
   combinedContext: string;
   matchedLesson?: CurriculumLesson;
@@ -46,8 +57,8 @@ export interface CurriculumRetrievalContext {
 const groq = new Groq({ apiKey: config.groq.apiKey });
 
 /**
- * Service to query the Qdrant Vector Knowledge Base (collection: pdf_knowledge_base)
- * and Neon PostgreSQL database directly for ingested textbooks, teacher guides, and syllabi.
+ * Service to query the Qdrant Vector Knowledge Base and Neon PostgreSQL database
+ * directly with chapter-bounded search and dual-grounded page citations.
  */
 export class QdrantService {
   private qdrantBaseUrl: string;
@@ -95,24 +106,22 @@ export class QdrantService {
   }
 
   /**
-   * Performs dense/payload search across the ingested PDF knowledge base directly via Qdrant REST.
+   * Performs dense/payload search across the ingested PDF knowledge base directly via Qdrant REST
+   * with optional chapter page bounding.
    */
   public async searchKnowledgeBase(
     query: string,
     limit: number = 8,
-    _scoreThreshold?: number,
-    filename?: string
+    bounds?: SearchPageBounds
   ): Promise<IngestionSearchChunk[]> {
     if (!query || !query.trim()) return [];
-    return this.searchByKeywordPayload(query, limit, filename);
+    return this.searchByKeywordPayload(query, limit, bounds);
   }
 
   /**
-   * Lists all ingested PDF textbook documents by querying the PostgreSQL database directly,
-   * with fallback to Qdrant vector storage if database is unreachable.
+   * Lists all ingested PDF textbook documents by querying the PostgreSQL database directly.
    */
   public async getIngestedDocuments(): Promise<IngestedDocumentInfo[]> {
-    // Strategy 1: Fetch directly from PostgreSQL database (jobs table)
     try {
       const dbDocs = await curriculumDbService.getUniqueCurriculumTextbooks();
       if (dbDocs && dbDocs.length > 0) {
@@ -133,7 +142,6 @@ export class QdrantService {
       );
     }
 
-    // Strategy 2: Fallback to Qdrant point scroll
     try {
       const scrollRes = await this.scrollPoints(200);
       const docsMap = new Map<string, IngestedDocumentInfo>();
@@ -173,40 +181,61 @@ export class QdrantService {
   }
 
   /**
-   * Retrieves textbook passages and compiles curriculum grounding context for a note.
+   * Retrieves textbook passages and compiles curriculum grounding context for a note,
+   * strictly bounded to the chapter's PDF and Book page ranges.
    */
   public async getCurriculumTextbookContext(
     subject: string,
     topic: string,
-    textSnippet?: string
+    textSnippet?: string,
+    grade?: number
   ): Promise<CurriculumRetrievalContext> {
-    const s = subject && subject !== "Unknown" ? subject : "";
-    const t = topic && topic !== "Unknown Topic" ? topic : "";
+    const s = subject && subject !== "Unknown" ? subject : "Science";
+    const t = topic && topic !== "Unknown Topic" ? topic : "Lesson 1";
+    const g = grade || 10;
     const snippet = textSnippet ? textSnippet.slice(0, 300) : "";
-    const query = `${s} ${t} ${snippet}`.trim() || "Science Grade 10 curriculum";
-    const passages = await this.searchKnowledgeBase(query, 6);
+
+    // 1. Look up authoritative Table of Contents chapter boundaries
+    const chapterBounds = curriculumDbService.getChapterPageBounds(s, g, t);
+
+    const searchBounds: SearchPageBounds | undefined = chapterBounds
+      ? {
+          minPage: chapterBounds.pdfPageStart,
+          maxPage: chapterBounds.pdfPageEnd,
+          filename: chapterBounds.textbookFilename,
+          bookPageStart: chapterBounds.bookPageStart,
+          bookPageEnd: chapterBounds.bookPageEnd,
+          unitName: chapterBounds.unitName,
+          textbookReference: chapterBounds.textbookReference,
+        }
+      : undefined;
+
+    const query = `${s} ${t} ${snippet}`.trim();
+    const passages = await this.searchKnowledgeBase(query, 6, searchBounds);
+
+    const textbookReference =
+      chapterBounds?.textbookReference ||
+      (passages.length > 0 && passages[0].filename
+        ? `${passages[0].filename} (Pages ${Array.from(new Set(passages.flatMap((p) => p.pages))).join(", ")})`
+        : undefined);
 
     if (passages.length === 0) {
       return {
-        isAvailable: false,
+        isAvailable: Boolean(chapterBounds),
+        sourceTextbook: chapterBounds?.textbookFilename,
+        textbookReference,
+        chapterBounds,
         passages: [],
-        combinedContext: "",
+        combinedContext: chapterBounds
+          ? `=== Official Curriculum Textbook: ${chapterBounds.subject} Grade ${chapterBounds.grade} ===\nUnit: ${chapterBounds.unitName}\nReference: ${chapterBounds.textbookReference}`
+          : "",
       };
     }
-
-    const primaryDoc = passages[0].filename;
-    const allPages = Array.from(
-      new Set(passages.flatMap((p) => (p.pages.length ? p.pages : [p.page_start])))
-    ).filter((p) => p > 0).sort((a, b) => a - b);
-
-    const textbookReference = primaryDoc
-      ? `${primaryDoc}${allPages.length ? ` (Pages ${allPages.join(", ")})` : ""}`
-      : undefined;
 
     const passageBlocks = passages
       .map(
         (p, i) =>
-          `[Passage ${i + 1} | Source: ${p.filename || "Curriculum Textbook"} (Pages: ${p.pages.join(", ") || p.page_start || "?"})]\n${p.text}`
+          `[Passage ${i + 1} | Source: ${p.filename} (PDF Page: ${p.pages.join(", ") || p.page_start})]\n${p.text}`
       )
       .join("\n\n---\n\n");
 
@@ -214,8 +243,9 @@ export class QdrantService {
 
     return {
       isAvailable: true,
-      sourceTextbook: primaryDoc,
+      sourceTextbook: chapterBounds?.textbookFilename || passages[0].filename,
       textbookReference,
+      chapterBounds,
       passages,
       combinedContext,
     };
@@ -223,27 +253,32 @@ export class QdrantService {
 
   /**
    * Dynamically constructs a structured CurriculumLesson from ingested PDF textbook passages
-   * when static JSON curriculum is not present or when deriving ground truth from the real textbook.
+   * and chapter boundaries directly from the database knowledge base.
    */
   public async extractDynamicLessonFromPassages(
     subject: string,
     topic: string,
     grade: number,
-    passages: IngestionSearchChunk[]
+    passages: IngestionSearchChunk[],
+    chapterBounds?: ChapterPageBounds | null
   ): Promise<CurriculumLesson | null> {
-    if (!passages || passages.length === 0) return null;
+    const effectiveSubject = chapterBounds?.subject || subject || "Science";
+    const effectiveTopic = chapterBounds?.unitName || topic || "Lesson";
+    const effectiveGrade = chapterBounds?.grade || grade || 10;
+    const textbookRef =
+      chapterBounds?.textbookReference ||
+      (passages.length > 0
+        ? `${passages[0].filename} (PDF Pages: ${Array.from(new Set(passages.flatMap((p) => p.pages))).join(", ")})`
+        : `${effectiveSubject} Grade ${effectiveGrade} Textbook`);
 
-    const sourceDoc = passages[0].filename || "Textbook";
-    const allPages = Array.from(
-      new Set(passages.flatMap((p) => (p.pages.length ? p.pages : [p.page_start])))
-    ).filter((p) => p > 0).sort((a, b) => a - b);
-
-    const textbookRef = `${sourceDoc}${allPages.length ? ` (Pages ${allPages.join(", ")})` : ""}`;
-    const excerptText = passages.map((p) => p.text).join("\n\n").slice(0, 4000);
+    const excerptText =
+      passages.length > 0
+        ? passages.map((p) => p.text).join("\n\n").slice(0, 4000)
+        : `Unit: ${effectiveTopic} (${effectiveSubject} Grade ${effectiveGrade})`;
 
     const prompt = `You are a Sri Lankan secondary school curriculum expert.
-Extract the structured syllabus elements for the topic "${topic}" (${subject} Grade ${grade || 10})
-directly from these official textbook passages:
+Extract the structured syllabus elements for the topic "${effectiveTopic}" (${effectiveSubject} Grade ${effectiveGrade})
+based on these official textbook passages and curriculum specifications:
 
 """
 ${excerptText}
@@ -251,8 +286,8 @@ ${excerptText}
 
 Respond ONLY with valid JSON in this exact structure:
 {
-  "lessonName": "${topic}",
-  "unit": "Unit/Chapter Name",
+  "lessonName": "${effectiveTopic}",
+  "unit": "${effectiveTopic}",
   "learningOutcomes": [
     {
       "id": "lo-01",
@@ -275,13 +310,13 @@ Respond ONLY with valid JSON in this exact structure:
   ],
   "formulae": [],
   "expectedDiagrams": [],
-  "matchingKeywords": ["${topic.toLowerCase()}", "${subject.toLowerCase()}"]
+  "matchingKeywords": ["${effectiveTopic.toLowerCase()}", "${effectiveSubject.toLowerCase()}"]
 }
 
 Rules:
 - weights: 1-5 (5=critical for exams, 4=very important, 3=standard, 2=supporting, 1=supplementary)
 - category: one of definition, process, formula, diagram, fact, law, calculation, experiment
-- Extract 5 to 12 core concepts mentioned in the textbook passages.`;
+- Extract 5 to 15 core concepts for this chapter.`;
 
     try {
       const completion = await groq.chat.completions.create({
@@ -302,27 +337,26 @@ Rules:
       const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
 
       const parsed = JSON.parse(jsonStr);
-
-      const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      const lessonId = `pdf-${slug}-${grade || 10}`;
+      const slug = effectiveTopic.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const lessonId = `db-${slug}-${effectiveGrade}`;
 
       return {
         lessonId,
-        subject,
-        grade: grade || 10,
-        unit: parsed.unit || topic,
-        lessonName: parsed.lessonName || topic,
+        subject: effectiveSubject,
+        grade: effectiveGrade,
+        unit: parsed.unit || effectiveTopic,
+        lessonName: parsed.lessonName || effectiveTopic,
         textbookReference: textbookRef,
-        matchingKeywords: Array.isArray(parsed.matchingKeywords) ? parsed.matchingKeywords : [topic.toLowerCase()],
+        matchingKeywords: Array.isArray(parsed.matchingKeywords) ? parsed.matchingKeywords : [effectiveTopic.toLowerCase()],
         learningOutcomes: Array.isArray(parsed.learningOutcomes) ? parsed.learningOutcomes : [],
         concepts: Array.isArray(parsed.concepts) ? parsed.concepts : [],
         definitions: Array.isArray(parsed.definitions) ? parsed.definitions : [],
         formulae: Array.isArray(parsed.formulae) ? parsed.formulae : [],
         expectedDiagrams: Array.isArray(parsed.expectedDiagrams) ? parsed.expectedDiagrams : [],
-        examKeywords: [topic],
+        examKeywords: [effectiveTopic],
       };
     } catch (err) {
-      console.warn("⚠️ Dynamic lesson extraction from textbook passages failed:", err);
+      console.warn("⚠️ Dynamic lesson extraction from database passages failed:", err);
       return null;
     }
   }
@@ -331,7 +365,7 @@ Rules:
    * Scrolls points from the Qdrant collection to retrieve ingested document passages.
    */
   public async scrollPoints(
-    limit: number = 20,
+    limit: number = 50,
     offset?: string | number
   ): Promise<{ points: any[]; nextOffset?: string | number }> {
     try {
@@ -363,37 +397,53 @@ Rules:
   }
 
   /**
-   * Searches the Qdrant knowledge base for passages matching keywords / topic text.
+   * Searches the Qdrant knowledge base for passages matching keywords / topic text,
+   * strictly filtering within the provided chapter page boundaries.
    */
   public async searchByKeywordPayload(
     keyword: string,
     limit: number = 10,
-    targetFilename?: string
+    bounds?: SearchPageBounds
   ): Promise<IngestionSearchChunk[]> {
     try {
-      const scrollResult = await this.scrollPoints(100);
+      const scrollResult = await this.scrollPoints(200);
       const lowerKey = keyword.toLowerCase();
       const keywords = lowerKey.split(/\s+/).filter((k) => k.length > 2);
 
       const matched = scrollResult.points.filter((pt) => {
-        const text = (pt.payload.text || "").toLowerCase();
-        const filename = (pt.payload.filename || "").toLowerCase();
+        const payload = pt.payload || {};
+        const text = (payload.text || "").toLowerCase();
+        const filename = (payload.filename || "").toLowerCase();
+        const pageStart = Number(payload.page_start || 0);
+        const pages = (payload.pages || []) as number[];
 
-        if (targetFilename && !filename.includes(targetFilename.toLowerCase())) {
+        // 1. Filename filter
+        if (bounds?.filename && !filename.includes(bounds.filename.toLowerCase().replace(/\.pdf$/i, ""))) {
           return false;
         }
 
+        // 2. Strict Chapter Page Range Bounding (PDF Pages)
+        if (bounds?.minPage !== undefined && bounds?.maxPage !== undefined) {
+          const isWithinBounds =
+            (pageStart >= bounds.minPage && pageStart <= bounds.maxPage) ||
+            pages.some((p) => p >= bounds.minPage! && p <= bounds.maxPage!);
+
+          if (!isWithinBounds) {
+            return false; // Reject chunks outside chapter range
+          }
+        }
+
+        // 3. Keyword / text match
         if (text.includes(lowerKey) || filename.includes(lowerKey)) {
           return true;
         }
 
-        // Check keyword intersections
         return keywords.some((k) => text.includes(k));
       });
 
       return matched.slice(0, limit).map((pt) => ({
         id: String(pt.id),
-        score: 0.75,
+        score: 0.85,
         text: pt.payload.text || "",
         filename: pt.payload.filename || "",
         pages: pt.payload.pages || [],

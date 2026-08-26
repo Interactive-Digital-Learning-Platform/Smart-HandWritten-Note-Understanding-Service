@@ -167,6 +167,10 @@ export const processNote = async (
         imageUrl: note.imageUrl,
         imageUrls,
         rawOcrText: note.rawText || undefined,
+        userSubject: note.userSubject,
+        userGrade: note.userGrade,
+        userTopic: note.userTopic,
+        userLessonId: note.userLessonId,
       },
       {
         asyncMaterialGeneration: true,

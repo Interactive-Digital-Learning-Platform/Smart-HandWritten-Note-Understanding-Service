@@ -1,34 +1,15 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// Pipeline Stage 4 — Lesson Identification
-// ═══════════════════════════════════════════════════════════════════════════
-//
-// Uses the subject + topic hint from Stage 3 to find the best matching
-// curriculum lesson in the Knowledge Base.
-//
-// Strategy (in priority order):
-//   1. Exact match: findLesson(subject, topicHint, grade)
-//   2. Global search: searchLessons(topicHint) across all subjects
-//   3. LLM-assisted: If KB search gives low confidence, ask LLM to pick
-//      from the top candidate lessons
-//
-// Research Contribution: Curriculum retrieval replaces the LLM guessing
-// which topic it thinks the notes are about (Improvement 9).
-// ═══════════════════════════════════════════════════════════════════════════
-
 import Groq from "groq-sdk";
 import { config } from "../../config/config";
 import { PipelineContext } from "../types";
 import { findLesson, searchLessons, getLessonsBySubject } from "../../curriculum";
 import { CurriculumLesson } from "../../curriculum/types";
+import { qdrantService } from "../../services/qdrantService";
+import { curriculumDbService } from "../../services/curriculumDbService";
 
 const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // ─── LLM-assisted lesson picker ────────────────────────────────────────────
 
-/**
- * When keyword matching gives us multiple low-confidence candidates,
- * ask the LLM to pick the best one by reading snippets of the lesson names.
- */
 const pickLessonWithLlm = async (
   textSnippet: string,
   candidates: CurriculumLesson[]
@@ -36,7 +17,7 @@ const pickLessonWithLlm = async (
   if (candidates.length === 0) return null;
 
   const options = candidates
-    .slice(0, 5) // Only show top 5 to avoid token overload
+    .slice(0, 5)
     .map(
       (l, i) =>
         `  ${i + 1}. "${l.lessonName}" (${l.subject} Grade ${l.grade}, Unit: ${l.unit})`
@@ -67,9 +48,7 @@ confidence: 0–100 how confident you are in this match`;
       messages: [{ role: "user", content: prompt }],
     });
 
-    let raw =
-      completion.choices[0]?.message?.content
-        ?.trim() ?? "";
+    let raw = completion.choices[0]?.message?.content?.trim() ?? "";
     raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
     const stripped = raw
       .replace(/^```(?:json)?\s*/i, "")
@@ -87,20 +66,18 @@ confidence: 0–100 how confident you are in this match`;
       return { lessonId: candidates[idx].lessonId, confidence };
     }
   } catch {
-    // Ignore LLM picker failures — fall through to no-match
+    // Ignore LLM picker failures
   }
 
   return null;
 };
-
-import { qdrantService } from "../../services/qdrantService";
 
 // ─── Stage Runner ──────────────────────────────────────────────────────────
 
 export const runLessonIdentification = async (
   ctx: PipelineContext
 ): Promise<void> => {
-  console.log(`  [Stage 4] Lesson Identification (Curriculum DB & Qdrant Vector KB)...`);
+  console.log(`  [Stage 4] Lesson Identification (Curriculum DB & Bounded Qdrant KB)...`);
 
   if (!ctx.subjectDetection) {
     throw new Error("Stage 4 requires subjectDetection from Stage 3");
@@ -109,27 +86,37 @@ export const runLessonIdentification = async (
   const { subject, grade, topicHint } = ctx.subjectDetection;
   const text = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
 
-  // ── Strategy 1: Search Official Ingested PDF Knowledge Base (Qdrant RAG) ──
+  // 1. Check Table of Contents Chapter Boundaries from Neon Database Registry
+  const chapterBounds = curriculumDbService.getChapterPageBounds(subject, grade || 10, topicHint);
+
+  // 2. Search Ingested PDF Knowledge Base in Qdrant (Strictly bounded to chapter PDF pages)
   try {
     const textbookContext = await qdrantService.getCurriculumTextbookContext(
       subject,
       topicHint,
-      text
+      text,
+      grade || 10
     );
 
-    if (textbookContext.isAvailable && textbookContext.passages.length > 0) {
-      ctx.textbookPassages = textbookContext.passages.map((p) => ({
-        text: p.text,
-        filename: p.filename,
-        pages: p.pages,
-        score: p.score,
-      }));
+    if (textbookContext.isAvailable) {
+      if (textbookContext.passages.length > 0) {
+        ctx.textbookPassages = textbookContext.passages.map((p) => ({
+          text: p.text,
+          filename: p.filename,
+          pages: p.pages,
+          score: p.score,
+        }));
+        console.log(
+          `  [Stage 4] 📚 Ingested PDF match: "${textbookContext.sourceTextbook}" ` +
+            `(${textbookContext.passages.length} bounded passages retrieved: ${textbookContext.textbookReference || ""})`
+        );
+      } else {
+        console.log(
+          `  [Stage 4] 📚 Grounded with TOC registry: ${textbookContext.textbookReference || ""}`
+        );
+      }
 
-      console.log(
-        `  [Stage 4] 📚 Ingested PDF match: "${textbookContext.sourceTextbook}" (${textbookContext.passages.length} passages retrieved)`
-      );
-
-      // Check if static lesson exists for additional concept keywords
+      // Check if static lesson exists
       let staticMatch = subject !== "Unknown" ? findLesson(subject, topicHint, grade || undefined) : null;
       if (!staticMatch && topicHint !== "Unknown Topic") {
         const sr = searchLessons(topicHint);
@@ -138,11 +125,16 @@ export const runLessonIdentification = async (
         }
       }
 
+      const authoritativeRef =
+        chapterBounds?.textbookReference ||
+        staticMatch?.lesson.textbookReference ||
+        textbookContext.textbookReference;
+
       if (staticMatch && staticMatch.confidence >= 0.2) {
         ctx.matchedLessonId = staticMatch.lesson.lessonId;
         ctx.matchedLesson = {
           ...staticMatch.lesson,
-          textbookReference: textbookContext.textbookReference || staticMatch.lesson.textbookReference,
+          textbookReference: authoritativeRef || staticMatch.lesson.textbookReference,
         };
         ctx.lessonMatchConfidence = 0.98;
         ctx.lessonMatchMethod = "pdf-ingestion-grounded";
@@ -155,60 +147,68 @@ export const runLessonIdentification = async (
         }
 
         console.log(
-          `  [Stage 4] ✅ Grounded static lesson with PDF Knowledge Base: "${ctx.matchedLesson.lessonName}"`
+          `  [Stage 4] ✅ Grounded lesson: "${ctx.matchedLesson.lessonName}" [Ref: ${ctx.matchedLesson.textbookReference}]`
         );
         return;
       }
 
-      // If no exact static lesson, dynamically extract lesson structure from ingested PDF chunks
-      const dynamicLesson = await qdrantService.extractDynamicLessonFromPassages(
-        subject !== "Unknown" ? subject : "Science",
-        topicHint !== "Unknown Topic" ? topicHint : "Curriculum Lesson",
-        grade || 10,
-        textbookContext.passages
-      );
-
-      if (dynamicLesson && dynamicLesson.concepts.length > 0) {
-        ctx.matchedLessonId = dynamicLesson.lessonId;
-        ctx.matchedLesson = dynamicLesson;
-        ctx.lessonMatchConfidence = 0.92;
-        ctx.lessonMatchMethod = "pdf-ingestion-dynamic";
-
-        if (ctx.subjectDetection.subject === "Unknown") {
-          ctx.subjectDetection.subject = dynamicLesson.subject;
-        }
-        if (!ctx.subjectDetection.grade) {
-          ctx.subjectDetection.grade = dynamicLesson.grade;
-        }
-
-        console.log(
-          `  [Stage 4] ✅ Extracted dynamic curriculum from PDF: "${dynamicLesson.lessonName}" (${dynamicLesson.concepts.length} concepts from ${dynamicLesson.textbookReference})`
+      // Dynamically extract lesson structure from database chunks if no static JSON
+      if (textbookContext.passages.length > 0 || chapterBounds) {
+        const dynamicLesson = await qdrantService.extractDynamicLessonFromPassages(
+          subject !== "Unknown" ? subject : "Science",
+          topicHint !== "Unknown Topic" ? topicHint : "Curriculum Lesson",
+          grade || 10,
+          textbookContext.passages,
+          chapterBounds
         );
-        return;
+
+        if (dynamicLesson && dynamicLesson.concepts.length > 0) {
+          ctx.matchedLessonId = dynamicLesson.lessonId;
+          ctx.matchedLesson = {
+            ...dynamicLesson,
+            textbookReference: authoritativeRef || dynamicLesson.textbookReference,
+          };
+          ctx.lessonMatchConfidence = 0.95;
+          ctx.lessonMatchMethod = "pdf-ingestion-dynamic";
+
+          if (ctx.subjectDetection.subject === "Unknown") {
+            ctx.subjectDetection.subject = dynamicLesson.subject;
+          }
+          if (!ctx.subjectDetection.grade) {
+            ctx.subjectDetection.grade = dynamicLesson.grade;
+          }
+
+          console.log(
+            `  [Stage 4] ✅ Extracted dynamic curriculum from DB: "${dynamicLesson.lessonName}" (${dynamicLesson.concepts.length} concepts) [Ref: ${ctx.matchedLesson.textbookReference}]`
+          );
+          return;
+        }
       }
     }
   } catch (err) {
     console.warn("  [Stage 4] ⚠️ PDF Knowledge Base search error:", err);
   }
 
-  // ── Strategy 2: Exact/keyword match via static KB ────────────────────────
+  // 3. Fallback: exact/keyword match via static KB
   if (subject !== "Unknown") {
     const result = findLesson(subject, topicHint, grade || undefined);
 
     if (result && result.confidence >= 0.5) {
       ctx.matchedLessonId = result.lesson.lessonId;
-      ctx.matchedLesson = result.lesson;
+      ctx.matchedLesson = {
+        ...result.lesson,
+        textbookReference: chapterBounds?.textbookReference || result.lesson.textbookReference,
+      };
       ctx.lessonMatchConfidence = result.confidence;
       ctx.lessonMatchMethod = result.matchMethod;
 
       console.log(
-        `  [Stage 4] ✅ Matched: "${result.lesson.lessonName}" ` +
+        `  [Stage 4] ✅ Matched static: "${result.lesson.lessonName}" ` +
           `(${result.matchMethod}, confidence: ${(result.confidence * 100).toFixed(0)}%)`
       );
       return;
     }
 
-    // ── Strategy 3: Try searching all lessons in the detected subject ───
     const subjectLessons = getLessonsBySubject(subject, grade || undefined);
     if (subjectLessons.length > 0 && text) {
       const aiPick = await pickLessonWithLlm(text, subjectLessons);
@@ -218,7 +218,10 @@ export const runLessonIdentification = async (
         );
         if (pickedLesson) {
           ctx.matchedLessonId = pickedLesson.lessonId;
-          ctx.matchedLesson = pickedLesson;
+          ctx.matchedLesson = {
+            ...pickedLesson,
+            textbookReference: chapterBounds?.textbookReference || pickedLesson.textbookReference,
+          };
           ctx.lessonMatchConfidence = aiPick.confidence;
           ctx.lessonMatchMethod = "ai-assisted";
 
@@ -232,10 +235,9 @@ export const runLessonIdentification = async (
     }
   }
 
-  // ── Strategy 4: Global search across all subjects ─────────────────────
+  // 4. Global search
   let globalResults = searchLessons(topicHint);
   if (globalResults.length === 0 || globalResults[0].confidence < 0.2) {
-    // Try searching with beginning of student notes
     const textFirstLines = text.split("\n").slice(0, 3).join(" ").trim();
     if (textFirstLines) {
       globalResults = searchLessons(textFirstLines);
@@ -245,7 +247,10 @@ export const runLessonIdentification = async (
   if (globalResults.length > 0 && globalResults[0].confidence >= 0.2) {
     const best = globalResults[0];
     ctx.matchedLessonId = best.lesson.lessonId;
-    ctx.matchedLesson = best.lesson;
+    ctx.matchedLesson = {
+      ...best.lesson,
+      textbookReference: chapterBounds?.textbookReference || best.lesson.textbookReference,
+    };
     ctx.lessonMatchConfidence = best.confidence;
     ctx.lessonMatchMethod = best.matchMethod;
 
@@ -263,7 +268,33 @@ export const runLessonIdentification = async (
     return;
   }
 
-  // ── No match — pipeline continues without curriculum context ──────────
+  // 5. If chapter bounds matched from TOC, construct a clean dynamic lesson
+  if (chapterBounds) {
+    const slug = chapterBounds.unitName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    ctx.matchedLessonId = `db-${slug}-${chapterBounds.grade}`;
+    ctx.matchedLesson = {
+      lessonId: ctx.matchedLessonId,
+      subject: chapterBounds.subject,
+      grade: chapterBounds.grade,
+      unit: chapterBounds.unitName,
+      lessonName: chapterBounds.unitName,
+      textbookReference: chapterBounds.textbookReference,
+      matchingKeywords: chapterBounds.matchingKeywords,
+      learningOutcomes: [],
+      concepts: [],
+      definitions: [],
+      formulae: [],
+      expectedDiagrams: [],
+      examKeywords: chapterBounds.matchingKeywords,
+    };
+    ctx.lessonMatchConfidence = 0.9;
+    ctx.lessonMatchMethod = "toc-registry";
+    console.log(
+      `  [Stage 4] ✅ Matched from TOC Registry: "${chapterBounds.unitName}" [Ref: ${chapterBounds.textbookReference}]`
+    );
+    return;
+  }
+
   ctx.matchedLessonId = undefined;
   ctx.matchedLesson = undefined;
   ctx.lessonMatchConfidence = 0;
@@ -274,4 +305,3 @@ export const runLessonIdentification = async (
       `"${subject}" / "${topicHint}". Pipeline will continue without KB.`
   );
 };
-

@@ -79,6 +79,10 @@ export const runPipeline = async (
     imageUrl: string;
     imageUrls?: string[];
     rawOcrText?: string;
+    userSubject?: string;
+    userGrade?: number;
+    userTopic?: string;
+    userLessonId?: string;
   },
   options?: PipelineOptions
 ): Promise<PipelineResult> => {
@@ -97,6 +101,10 @@ export const runPipeline = async (
     imageUrl: pages[0],
     imageUrls: pages,
     rawOcrText: input.rawOcrText,
+    userSubject: input.userSubject,
+    userGrade: input.userGrade,
+    userTopic: input.userTopic,
+    userLessonId: input.userLessonId,
     pipelineVersion: PIPELINE_VERSION,
     startedAt: new Date(),
     stageResults: [],
