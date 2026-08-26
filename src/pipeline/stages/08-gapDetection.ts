@@ -301,10 +301,16 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
     });
   }
 
-  // ── Identify strength areas (achieved outcomes) ───────────────────────
-  const strengthAreas = outcomeAssessments
+  // ── Identify strength areas (achieved outcomes or verified found concepts) ──
+  let strengthAreas = outcomeAssessments
     .filter((a) => a.status === "achieved")
     .map((a) => a.outcome.description);
+
+  if (strengthAreas.length === 0) {
+    strengthAreas = matches
+      .filter((m) => m.found)
+      .map((m) => m.concept.name);
+  }
 
   // ── Calculate exam readiness ──────────────────────────────────────────
   const examReadiness = calculateExamReadiness(ctx);
