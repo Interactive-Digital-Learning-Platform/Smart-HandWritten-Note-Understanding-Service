@@ -69,11 +69,18 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     ctx.coverageScores?.simpleCoverage ??
     0;
 
+  const unitMatch = (ctx.matchedLesson?.textbookReference || "").match(/(?:Unit|Lesson)\s*(\d+)/i) ||
+                    (ctx.matchedLesson?.unit || "").match(/(?:Unit|Lesson)?\s*(\d+)/i) ||
+                    (topic || "").match(/^(?:Unit|Lesson)?\s*(\d+)[\.\:\-]/i);
+  const parsedUnitNum = unitMatch ? parseInt(unitMatch[1], 10) : undefined;
+
   return {
     // Core identification
     subject,
     topic,
     gradeLevel,
+    unitNumber: parsedUnitNum,
+    lessonNumber: parsedUnitNum,
 
     // Curriculum KB match & Ingested Textbook
     lessonId: ctx.matchedLessonId,

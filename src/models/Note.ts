@@ -62,6 +62,8 @@ export interface IAnalysis {
   subject: string;
   topic: string;
   gradeLevel: string;
+  unitNumber?: number;             // Unit / Chapter number (e.g. 1, 2, 3...)
+  lessonNumber?: number;           // Lesson number
 
   // ── Curriculum KB match & Ingested Textbook ────────────────────────────
   lessonId?: string;               // KB lesson ID if matched
@@ -193,6 +195,8 @@ const AnalysisSchema = new Schema<IAnalysis>(
     subject: { type: String, required: true },
     topic: { type: String, required: true },
     gradeLevel: { type: String, default: "Unknown" },
+    unitNumber: { type: Number },
+    lessonNumber: { type: Number },
 
     // Curriculum KB match
     lessonId: { type: String },
