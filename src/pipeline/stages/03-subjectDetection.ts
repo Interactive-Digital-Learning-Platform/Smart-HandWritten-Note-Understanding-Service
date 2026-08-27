@@ -1,10 +1,8 @@
-import Groq from "groq-sdk";
 import { config } from "../../config/config";
+import { groqPool } from "../../services/groqPool";
 import { PipelineContext, SubjectDetectionOutput } from "../types";
 import { getAllSubjects } from "../../curriculum";
 import { curriculumDbService } from "../../services/curriculumDbService";
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // ─── Prompt ────────────────────────────────────────────────────────────────
 
@@ -88,7 +86,7 @@ export const runSubjectDetection = async (
   let output: SubjectDetectionOutput;
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groqPool.createChatCompletion({
       model: config.groq.model,
       temperature: 0.1,
       max_tokens: 1500,

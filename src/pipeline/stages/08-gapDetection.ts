@@ -16,8 +16,8 @@
 //   - Improvement 5: Exam readiness goes beyond simple completeness %
 // ═══════════════════════════════════════════════════════════════════════════
 
-import Groq from "groq-sdk";
 import { config } from "../../config/config";
+import { groqPool } from "../../services/groqPool";
 import {
   PipelineContext,
   ExplainableGap,
@@ -25,8 +25,6 @@ import {
   ExamReadiness,
 } from "../types";
 import { LearningOutcome } from "../../curriculum/types";
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -95,7 +93,7 @@ Respond ONLY with a JSON array of strings, one per gap:
 
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groqPool.createChatCompletion({
       model: config.groq.model,
       temperature: 0.3,
       max_tokens: 2048,

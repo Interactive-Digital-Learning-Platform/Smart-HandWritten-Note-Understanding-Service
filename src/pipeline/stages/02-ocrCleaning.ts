@@ -12,11 +12,9 @@
 // proposed Hybrid AI Architecture (Improvement 9).
 // ═══════════════════════════════════════════════════════════════════════════
 
-import Groq from "groq-sdk";
 import { config } from "../../config/config";
+import { groqPool } from "../../services/groqPool";
 import { PipelineContext, OcrCleaningOutput } from "../types";
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // ─── Rule-based pre-cleaning ───────────────────────────────────────────────
 
@@ -82,15 +80,18 @@ export const runOcrCleaning = async (ctx: PipelineContext): Promise<void> => {
   let output: OcrCleaningOutput;
 
   try {
-    const completion = await groq.chat.completions.create({
+    const isLargeText = precleaned.length > 3500;
+    const textSample = isLargeText ? precleaned.slice(0, 3000) : precleaned;
+
+    const completion = await groqPool.createChatCompletion({
       model: config.groq.model,
       temperature: 0.1,
-      max_tokens: 4096,
+      max_tokens: 2048,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `Clean and assess the following OCR text extracted from a student's handwritten notes:\n\n"""\n${precleaned}\n"""`,
+          content: `Clean and assess the following OCR text extracted from a student's handwritten notes:\n\n"""\n${textSample}\n"""`,
         },
       ],
     });
@@ -105,13 +106,15 @@ export const runOcrCleaning = async (ctx: PipelineContext): Promise<void> => {
 
     output = {
       cleanedText:
-        typeof parsed.cleanedText === "string" && parsed.cleanedText.trim()
+        isLargeText
+          ? precleaned
+          : typeof parsed.cleanedText === "string" && parsed.cleanedText.trim()
           ? parsed.cleanedText.trim()
           : precleaned, // Fallback to pre-cleaned
       confidenceScore:
         typeof parsed.confidenceScore === "number"
           ? Math.min(100, Math.max(0, Math.round(parsed.confidenceScore)))
-          : 70,
+          : 75,
       lowQualityWarning:
         typeof parsed.lowQualityWarning === "boolean"
           ? parsed.lowQualityWarning

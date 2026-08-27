@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import Groq from "groq-sdk";
 import { config } from "../config/config";
+import { groqPool } from "./groqPool";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -14,16 +14,10 @@ export interface OcrResult {
 
 // ─── OCR Service ───────────────────────────────────────────────────────────
 
-const groq = new Groq({
-  apiKey: config.groq.apiKey,
-});
-
 /**
- * Extracts text from a handwritten note image using Llama 3.2 Vision on Groq.
+ * Extracts text from a handwritten note image using Llama 3.2 / Qwen Vision on Groq.
  *
- * This replaces the previous TrOCR implementation which is no longer available.
- * Groq Vision is significantly faster and better at understanding context
- * in handwritten notes.
+ * Automatically rotates across available Groq pool keys.
  *
  * @param imagePath - Absolute path to the uploaded image file
  * @returns OcrResult with the extracted text or an error message
@@ -31,11 +25,11 @@ const groq = new Groq({
 export const extractTextFromImage = async (
   imagePath: string
 ): Promise<OcrResult> => {
-  if (!config.groq.apiKey) {
+  if (!config.groq.apiKey && config.groq.apiKeys.length === 0) {
     return {
       success: false,
       text: "",
-      error: "Groq API key is not configured. Set GROQ_API_KEY in .env",
+      error: "Groq API key is not configured. Set GROQ_API_KEY or GROQ_API_KEYS in .env",
     };
   }
 
@@ -79,9 +73,11 @@ export const extractTextFromImage = async (
 
     for (const model of VISION_MODELS) {
       for (let attempt = 1; attempt <= 3; attempt++) {
+        const { client, keyIndex, maskedKey } = groqPool.getNextClient();
+
         try {
           if (attempt > 1 || model !== VISION_MODELS[0]) {
-            console.log(`🔄 OCR model ${model} (attempt ${attempt}/3)...`);
+            console.log(`🔄 OCR model ${model} via Key #${keyIndex + 1} (${maskedKey}) (attempt ${attempt}/3)...`);
           }
 
           // Wrap each API call with a timeout so we never hang indefinitely
@@ -89,7 +85,7 @@ export const extractTextFromImage = async (
           const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
           try {
-            const chatCompletion = await groq.chat.completions.create(
+            const chatCompletion = await client.chat.completions.create(
               {
                 messages: [
                   {
@@ -130,16 +126,16 @@ export const extractTextFromImage = async (
           const status = err?.status || err?.statusCode;
           const msg = err?.message || String(err);
 
-          console.warn(`⚠️ Groq OCR model ${model} attempt ${attempt} failed: ${status || "Timeout/Error"} ${msg}`);
+          console.warn(`⚠️ Groq OCR model ${model} on Key #${keyIndex + 1} attempt ${attempt} failed: ${status || "Timeout/Error"} ${msg}`);
 
           if (err.name === "AbortError" || msg.includes("aborted")) {
             console.warn(`⚠️ Groq OCR model ${model} request timed out (${REQUEST_TIMEOUT_MS / 1000}s)`);
           }
 
           if (status === 503 || status === 429 || msg.includes("over capacity") || msg.includes("rate limit")) {
-            // Exponential backoff for rate limit / capacity: wait 2s, 4s, 6s... then retry
-            const backoffMs = attempt * 2500;
-            console.log(`⏳ Groq rate limit/capacity hit. Waiting ${backoffMs / 1000}s before retry...`);
+            groqPool.markCooldown(keyIndex, 20000);
+            const backoffMs = attempt * 1500;
+            console.log(`⏳ Groq rate limit/capacity hit on Key #${keyIndex + 1}. Switching/waiting ${backoffMs / 1000}s before retry...`);
             await new Promise((resolve) => setTimeout(resolve, backoffMs));
           } else if (status === 500) {
             await new Promise((resolve) => setTimeout(resolve, attempt * 1000));

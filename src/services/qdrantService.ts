@@ -1,6 +1,6 @@
 import axios from "axios";
-import Groq from "groq-sdk";
 import { config } from "../config/config";
+import { groqPool } from "./groqPool";
 import { CurriculumLesson } from "../curriculum/types";
 import { curriculumDbService, ChapterPageBounds } from "./curriculumDbService";
 
@@ -53,8 +53,6 @@ export interface CurriculumRetrievalContext {
   combinedContext: string;
   matchedLesson?: CurriculumLesson;
 }
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 /**
  * Service to query the Qdrant Vector Knowledge Base and Neon PostgreSQL database
@@ -319,7 +317,7 @@ Rules:
 - Extract 5 to 15 core concepts for this chapter.`;
 
     try {
-      const completion = await groq.chat.completions.create({
+      const completion = await groqPool.createChatCompletion({
         model: config.groq.model,
         temperature: 0.1,
         max_tokens: 3500,

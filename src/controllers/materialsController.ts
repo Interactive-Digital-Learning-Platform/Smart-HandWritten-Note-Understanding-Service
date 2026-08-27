@@ -32,7 +32,7 @@ export const getMaterialsByNote = async (
     const { noteId } = req.params;
 
     const materials = await LearningMaterial.find({ noteId })
-      .select("noteId userId type generatedAt audioUrl createdAt")
+      .select("noteId userId type generatedAt audioUrl targetedGaps estimatedMinutes purposeDescription createdAt")
       .sort({ generatedAt: -1 });
 
     // Return which types exist and which are still missing

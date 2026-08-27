@@ -2,6 +2,29 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const parseGroqApiKeys = (): string[] => {
+  const keys: string[] = [];
+  if (process.env.GROQ_API_KEYS) {
+    keys.push(
+      ...process.env.GROQ_API_KEYS.split(",")
+        .map((k) => k.trim())
+        .filter(Boolean)
+    );
+  }
+  if (process.env.GROQ_API_KEY && !keys.includes(process.env.GROQ_API_KEY.trim())) {
+    keys.unshift(process.env.GROQ_API_KEY.trim());
+  }
+  if (process.env.GROQ_API_KEY_2 && !keys.includes(process.env.GROQ_API_KEY_2.trim())) {
+    keys.push(process.env.GROQ_API_KEY_2.trim());
+  }
+  if (process.env.GROQ_API_KEY_3 && !keys.includes(process.env.GROQ_API_KEY_3.trim())) {
+    keys.push(process.env.GROQ_API_KEY_3.trim());
+  }
+  return keys;
+};
+
+const groqApiKeys = parseGroqApiKeys();
+
 export const config = {
   port: parseInt(process.env.PORT || "3001", 10),
   nodeEnv: process.env.NODE_ENV || "development",
@@ -11,7 +34,8 @@ export const config = {
   },
 
   groq: {
-    apiKey: process.env.GROQ_API_KEY || "",
+    apiKey: groqApiKeys[0] || "",
+    apiKeys: groqApiKeys,
     model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
   },
 

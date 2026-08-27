@@ -1,12 +1,10 @@
-import Groq from "groq-sdk";
 import { config } from "../../config/config";
+import { groqPool } from "../../services/groqPool";
 import { PipelineContext } from "../types";
 import { findLesson, searchLessons, getLessonsBySubject } from "../../curriculum";
 import { CurriculumLesson } from "../../curriculum/types";
 import { qdrantService } from "../../services/qdrantService";
 import { curriculumDbService } from "../../services/curriculumDbService";
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // ─── LLM-assisted lesson picker ────────────────────────────────────────────
 
@@ -41,7 +39,7 @@ lessonIndex: the number (1-based) of the best matching lesson, or 0 if none matc
 confidence: 0–100 how confident you are in this match`;
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groqPool.createChatCompletion({
       model: config.groq.model,
       temperature: 0.1,
       max_tokens: 1024,

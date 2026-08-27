@@ -88,12 +88,35 @@ export const runMaterialGeneration = async (
     const gradeLevel = grade ? `Grade ${grade}` : "Unknown";
     const rawText = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
 
+    const foundConcepts = (ctx.conceptMatches ?? [])
+      .filter((m) => m.found)
+      .map((m) => m.concept.name);
+
+    const missingConcepts = (ctx.conceptMatches ?? [])
+      .filter((m) => !m.found)
+      .map((m) => m.concept.name);
+
+    const explainableGaps = (ctx.explainableGaps ?? []).map((g) => ({
+      outcomeId: g.learningOutcome.id,
+      outcomeDescription: g.learningOutcome.description,
+      missingConcepts: g.missingConcepts.map((c) => ({
+        id: c.id,
+        name: c.name,
+        severity: c.severity,
+      })),
+      recommendation: g.recommendation,
+      evidence: g.evidence,
+    }));
+
     const override: NoteDataOverride = {
       rawText,
       subject,
       topic,
       gradeLevel,
       userId: ctx.userId,
+      foundConcepts,
+      missingConcepts,
+      explainableGaps,
     };
 
     const result = await generateMaterials(

@@ -22,12 +22,10 @@
 // matching cannot (semantic paraphrasing).
 // ═══════════════════════════════════════════════════════════════════════════
 
-import Groq from "groq-sdk";
 import { config } from "../../config/config";
+import { groqPool } from "../../services/groqPool";
 import { PipelineContext, ConceptMatch } from "../types";
 import { CurriculumConcept } from "../../curriculum/types";
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // ─── Step 1: Keyword Matching ─────────────────────────────────────────────
 
@@ -101,7 +99,7 @@ If not found: { "index": 1, "found": false, "evidence": "" }
 Return one entry per concept, all ${unmatchedConcepts.length} concepts:`;
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groqPool.createChatCompletion({
       model: config.groq.model,
       temperature: 0.1,
       max_tokens: 2048,

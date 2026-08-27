@@ -46,6 +46,11 @@ export interface ILearningMaterial extends Document {
   mindMap?: IMindMapNode;         // mindmap root node
   audioUrl?: string;              // audio file path/URL
 
+  // Personalized study metadata
+  targetedGaps?: string[];        // missing concepts or outcome IDs addressed
+  estimatedMinutes?: number;      // estimated study/reading duration in minutes
+  purposeDescription?: string;    // pedagogical explanation of this material
+
   generatedAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -97,6 +102,9 @@ const LearningMaterialSchema = new Schema<ILearningMaterial>(
     definitions: { type: [DefinitionSchema], default: undefined },
     mindMap: { type: Schema.Types.Mixed, default: undefined },
     audioUrl: { type: String },
+    targetedGaps: { type: [String], default: [] },
+    estimatedMinutes: { type: Number, default: 3 },
+    purposeDescription: { type: String },
     generatedAt: { type: Date, default: Date.now },
   },
   {
