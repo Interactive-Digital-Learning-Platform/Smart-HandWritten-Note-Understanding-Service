@@ -126,7 +126,8 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
     }
 
     const slug = toc.unitName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const lessonId = `sci-g${toc.grade}-${slug}`;
+    const subPrefix = toc.subject.toLowerCase().slice(0, 3);
+    const lessonId = `${subPrefix}-g${toc.grade}-${slug}`;
 
     const existing = subjects[sKey].grades[toc.grade].find((l) => l.lessonName === toc.unitName);
     if (!existing) {

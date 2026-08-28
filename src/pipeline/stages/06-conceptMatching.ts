@@ -30,7 +30,13 @@ import { CurriculumConcept } from "../../curriculum/types";
 // ─── Step 1: Keyword Matching ─────────────────────────────────────────────
 
 /**
- * Performs case-insensitive keyword search.
+ * Normalizes text for matching by collapsing whitespace and punctuation.
+ */
+const normalizeTerm = (t: string): string =>
+  t.toLowerCase().replace(/['’]/g, "").replace(/[-_]/g, " ").trim();
+
+/**
+ * Performs case-insensitive keyword search with stemming, plural, and word-boundary support.
  * Returns the matched keyword and a surrounding evidence snippet.
  */
 const keywordMatch = (
@@ -38,16 +44,50 @@ const keywordMatch = (
   concept: CurriculumConcept
 ): { found: boolean; keyword?: string; evidence?: string } => {
   const textLower = text.toLowerCase();
+  const textNormalized = normalizeTerm(text);
 
   for (const keyword of concept.keywords) {
-    const kwLower = keyword.toLowerCase();
-    const idx = textLower.indexOf(kwLower);
+    const kwLower = keyword.toLowerCase().trim();
+    if (!kwLower) continue;
+
+    const kwNormalized = normalizeTerm(kwLower);
+
+    // 1. Exact substring check in raw lower and normalized text
+    let idx = textLower.indexOf(kwLower);
+    if (idx === -1) {
+      idx = textNormalized.indexOf(kwNormalized);
+    }
+
+    // 2. Plural / Singular variations
+    if (idx === -1) {
+      // Check if keyword + "s" or "es" exists
+      const plural1 = kwLower + "s";
+      const plural2 = kwLower + "es";
+      idx = textLower.indexOf(plural1);
+      if (idx === -1) idx = textLower.indexOf(plural2);
+
+      // If keyword already ends in "s", check singular
+      if (idx === -1 && kwLower.endsWith("s") && kwLower.length > 3) {
+        const singular = kwLower.slice(0, -1);
+        idx = textLower.indexOf(singular);
+      }
+    }
+
+    // 3. Word boundary regex for short terms (>= 3 chars)
+    if (idx === -1 && kwLower.length >= 3) {
+      const escaped = kwLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`\\b${escaped}\\b`, "i");
+      const match = regex.exec(text);
+      if (match) {
+        idx = match.index;
+      }
+    }
 
     if (idx !== -1) {
-      // Extract a 100-char evidence snippet around the match
+      // Extract a surrounding evidence snippet around the match
       const start = Math.max(0, idx - 40);
       const end = Math.min(text.length, idx + kwLower.length + 60);
-      const evidence = `"...${text.slice(start, end).trim()}..."`;
+      const evidence = `"...${text.slice(start, end).replace(/\s+/g, " ").trim()}..."`;
 
       return { found: true, keyword, evidence };
     }
@@ -56,14 +96,13 @@ const keywordMatch = (
   return { found: false };
 };
 
-// ─── Step 2: Semantic Matching (batch LLM) ───────────────────────────────
+// ─── Step 2: Semantic Matching (batch LLM with Full Multi-Page Context) ────
 
 /**
  * For concepts that weren't found by keyword matching, ask the LLM
- * whether they appear in the student's text using different wording.
+ * whether they appear in the student's text using different wording or summaries.
  *
- * We batch all unmatched concepts into a single LLM call to minimize
- * API calls and latency.
+ * We pass the full multi-page text (up to 30,000 chars) so no pages are cut off.
  */
 const semanticMatchBatch = async (
   text: string,
@@ -73,36 +112,45 @@ const semanticMatchBatch = async (
 
   if (unmatchedConcepts.length === 0) return result;
 
+  // Use full multi-page text up to 30,000 characters
+  const fullTextContext = text.slice(0, 30000);
+
   const conceptList = unmatchedConcepts
     .map(
       (c, i) =>
-        `  ${i + 1}. "${c.name}" (keywords: ${c.keywords.slice(0, 3).join(", ")})`
+        `  ${i + 1}. Concept: "${c.name}" [Category: ${c.category || "concept"}, Priority: ${c.weight || 3}/5]\n     Key indicator terms: ${c.keywords.slice(0, 5).join(", ")}`
     )
-    .join("\n");
+    .join("\n\n");
 
-  const prompt = `You are analyzing a student's handwritten notes to check if specific concepts are discussed.
+  const prompt = `You are an expert pedagogical evaluator analyzing a student's multi-page handwritten notes.
 
-The student's notes say:
-"""
-${text.slice(0, 2000)}
-"""
+Your task is to determine whether each syllabus concept below is DISCUSSED, MENTIONED, DEFINED, CALCULATED, or DRAWN anywhere in the student's notes (including student shorthand, paraphrasing, diagrams, or partial summaries).
 
-For each concept below, determine if the student's notes DISCUSS or REFERENCE the concept,
-even if they use different words or incomplete descriptions.
+STUDENT'S HANDWRITTEN NOTES:
+\"\"\"
+${fullTextContext}
+\"\"\"
 
-Concepts to check:
+SYLLABUS CONCEPTS TO CHECK:
 ${conceptList}
 
-Respond ONLY with a JSON array (no markdown, no explanation).
-Each element: { "index": 1, "found": true, "evidence": "...brief quote from notes..." }
-If not found: { "index": 1, "found": false, "evidence": "" }
-Return one entry per concept, all ${unmatchedConcepts.length} concepts:`;
+INSTRUCTIONS:
+1. Carefully inspect the entire text for each concept.
+2. Mark "found": true if the student covered or referenced the concept (even if incomplete or in their own words).
+3. Mark "found": false ONLY if the concept is completely missing from the notes.
+4. If found, include a brief direct quote from the notes in "evidence".
+
+Respond ONLY with a valid JSON array matching this exact format:
+[
+  { "index": 1, "found": true, "evidence": "...quote from note..." },
+  { "index": 2, "found": false, "evidence": "" }
+]`;
 
   try {
     const completion = await groqPool.createChatCompletion({
       model: config.groq.model,
       temperature: 0.1,
-      max_tokens: 2048,
+      max_tokens: 3000,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -119,7 +167,7 @@ Return one entry per concept, all ${unmatchedConcepts.length} concepts:`;
     const parsed: Array<{
       index: number;
       found: boolean;
-      evidence: string;
+      evidence?: string;
     }> = JSON.parse(jsonStr);
 
     for (const entry of parsed) {
@@ -129,7 +177,7 @@ Return one entry per concept, all ${unmatchedConcepts.length} concepts:`;
           found: Boolean(entry.found),
           evidence:
             entry.found && entry.evidence
-              ? `"${entry.evidence.slice(0, 100)}"`
+              ? `"${entry.evidence.slice(0, 120).trim()}"`
               : undefined,
         });
       }

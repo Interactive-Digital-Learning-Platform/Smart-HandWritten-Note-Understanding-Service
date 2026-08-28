@@ -7,6 +7,8 @@
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "eval:benchmarks": "ts-node src/scripts/run-research-benchmarks.ts",
+    "eval:dashboard": "ts-node src/scripts/generate-eval-dashboard.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

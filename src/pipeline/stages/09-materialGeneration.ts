@@ -21,6 +21,7 @@
 import { PipelineContext, MaterialPriorities } from "../types";
 import { generateMaterials, NoteDataOverride } from "../../services/materialsService";
 import { MaterialType } from "../../models/LearningMaterial";
+import mongoose from "mongoose";
 
 // ─── Severity Analysis ─────────────────────────────────────────────────────
 
@@ -78,6 +79,12 @@ export const runMaterialGeneration = async (
 
   console.log(`  [Stage 9] Strategy: ${priorities.rationale}`);
   console.log(`  [Stage 9] Types: ${priorities.typesToGenerate.join(", ")}`);
+
+  // If MongoDB is not connected (e.g. offline evaluation scripts), skip material generation
+  if (mongoose.connection.readyState === 0) {
+    console.log(`  [Stage 9] ⏭️ Skipping material storage (MongoDB offline in benchmark mode)`);
+    return;
+  }
 
   try {
     // Build an override so generateMaterials doesn't need to re-read note.analysis

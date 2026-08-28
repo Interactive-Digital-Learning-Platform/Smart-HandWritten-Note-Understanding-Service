@@ -1,7 +1,7 @@
 import { config } from "../../config/config";
 import { groqPool } from "../../services/groqPool";
 import { PipelineContext } from "../types";
-import { findLesson, searchLessons, getLessonsBySubject } from "../../curriculum";
+import { findLesson, searchLessons, getLessonsBySubject, getLessonById } from "../../curriculum";
 import { CurriculumLesson } from "../../curriculum/types";
 import { qdrantService } from "../../services/qdrantService";
 import { curriculumDbService } from "../../services/curriculumDbService";
@@ -79,6 +79,19 @@ export const runLessonIdentification = async (
 
   if (!ctx.subjectDetection) {
     throw new Error("Stage 4 requires subjectDetection from Stage 3");
+  }
+
+  // 0. Priority: User explicitly provided a lesson ID (e.g. from UI or Benchmark)
+  if (ctx.userLessonId) {
+    const userLesson = getLessonById(ctx.userLessonId);
+    if (userLesson) {
+      ctx.matchedLessonId = userLesson.lessonId;
+      ctx.matchedLesson = userLesson;
+      ctx.lessonMatchConfidence = 1.0;
+      ctx.lessonMatchMethod = "user-specified";
+      console.log(`  [Stage 4] 🎯 Using specified lesson: "${userLesson.lessonName}" (${userLesson.lessonId})`);
+      return;
+    }
   }
 
   const { subject, grade, topicHint } = ctx.subjectDetection;

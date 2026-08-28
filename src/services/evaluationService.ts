@@ -47,6 +47,22 @@ export interface EvaluationMetrics {
     overallApprovalRate: number | null;
   };
 
+  /** Granular concept-level teacher verification metrics */
+  conceptLevelMetrics: {
+    totalConceptReviews: number;
+    conceptAgreementRate: number | null;
+    falsePositiveCount: number;
+    falseNegativeCount: number;
+  };
+
+  /** Explainability & Trust Evaluation (5-point Likert Scale) */
+  explainabilityScores: {
+    averageExplanationClarity: number | null;
+    averageTextbookEvidenceTrust: number | null;
+    averageRemediationUsefulness: number | null;
+    averagePerceivedAccuracy: number | null;
+  };
+
   /** Analysis quality distribution (1–5 star ratings) */
   qualityDistribution: {
     rating1: number;
@@ -67,7 +83,7 @@ export interface EvaluationMetrics {
   /** Number of gaps teachers had to add that the system missed */
   teacherAddedGapsTotal: number;
 
-  /** Student learning improvement */
+  /** Student learning progress */
   learningProgress: {
     /** Total students with a profile */
     totalStudents: number;
@@ -136,6 +152,48 @@ export const computeEvaluationMetrics = async (
   );
 
   const overallApprovalRate = safePercentage(approved.length, total);
+
+  // ── Granular concept-level reviews ───────────────────────────────────
+  let totalConceptReviews = 0;
+  let agreedConceptReviews = 0;
+  let falsePositiveCount = 0;
+  let falseNegativeCount = 0;
+
+  for (const v of validations) {
+    if (v.conceptReviews && v.conceptReviews.length > 0) {
+      for (const cr of v.conceptReviews) {
+        totalConceptReviews++;
+        if (cr.agreement) {
+          agreedConceptReviews++;
+        } else {
+          if (cr.systemFound && cr.teacherVerdict === "missing") {
+            falsePositiveCount++;
+          } else if (!cr.systemFound && cr.teacherVerdict === "present") {
+            falseNegativeCount++;
+          }
+        }
+      }
+    }
+  }
+
+  const conceptAgreementRate = safePercentage(agreedConceptReviews, totalConceptReviews);
+
+  // ── Explainability survey metrics ─────────────────────────────────────
+  const withSurvey = validations.filter((v) => v.explainabilitySurvey);
+  const avgSurvey = (field: "explanationClarity" | "textbookEvidenceTrust" | "remediationUsefulness" | "overallPerceivedAccuracy"): number | null => {
+    const validScores = withSurvey
+      .map((v) => v.explainabilitySurvey?.[field])
+      .filter((s): s is number => typeof s === "number");
+    if (validScores.length === 0) return null;
+    return Math.round((validScores.reduce((a, b) => a + b, 0) / validScores.length) * 10) / 10;
+  };
+
+  const explainabilityScores = {
+    averageExplanationClarity: avgSurvey("explanationClarity"),
+    averageTextbookEvidenceTrust: avgSurvey("textbookEvidenceTrust"),
+    averageRemediationUsefulness: avgSurvey("remediationUsefulness"),
+    averagePerceivedAccuracy: avgSurvey("overallPerceivedAccuracy"),
+  };
 
   // ── Quality distribution ──────────────────────────────────────────────
   const withRating = validations.filter((v) => v.analysisQualityRating !== undefined);
@@ -206,6 +264,13 @@ export const computeEvaluationMetrics = async (
       gapRelevanceRate,
       overallApprovalRate,
     },
+    conceptLevelMetrics: {
+      totalConceptReviews,
+      conceptAgreementRate,
+      falsePositiveCount,
+      falseNegativeCount,
+    },
+    explainabilityScores,
     qualityDistribution: {
       ...ratings,
       averageRating,
