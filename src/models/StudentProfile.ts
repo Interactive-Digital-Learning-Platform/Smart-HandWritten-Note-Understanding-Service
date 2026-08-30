@@ -26,16 +26,20 @@ export interface IConceptPerformance {
    * Number of times this concept appeared in an analysis
    * and was found in the student's notes
    */
-  timesFound: number;
+  timesFoundInNotes: number;
   /**
    * Number of times this concept appeared in an analysis
    * and was MISSING from the student's notes
    */
-  timesMissed: number;
+  timesNotFoundInNotes: number;
+  /** Number of times the student explicitly selected "I need help". */
+  timesStudentConfirmedNeedsHelp: number;
+  /** Number of times the student explicitly selected "I understand this". */
+  timesStudentConfirmedUnderstood: number;
   /** Most recent analysis result for this concept */
   lastSeen: Date;
   /** Whether the concept is currently flagged as a persistent gap (missed 2+ times) */
-  isPersistentGap: boolean;
+  isPersistentSupportNeed: boolean;
 }
 
 // ─── Per-subject mastery record ────────────────────────────────────────────
@@ -102,10 +106,12 @@ const ConceptPerformanceSchema = new Schema<IConceptPerformance>(
     subjectName: { type: String, required: true },
     lessonId: { type: String, required: true },
     weight: { type: Number, required: true },
-    timesFound: { type: Number, default: 0 },
-    timesMissed: { type: Number, default: 0 },
+    timesFoundInNotes: { type: Number, default: 0 },
+    timesNotFoundInNotes: { type: Number, default: 0 },
+    timesStudentConfirmedNeedsHelp: { type: Number, default: 0 },
+    timesStudentConfirmedUnderstood: { type: Number, default: 0 },
     lastSeen: { type: Date, default: Date.now },
-    isPersistentGap: { type: Boolean, default: false },
+    isPersistentSupportNeed: { type: Boolean, default: false },
   },
   { _id: false }
 );

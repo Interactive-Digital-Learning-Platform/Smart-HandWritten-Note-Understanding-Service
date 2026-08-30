@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "eval:benchmarks": "ts-node src/scripts/run-research-benchmarks.ts",
     "eval:dashboard": "ts-node src/scripts/generate-eval-dashboard.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test -r ts-node/register src/config/validateConfig.test.ts",
+    "security:secrets": "ts-node src/scripts/check-committed-secrets.ts"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,7 @@
   },
   "homepage": "https://github.com/Interactive-Digital-Learning-Platform/Smart-HandWritten-Note-Understanding-Service#readme",
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "@types/pg": "^8.23.1",
     "axios": "^1.16.0",
     "cors": "^2.8.6",

@@ -136,7 +136,21 @@ export const runOcrCleaning = async (ctx: PipelineContext): Promise<void> => {
     };
   }
 
+  // Do not rely solely on an LLM-provided boolean. The numeric score is the
+  // pipeline's deterministic quality gate: below 60, coverage findings should
+  // be treated as tentative and the student should be asked to recapture.
+  if (output.confidenceScore < 60) {
+    output.lowQualityWarning = true;
+    output.qualityNote = output.qualityNote || "The extracted handwriting is difficult to read.";
+  }
+
   ctx.ocrCleaning = output;
+  if (output.lowQualityWarning) {
+    ctx.qualityWarnings = [
+      ...(ctx.qualityWarnings ?? []),
+      "Low OCR confidence: recapture this note in better lighting before relying on coverage findings.",
+    ];
+  }
 
   console.log(
     `  [Stage 2] ✅ Cleaned (${output.cleanedText.length} chars, ` +

@@ -245,7 +245,7 @@ export const computeEvaluationMetrics = async (
   const improvingStudentRate = safePercentage(improvingStudents, totalStudents);
 
   const totalPersistentGaps = allProfiles.reduce(
-    (sum, p) => sum + (p.conceptPerformance ?? []).filter((c) => c.isPersistentGap).length,
+    (sum, p) => sum + (p.conceptPerformance ?? []).filter((c) => c.isPersistentSupportNeed).length,
     0
   );
 

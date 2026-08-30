@@ -46,8 +46,12 @@ export const config = {
       "microsoft/trocr-base-handwritten",
   },
 
-  clerk: {
-    secretKey: process.env.CLERK_SECRET_KEY || "",
+  embedding: {
+    model: process.env.EMBEDDING_MODEL || "nomic-ai/nomic-embed-text-v1.5",
+    provider: process.env.EMBEDDING_PROVIDER || "local-transformers-js",
+    expectedDimension: parseInt(process.env.EMBEDDING_DIMENSION || "768", 10),
+    maxTokens: parseInt(process.env.EMBEDDING_MAX_TOKENS || "8192", 10),
+    cacheDir: process.env.EMBEDDING_CACHE_DIR || ".cache/embeddings",
   },
 
   uploads: {
@@ -68,7 +72,7 @@ export const config = {
     url:
       process.env.CURRICULUM_DB_URL ||
       process.env.DB_URL ||
-      "postgresql://neondb_owner:npg_6qliOG7utYab@ep-twilight-mode-apd0prh5-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require",
+      "",
   },
 
   gateway: {

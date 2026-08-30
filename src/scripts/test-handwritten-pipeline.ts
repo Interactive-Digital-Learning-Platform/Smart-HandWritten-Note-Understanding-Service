@@ -89,7 +89,6 @@ async function runTest() {
   console.log(`High-Priority Concept Coverage: ${ctx.examReadiness?.highPriorityConceptsCoverage}%`);
   console.log(`Frequently Examined Missing: ${ctx.examReadiness?.frequentlyExaminedMissing.join(", ") || "None"}`);
   console.log(`Revision Priority: ${ctx.examReadiness?.revisionPriority}`);
-  console.log(`Estimated Score Range: ${ctx.examReadiness?.estimatedScoreRange}`);
   console.log(`\nLearning Outcome Assessments (${ctx.outcomeAssessments?.length || 0}):`);
   ctx.outcomeAssessments?.forEach((oa, idx) => {
     console.log(`  [LO ${idx + 1}] Status: ${oa.status.toUpperCase()} | ${oa.outcome.description}`);

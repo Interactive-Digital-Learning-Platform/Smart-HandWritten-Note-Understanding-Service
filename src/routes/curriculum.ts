@@ -11,6 +11,7 @@ import {
 import { sendSuccess, sendError } from "../middleware/errorHandler";
 import { qdrantService } from "../services/qdrantService";
 import { curriculumDbService } from "../services/curriculumDbService";
+import { config } from "../config/config";
 
 const router = Router();
 
@@ -255,7 +256,9 @@ router.get("/chapters", (req: Request, res: Response) => {
 // ─── GET /api/curriculum/pdf-search?q=photosynthesis ─────────────────────────
 
 /**
- * Searches the official PDF Ingestion Knowledge Base in Qdrant directly.
+ * Searches the official PDF Ingestion Knowledge Base by true vector similarity.
+ * The Smart Note service creates a Nomic query embedding and sends it directly
+ * to Qdrant; it does not call or modify the ingestion microservice.
  */
 router.get("/pdf-search", async (req: Request, res: Response) => {
   try {
@@ -265,7 +268,10 @@ router.get("/pdf-search", async (req: Request, res: Response) => {
       return;
     }
 
-    const limitNum = limit ? parseInt(limit as string, 10) : 8;
+    const requestedLimit = limit ? parseInt(limit as string, 10) : 8;
+    const limitNum = Number.isFinite(requestedLimit)
+      ? Math.min(Math.max(requestedLimit, 1), 20)
+      : 8;
     const bounds = {
       filename: typeof filename === "string" ? filename : undefined,
       minPage: minPage ? parseInt(minPage as string, 10) : undefined,
@@ -276,6 +282,8 @@ router.get("/pdf-search", async (req: Request, res: Response) => {
 
     sendSuccess(res, {
       query: q,
+      retrievalMode: "vector",
+      embeddingModel: config.embedding.model,
       count: passages.length,
       passages,
     });

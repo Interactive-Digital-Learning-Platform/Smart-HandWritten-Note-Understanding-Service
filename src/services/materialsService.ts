@@ -23,6 +23,11 @@ export interface GenerateAllResult {
   failed: number;
 }
 
+export interface GenerateMaterialsOptions {
+  /** Concepts the student explicitly confirmed they need help with. */
+  targetConcepts?: string[];
+}
+
 // ─── Groq helper: send prompt, get text back with pool rotation ──────────────
 
 const askGroq = async (
@@ -66,12 +71,17 @@ import { qdrantService } from "./qdrantService";
 
 // ─── Context builders ───────────────────────────────────────────────────────
 
-const buildContext = (subject: string, topic: string, gradeLevel: string, rawText: string) => {
+const buildContext = (subject: string, topic: string, gradeLevel: string, rawText: string, contentLanguage: string = "English") => {
   const safeText =
     rawText.length > 3500
       ? `${rawText.slice(0, 3500)}\n[...note content truncated for brevity...]`
       : rawText;
-  return `Subject: ${subject} | Topic: ${topic} | Grade: ${gradeLevel}\n\nStudent's Notes:\n"""\n${safeText}\n"""`;
+  const languageInstruction = contentLanguage === "Sinhala"
+    ? "Write explanations in Sinhala. Keep standard scientific terms in English where that is clearer."
+    : contentLanguage === "Mixed"
+    ? "Write explanations mainly in Sinhala while retaining familiar English scientific terms."
+    : "Write explanations in English.";
+  return `Subject: ${subject} | Topic: ${topic} | Grade: ${gradeLevel}\nResponse language: ${contentLanguage}. ${languageInstruction}\n\nStudent's Notes:\n"""\n${safeText}\n"""`;
 };
 
 /**
@@ -188,7 +198,8 @@ export const generateStructuredNotes = async (
   gradeLevel: string,
   foundConcepts: string[] = [],
   missingConcepts: string[] = [],
-  explainableGaps: any[] = []
+  explainableGaps: any[] = [],
+  contentLanguage: string = "English"
 ): Promise<string> => {
   const curriculumContext = await buildCurriculumContext(subject, topic, gradeLevel, rawText);
 
@@ -225,7 +236,7 @@ CRITICAL FORMATTING AND HIGHLIGHTING RULES:
      You MUST create dedicated remediation subsections with this exact anchor comment and callout format:
      ### ⚠️ Remediated Learning Gap: [Outcome Description or Concept Name]
      <!-- anchor:gap-[outcomeId] -->
-     > ⚠️ **Remediated Learning Gap (Missing from your notes):** [Provide an in-depth, crystal-clear explanation of the missing concept, including complete theoretical explanations, step-by-step mathematical derivations/calculations if applicable, and real-world examples]
+     > ⚠️ **Focused Support Area:** [Provide an in-depth, crystal-clear explanation of the concept the student asked for help with, including complete theoretical explanations, step-by-step mathematical derivations/calculations if applicable, and real-world examples]
 
    - For Key Definitions:
      > 💡 **Key Definition:** **[Term]**: [Clear, exam-focused definition from the textbook]
@@ -240,17 +251,17 @@ CRITICAL FORMATTING AND HIGHLIGHTING RULES:
 5. Tone: Inspiring, highly structured, clean, and academically precise.
 6. Output: Output ONLY the markdown notes. Do NOT include conversational preambles or greeting messages.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 
 ---
 ${curriculumContext || "Official Sri Lankan Curriculum Standards"}
 ---
 
-STUDENT'S GAP ANALYSIS FROM THEIR HANDWRITTEN NOTES:
+STUDENT'S CONFIRMED SUPPORT AREAS:
 • Concepts covered in notes:
   ${coveredSummary}
 
-• Missing Concepts & Learning Gaps to Remediate:
+• Concepts the student asked for help with:
 ${gapsSummary}
 
 Generate the complete, gap-annotated structured lesson note following the rules above.`;
@@ -265,17 +276,18 @@ export const generateDefinitions = async (
   subject: string,
   topic: string,
   gradeLevel: string,
-  missingConcepts: string[] = []
+  missingConcepts: string[] = [],
+  contentLanguage: string = "English"
 ): Promise<IDefinition[]> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
 Extract and define key terms from the lesson for student revision.
 Respond with ONLY a valid JSON array. No markdown, no explanation.`;
 
   const missingHint = missingConcepts.length > 0
-    ? `\nMake sure to include definitions for these concepts that were missing in the student's notes: ${missingConcepts.join(", ")}.`
+    ? `\nMake sure to include definitions for these concepts the student asked for help with: ${missingConcepts.join(", ")}.`
     : "";
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 ${missingHint}
 
 Extract ALL important terms (at least 6-8 terms) and provide clear, exam-focused definitions.
@@ -299,7 +311,8 @@ export const generateFlashcards = async (
   subject: string,
   topic: string,
   gradeLevel: string,
-  missingConcepts: string[] = []
+  missingConcepts: string[] = [],
+  contentLanguage: string = "English"
 ): Promise<IFlashcard[]> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
 Create effective study flashcards from the lesson.
@@ -307,10 +320,10 @@ Prioritize concepts that students commonly find difficult or were missing in the
 Respond with ONLY a valid JSON array. No markdown, no explanation.`;
 
   const missingHint = missingConcepts.length > 0
-    ? `\nPRIORITY: The student missed these concepts in their notes: ${missingConcepts.join(", ")}. Ensure at least half the flashcards directly test these missing concepts.`
+    ? `\nPRIORITY: The student asked for help with: ${missingConcepts.join(", ")}. Ensure at least half the flashcards directly practise these concepts.`
     : "";
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 ${missingHint}
 
 Create 10–15 flashcards covering all key concepts of this topic.
@@ -333,13 +346,14 @@ export const generateMindMap = async (
   rawText: string,
   subject: string,
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  contentLanguage: string = "English"
 ): Promise<IMindMapNode> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
 Create a comprehensive hierarchical mind map covering the complete lesson as a JSON tree structure.
 Respond with ONLY a valid JSON object. No markdown, no explanation.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 
 Create a mind map with the topic as the root node.
 Each node has a "label" (string) and optional "children" (array of nodes).
@@ -378,14 +392,15 @@ export const generateRevisionSummary = async (
   rawText: string,
   subject: string,
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  contentLanguage: string = "English"
 ): Promise<string> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
 Write a concise, exam-focused revision summary in clear markdown.
 Cover all essential concepts a student must know for the exam.
 Do NOT add any explanation — output ONLY the revision summary markdown.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 
 Write a compact revision summary (max 300 words) that covers:
 1. The most important facts and definitions
@@ -403,7 +418,8 @@ export const generateLearningPoints = async (
   subject: string,
   topic: string,
   gradeLevel: string,
-  missingConcepts: string[] = []
+  missingConcepts: string[] = [],
+  contentLanguage: string = "English"
 ): Promise<string> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
 Create a clear numbered list of learning points from student notes and syllabus.
@@ -411,10 +427,10 @@ Explicitly distinguish points covered in notes vs points that were missing.
 Do NOT add any explanation — output ONLY the numbered markdown list.`;
 
   const missingHint = missingConcepts.length > 0
-    ? `\nMark points relating to these missing concepts with '⚠️ Gap (Missing from notes)': ${missingConcepts.join(", ")}.`
+    ? `\nMark points relating to concepts the student asked for help with as '⚠️ Focus area': ${missingConcepts.join(", ")}.`
     : "";
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 ${missingHint}
 
 Generate 10–15 numbered learning points for this topic.
@@ -433,23 +449,24 @@ export const generateAudio = async (
   topic: string,
   gradeLevel: string,
   noteId: string,
-  missingConcepts: string[] = []
+  missingConcepts: string[] = [],
+  contentLanguage: string = "English"
 ): Promise<string> => {
   const system = `You are a friendly, engaging teacher creating a podcast-style audio explanation
 for a Sri Lankan secondary school student. Speak naturally and clearly.
 Do NOT add markdown, headings, or bullet points — write as if you are speaking aloud.`;
 
   const missingHint = missingConcepts.length > 0
-    ? `Mention that you noticed the student had gaps in: ${missingConcepts.join(", ")}, and give a clear spoken explanation to help them remember.`
+    ? `Focus on the concepts the student asked for help with: ${missingConcepts.join(", ")}, and give a clear spoken explanation to help them remember.`
     : "";
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 ${missingHint}
 
 Write a 2-minute spoken explanation of this topic for a student.
 - Start with a warm greeting: "Hey! Let's go through [topic] together."
 - Explain the key concepts clearly in simple language
-- Address the missing concepts clearly
+- Address the concepts the student asked for help with clearly
 - End with encouraging advice: "Keep studying and you'll get there!"
 Write naturally as spoken words only — no bullet points or markdown.`;
 
@@ -507,6 +524,7 @@ export interface NoteDataOverride {
   foundConcepts?: string[];
   missingConcepts?: string[];
   explainableGaps?: any[];
+  contentLanguage?: "Sinhala" | "English" | "Mixed" | "Unknown";
 }
 
 const activeGenerations = new Set<string>();
@@ -518,7 +536,8 @@ const activeGenerations = new Set<string>();
 export const generateMaterials = async (
   noteId: string,
   types?: MaterialType[],
-  override?: NoteDataOverride
+  override?: NoteDataOverride,
+  options?: GenerateMaterialsOptions
 ): Promise<GenerateAllResult> => {
   if (activeGenerations.has(noteId)) {
     console.log(`ℹ️ Material generation already in progress for note ${noteId}, skipping duplicate call.`);
@@ -536,12 +555,14 @@ export const generateMaterials = async (
     let foundConcepts: string[] = [];
     let missingConcepts: string[] = [];
     let explainableGaps: any[] = [];
+    let contentLanguage = "English";
 
     if (override) {
       ({ subject, topic, gradeLevel, rawText, userId } = override);
       foundConcepts = override.foundConcepts || [];
-      missingConcepts = override.missingConcepts || [];
+      missingConcepts = options?.targetConcepts ?? (override.missingConcepts || []);
       explainableGaps = override.explainableGaps || [];
+      contentLanguage = override.contentLanguage || "English";
     } else {
       const note = await Note.findById(noteId);
       if (!note) throw new Error(`Note not found: ${noteId}`);
@@ -553,8 +574,23 @@ export const generateMaterials = async (
       rawText = note.rawText;
       userId = note.userId;
       foundConcepts = note.analysis.keyConcepts || [];
-      missingConcepts = note.analysis.missingConcepts || [];
+      missingConcepts = options?.targetConcepts ?? (note.analysis.missingConcepts || []);
       explainableGaps = note.analysis.explainableGaps || [];
+      contentLanguage = note.analysis.contentLanguage?.primaryLanguage || "English";
+    }
+
+    // When material generation follows a student "needs help" response, pass
+    // only their confirmed support areas into prompts and targeted metadata.
+    if (options?.targetConcepts) {
+      const targets = new Set(options.targetConcepts.map((name) => name.toLowerCase()));
+      explainableGaps = explainableGaps
+        .map((gap) => ({
+          ...gap,
+          missingConcepts: (gap.missingConcepts || []).filter((concept: any) =>
+            targets.has((typeof concept === "string" ? concept : concept.name).toLowerCase())
+          ),
+        }))
+        .filter((gap) => gap.missingConcepts.length > 0);
     }
 
     const allTypes: MaterialType[] = types ?? [
@@ -597,7 +633,8 @@ export const generateMaterials = async (
               gradeLevel,
               foundConcepts,
               missingConcepts,
-              explainableGaps
+              explainableGaps,
+              contentLanguage
             );
             updateData = {
               ...updateData,
@@ -608,7 +645,7 @@ export const generateMaterials = async (
             break;
           }
           case "definitions": {
-            const defs = await generateDefinitions(rawText, subject, topic, gradeLevel, missingConcepts);
+            const defs = await generateDefinitions(rawText, subject, topic, gradeLevel, missingConcepts, contentLanguage);
             updateData = {
               ...updateData,
               definitions: defs,
@@ -618,7 +655,7 @@ export const generateMaterials = async (
             break;
           }
           case "flashcards": {
-            const cards = await generateFlashcards(rawText, subject, topic, gradeLevel, missingConcepts);
+            const cards = await generateFlashcards(rawText, subject, topic, gradeLevel, missingConcepts, contentLanguage);
             updateData = {
               ...updateData,
               flashcards: cards,
@@ -628,7 +665,7 @@ export const generateMaterials = async (
             break;
           }
           case "mindmap": {
-            const map = await generateMindMap(rawText, subject, topic, gradeLevel);
+            const map = await generateMindMap(rawText, subject, topic, gradeLevel, contentLanguage);
             updateData = {
               ...updateData,
               mindMap: map,
@@ -638,7 +675,7 @@ export const generateMaterials = async (
             break;
           }
           case "revision_summary": {
-            const text = await generateRevisionSummary(rawText, subject, topic, gradeLevel);
+            const text = await generateRevisionSummary(rawText, subject, topic, gradeLevel, contentLanguage);
             updateData = {
               ...updateData,
               textContent: text,
@@ -648,7 +685,7 @@ export const generateMaterials = async (
             break;
           }
           case "learning_points": {
-            const text = await generateLearningPoints(rawText, subject, topic, gradeLevel, missingConcepts);
+            const text = await generateLearningPoints(rawText, subject, topic, gradeLevel, missingConcepts, contentLanguage);
             updateData = {
               ...updateData,
               textContent: text,
@@ -658,7 +695,7 @@ export const generateMaterials = async (
             break;
           }
           case "audio": {
-            const url = await generateAudio(rawText, subject, topic, gradeLevel, noteId, missingConcepts);
+            const url = await generateAudio(rawText, subject, topic, gradeLevel, noteId, missingConcepts, contentLanguage);
             updateData = {
               ...updateData,
               audioUrl: url,

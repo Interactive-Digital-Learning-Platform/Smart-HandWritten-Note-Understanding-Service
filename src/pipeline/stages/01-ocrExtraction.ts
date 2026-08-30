@@ -99,6 +99,17 @@ export const runOcrExtraction = async (
 
   const combinedText = pageTexts.join("\n\n");
   ctx.rawOcrText = combinedText;
+  ctx.ocrExtraction = {
+    totalPages: pages.length,
+    extractedPages: pageTexts.length,
+    failedPages,
+  };
+  if (failedPages > 0) {
+    ctx.qualityWarnings = [
+      ...(ctx.qualityWarnings ?? []),
+      `OCR could not read ${failedPages} of ${pages.length} uploaded page(s); coverage may be incomplete.`,
+    ];
+  }
 
   console.log(
     `  [Stage 1] ✅ OCR complete across ${pageTexts.length}/${pages.length} pages — ` +

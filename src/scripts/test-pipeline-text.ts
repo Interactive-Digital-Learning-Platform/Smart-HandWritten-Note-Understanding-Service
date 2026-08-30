@@ -71,7 +71,7 @@ Two Main Stages:
     console.log(`Textbook Reference: ${ctx.matchedLesson?.textbookReference || "N/A"}`);
     console.log(`Concepts Found: ${ctx.coverageScores?.foundConcepts}/${ctx.coverageScores?.totalConcepts}`);
     console.log(`Weighted Coverage: ${ctx.coverageScores?.weightedCoverage?.toFixed(1)}%`);
-    console.log(`Exam Readiness: ${ctx.examReadiness?.rating} (Score: ${ctx.examReadiness?.estimatedScoreRange})`);
+    console.log(`Revision priority: ${ctx.examReadiness?.revisionPriority}`);
     console.log(`Gaps Detected: ${ctx.explainableGaps?.length}`);
     if (ctx.explainableGaps && ctx.explainableGaps.length > 0) {
       console.log(`Sample Recommendation: "${ctx.explainableGaps[0].recommendation}"`);
@@ -83,4 +83,3 @@ Two Main Stages:
 }
 
 testFullPipeline().catch(console.error);
-

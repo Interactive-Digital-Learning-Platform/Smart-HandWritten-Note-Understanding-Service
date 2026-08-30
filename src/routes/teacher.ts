@@ -4,6 +4,15 @@ import { Note } from "../models/Note";
 import { computeEvaluationMetrics } from "../services/evaluationService";
 import { sendSuccess, sendError } from "../middleware/errorHandler";
 
+/**
+ * INTERNAL LEGACY ANNOTATION ROUTER.
+ *
+ * The student application has no teacher role, so this router is deliberately
+ * not mounted by server.ts. Do not expose it without a separate authenticated
+ * reviewer identity and authorization boundary. Dataset annotation will use an
+ * offline export/import workflow instead.
+ */
+
 const router = Router();
 
 // ─── POST /api/teacher/validate ───────────────────────────────────────────

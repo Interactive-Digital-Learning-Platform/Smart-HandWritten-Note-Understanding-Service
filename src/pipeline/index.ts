@@ -20,6 +20,8 @@
 import { PipelineContext, PipelineResult, PipelineStage, StageResult } from "./types";
 import { runOcrExtraction } from "./stages/01-ocrExtraction";
 import { runOcrCleaning } from "./stages/02-ocrCleaning";
+import { runNoteScopeAssessment } from "./stages/03-noteScopeAssessment";
+import { runLanguageDetection } from "./stages/04-languageDetection";
 import { runSubjectDetection } from "./stages/03-subjectDetection";
 import { runLessonIdentification } from "./stages/04-lessonIdentification";
 import { runCurriculumRetrieval } from "./stages/05-curriculumRetrieval";
@@ -45,6 +47,8 @@ interface StageDefinition {
 const ANALYSIS_STAGES: StageDefinition[] = [
   { name: "ocr_extraction",        run: runOcrExtraction,        critical: true  },
   { name: "ocr_cleaning",          run: runOcrCleaning,          critical: false },
+  { name: "note_scope_assessment", run: runNoteScopeAssessment, critical: false },
+  { name: "language_detection",    run: runLanguageDetection,    critical: false },
   { name: "subject_detection",     run: runSubjectDetection,     critical: false },
   { name: "lesson_identification", run: runLessonIdentification, critical: false },
   { name: "curriculum_retrieval",  run: runCurriculumRetrieval,  critical: false },

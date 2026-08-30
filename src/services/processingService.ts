@@ -46,9 +46,24 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     .filter((m) => !m.found)
     .map((m) => m.concept.name);
 
-  // ── Legacy learningGaps (backward compat for mobile) ────────────────────
+  const conceptFindings = (ctx.conceptMatches ?? []).map((m) => ({
+    conceptId: m.concept.id,
+    conceptName: m.concept.name,
+    found: m.found,
+    decisionConfidence: m.decisionConfidence,
+    matchMethod: m.matchMethod,
+    evidence: m.evidence,
+    curriculumCategory: m.concept.category,
+    importanceWeight: m.concept.weight,
+    isFrequentlyTested: m.concept.isFrequentlyTested,
+    studentVerification: "unverified" as const,
+  }));
+
+  // ── Legacy learningGaps (backward compatibility only) ───────────────────
+  // These represent concepts not covered in this upload, not verified
+  // knowledge deficits. New clients should use explainableGaps.findingStatus.
   const learningGaps = (ctx.explainableGaps ?? []).map((g) => ({
-    concept: g.missingConcepts.map((c) => c.name).join(", ") || g.learningOutcome.description,
+    concept: `Not covered in this note: ${g.missingConcepts.map((c) => c.name).join(", ") || g.learningOutcome.description}`,
     severity: (g.missingConcepts[0]?.severity ?? "medium") as "low" | "medium" | "high",
     suggestion: g.recommendation,
   }));
@@ -61,6 +76,8 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     evidence: g.evidence,
     missingConcepts: g.missingConcepts,
     recommendation: g.recommendation,
+    findingStatus: g.findingStatus,
+    verificationStatus: g.verificationStatus,
   }));
 
   // ── Overall completeness: prefer weighted coverage ───────────────────────
@@ -92,10 +109,14 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     // OCR quality
     ocrConfidence: ctx.ocrCleaning?.confidenceScore,
     ocrLowQualityWarning: ctx.ocrCleaning?.lowQualityWarning,
+    ocrPageSummary: ctx.ocrExtraction,
+    noteScope: ctx.noteScope,
+    contentLanguage: ctx.contentLanguage,
 
     // Coverage
     keyConcepts,
     missingConcepts: missingConceptNames,
+    conceptFindings,
     coverageScores: ctx.coverageScores,
     overallCompleteness,
 
@@ -161,6 +182,7 @@ export const processNote = async (
     // ── Mark as processing ──────────────────────────────────────────────────
     note.status = "processing";
     await note.save();
+    const previousAnalysis = note.analysis;
 
     // ── Run the Hybrid Pipeline ─────────────────────────────────────────────
     const imageUrls = note.imageUrls && note.imageUrls.length > 0
@@ -195,7 +217,7 @@ export const processNote = async (
           await note.save();
 
           // ── Update Student Profile (non-fatal) ─────────────────────────────
-          await updateProfileFromAnalysis(ctx);
+          await updateProfileFromAnalysis(ctx, previousAnalysis);
 
           console.log(
             `✅ Note analysis complete & saved for note ${noteId}: ` +

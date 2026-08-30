@@ -1,12 +1,15 @@
 import { Router } from "express";
 import { upload } from "../middleware/upload";
+import { aiRateLimit } from "../middleware/aiRateLimit";
 import {
   uploadNote,
   getNotes,
   getNoteById,
+  verifyConceptFinding,
   deleteNote,
   processNote,
   uploadAndProcess,
+  updateNoteContextAndProcess,
 } from "../controllers/notesController";
 
 const router = Router();
@@ -24,7 +27,7 @@ router.post("/upload", upload.any(), uploadNote);
  * Primary endpoint used by the mobile app.
  * Returns 202 with pollUrl — client polls GET /api/notes/:id for completion.
  */
-router.post("/upload-and-process", upload.any(), uploadAndProcess);
+router.post("/upload-and-process", aiRateLimit(5, 10 * 60 * 1000), upload.any(), uploadAndProcess);
 
 /**
  * GET /api/notes
@@ -32,6 +35,15 @@ router.post("/upload-and-process", upload.any(), uploadAndProcess);
  * Query: userId (required) | status | page | limit
  */
 router.get("/", getNotes);
+
+/**
+ * PATCH /api/notes/:id/concepts/:conceptId/verification
+ * Student self-verification of an individual note-coverage finding.
+ */
+router.patch("/:id/concepts/:conceptId/verification", verifyConceptFinding);
+
+/** Student correction of subject/grade/topic, followed by re-analysis. */
+router.patch("/:id/context", updateNoteContextAndProcess);
 
 /**
  * GET /api/notes/:id
@@ -43,7 +55,7 @@ router.get("/:id", getNoteById);
  * POST /api/notes/:id/process
  * Manually trigger OCR + AI pipeline for an already-uploaded note
  */
-router.post("/:id/process", processNote);
+router.post("/:id/process", aiRateLimit(5, 10 * 60 * 1000), processNote);
 
 /**
  * DELETE /api/notes/:id

@@ -31,40 +31,16 @@ import mongoose from "mongoose";
 const determineMaterialPriorities = (
   ctx: PipelineContext
 ): MaterialPriorities => {
-  const gaps = ctx.explainableGaps ?? [];
-  const examReadiness = ctx.examReadiness;
+  // A missing concept in one upload is note-coverage evidence, not a verified
+  // knowledge deficit. The pipeline runs before a student can self-verify, so
+  // it must not automatically create a remediation pack from those omissions.
+  // A neutral revision summary remains useful without making that assumption.
+  return {
+    typesToGenerate: ["revision_summary"],
+    severityProfile: { high: 0, medium: 0, low: 0 },
+    rationale: "Generating a neutral revision summary. Targeted materials are created after the student confirms they need help with a concept.",
+  };
 
-  let highCount = 0, mediumCount = 0, lowCount = 0;
-
-  for (const gap of gaps) {
-    for (const mc of gap.missingConcepts) {
-      if (mc.severity === "high") highCount++;
-      else if (mc.severity === "medium") mediumCount++;
-      else lowCount++;
-    }
-  }
-
-  const severityProfile = { high: highCount, medium: mediumCount, low: lowCount };
-  const rating = examReadiness?.rating ?? "Needs Work";
-
-  let typesToGenerate: string[];
-  let rationale: string;
-
-  if (rating === "At Risk" || highCount >= 3) {
-    typesToGenerate = ["structured_notes", "definitions", "flashcards", "revision_summary", "learning_points"];
-    rationale = `Critical gaps detected (${highCount} high-severity concepts missing). Generating full study pack.`;
-  } else if (rating === "Needs Work" || highCount >= 1) {
-    typesToGenerate = ["structured_notes", "flashcards", "learning_points"];
-    rationale = `Significant gaps found. Generating targeted structured notes and practice materials.`;
-  } else if (rating === "Good") {
-    typesToGenerate = ["flashcards", "learning_points", "revision_summary"];
-    rationale = `Minor gaps only. Generating flashcards and revision summary for reinforcement.`;
-  } else {
-    typesToGenerate = ["revision_summary"];
-    rationale = `Excellent coverage. Generating a concise revision summary.`;
-  }
-
-  return { typesToGenerate, severityProfile, rationale };
 };
 
 // ─── Stage Runner ──────────────────────────────────────────────────────────
@@ -113,6 +89,8 @@ export const runMaterialGeneration = async (
       })),
       recommendation: g.recommendation,
       evidence: g.evidence,
+      findingStatus: g.findingStatus,
+      verificationStatus: g.verificationStatus,
     }));
 
     const override: NoteDataOverride = {
@@ -124,6 +102,7 @@ export const runMaterialGeneration = async (
       foundConcepts,
       missingConcepts,
       explainableGaps,
+      contentLanguage: ctx.contentLanguage?.primaryLanguage,
     };
 
     const result = await generateMaterials(

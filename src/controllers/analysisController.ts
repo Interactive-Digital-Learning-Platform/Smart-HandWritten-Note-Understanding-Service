@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { Note } from "../models/Note";
 import { analyzeNoteContent } from "../services/analysisService";
+import { processNote as runPipeline } from "../services/processingService";
 import { sendSuccess, sendError, AppError } from "../middleware/errorHandler";
 
 // ─── Analyze a note ────────────────────────────────────────────────────────
@@ -8,11 +9,9 @@ import { sendSuccess, sendError, AppError } from "../middleware/errorHandler";
 /**
  * POST /api/analyze/:noteId
  *
- * Manually re-runs AI analysis on a note that already has rawText.
- * Useful for:
- *   - Re-analyzing after OCR is confirmed correct
- *   - Re-running with updated prompts during development
- *   - Testing analysis independently of the full pipeline
+ * Backward-compatible alias for the full curriculum-grounded pipeline.
+ * This endpoint must never persist the legacy generic LLM analysis because it
+ * would overwrite the structured concept and coverage results.
  */
 export const analyzeNote = async (
   req: Request,
@@ -22,42 +21,30 @@ export const analyzeNote = async (
   try {
     const { noteId } = req.params;
 
-    const note = await Note.findById(noteId);
+    const note = await Note.findById(noteId).select("status");
 
     if (!note) {
       throw new AppError("Note not found", 404);
     }
 
-    if (!note.rawText || note.rawText.trim().length < 10) {
-      sendError(
-        res,
-        "Note has no extracted text yet. Run OCR first via POST /api/notes/:id/process",
-        400
-      );
+    if (note.status === "processing") {
+      sendError(res, "Note is already being processed.", 409);
       return;
     }
 
-    console.log(`\n🔄 Manual re-analysis triggered for note: ${noteId}`);
-
-    const result = await analyzeNoteContent(note.rawText);
-
-    if (!result.success || !result.analysis) {
-      sendError(res, result.error || "Analysis failed", 500);
-      return;
-    }
-
-    // Save updated analysis
-    note.analysis = result.analysis;
-    note.status = "analyzed";
-    await note.save();
+    runPipeline(noteId as string, true).catch((error) => {
+      console.error(`Background pipeline error for note ${noteId}:`, error);
+    });
 
     sendSuccess(
       res,
       {
         noteId,
-        analysis: result.analysis,
+        status: "processing",
+        pollUrl: `/api/notes/${noteId}`,
       },
-      "Note analyzed successfully"
+      "Curriculum-grounded processing started. Poll pollUrl to track progress.",
+      202
     );
   } catch (error) {
     next(error);

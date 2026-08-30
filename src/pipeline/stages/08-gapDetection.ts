@@ -154,7 +154,6 @@ const calculateExamReadiness = (
   // Rating logic
   let rating: ExamReadiness["rating"];
   let revisionPriority: ExamReadiness["revisionPriority"];
-  let estimatedScoreRange: string;
 
   if (
     highPriorityCoverage >= 90 &&
@@ -162,22 +161,18 @@ const calculateExamReadiness = (
   ) {
     rating = "Excellent";
     revisionPriority = "Low";
-    estimatedScoreRange = "85–100%";
   } else if (
     highPriorityCoverage >= 75 &&
     frequentlyExaminedMissing.length <= 2
   ) {
     rating = "Good";
     revisionPriority = "Medium";
-    estimatedScoreRange = "65–85%";
   } else if (highPriorityCoverage >= 50) {
     rating = "Needs Work";
     revisionPriority = "High";
-    estimatedScoreRange = "40–65%";
   } else {
     rating = "At Risk";
     revisionPriority = "Critical";
-    estimatedScoreRange = "Below 40%";
   }
 
   return {
@@ -185,7 +180,6 @@ const calculateExamReadiness = (
     highPriorityConceptsCoverage: highPriorityCoverage,
     frequentlyExaminedMissing,
     revisionPriority,
-    estimatedScoreRange,
   };
 };
 
@@ -296,6 +290,11 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
       evidence: assessment.evidence,
       missingConcepts: missingDetails,
       recommendation: recommendations[i] ?? `Review ${assessment.missingConceptNames.join(", ")} in your textbook.`,
+      // An upload can be a partial note, so this is intentionally NOT
+      // labelled a student knowledge gap. A future Quiz service diagnostic
+      // may promote it to confirmed_learning_gap.
+      findingStatus: "not_found_in_note",
+      verificationStatus: "pending",
     });
   }
 
@@ -311,7 +310,12 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
   }
 
   // ── Calculate exam readiness ──────────────────────────────────────────
-  const examReadiness = calculateExamReadiness(ctx);
+  // Exam readiness is meaningful only when the upload represents a complete
+  // lesson note. A single section, worksheet, or formula page must not be
+  // used to estimate a student's likely exam score.
+  const examReadiness = ctx.noteScope?.scope === "complete_lesson_note"
+    ? calculateExamReadiness(ctx)
+    : undefined;
 
   // ── Write to context ──────────────────────────────────────────────────
   ctx.outcomeAssessments = outcomeAssessments;
@@ -332,9 +336,13 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
   console.log(
     `  [Stage 8] ✅ Outcomes: ${achieved} achieved, ${partial} partial, ${notAchieved} not achieved`
   );
-  console.log(
-    `  [Stage 8]    Exam Readiness: ${examReadiness.rating} | ` +
-      `High-priority coverage: ${examReadiness.highPriorityConceptsCoverage}% | ` +
-      `Frequently examined missing: ${examReadiness.frequentlyExaminedMissing.length}`
-  );
+  if (examReadiness) {
+    console.log(
+      `  [Stage 8]    Exam Readiness: ${examReadiness.rating} | ` +
+        `High-priority coverage: ${examReadiness.highPriorityConceptsCoverage}% | ` +
+        `Frequently examined missing: ${examReadiness.frequentlyExaminedMissing.length}`
+    );
+  } else {
+    console.log("  [Stage 8]    Exam readiness skipped: upload is not a complete lesson note");
+  }
 };

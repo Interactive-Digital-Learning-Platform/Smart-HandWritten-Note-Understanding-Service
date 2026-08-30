@@ -14,6 +14,8 @@ import { CurriculumLesson, CurriculumConcept, LearningOutcome } from "../curricu
 export type PipelineStage =
   | "ocr_extraction"
   | "ocr_cleaning"
+  | "note_scope_assessment"
+  | "language_detection"
   | "subject_detection"
   | "lesson_identification"
   | "curriculum_retrieval"
@@ -33,6 +35,12 @@ export interface StageResult {
 }
 
 // ─── OCR Cleaning Output ───────────────────────────────────────────────────
+
+export interface OcrExtractionOutput {
+  totalPages: number;
+  extractedPages: number;
+  failedPages: number;
+}
 
 export interface OcrCleaningOutput {
   /** The cleaned and normalized text */
@@ -72,11 +80,42 @@ export interface ConceptMatch {
    * 1.0 = exact keyword found, 0.7–0.9 = semantic match, 0 = not found.
    */
   matchConfidence: number;
+  /** Confidence that the covered/not-covered decision is correct. */
+  decisionConfidence: number;
   /** The method used to detect this concept */
   matchMethod: "keyword" | "semantic" | "not_found";
   /** Snippet from student text that triggered the match, if found */
   evidence?: string;
 }
+
+/** What kind of learning artefact the upload represents. */
+export interface NoteScopeOutput {
+  scope:
+    | "complete_lesson_note"
+    | "partial_lesson_note"
+    | "revision_summary"
+    | "exercise_or_worksheet"
+    | "diagram_or_formula_sheet"
+    | "unknown";
+  confidence: number;
+  rationale: string;
+}
+
+export interface LanguageDetectionOutput {
+  primaryLanguage: "Sinhala" | "English" | "Mixed" | "Unknown";
+  confidence: number;
+}
+
+/**
+ * Meaning of a curriculum finding. An absence from one uploaded note is
+ * evidence about note coverage only; it is not evidence that the student
+ * lacks the knowledge. `confirmed_learning_gap` is reserved for a later
+ * diagnostic/quiz integration that can verify understanding.
+ */
+export type LearningFindingStatus =
+  | "covered_in_note"
+  | "not_found_in_note"
+  | "confirmed_learning_gap";
 
 // ─── Coverage Scores ───────────────────────────────────────────────────────
 
@@ -85,6 +124,8 @@ export interface CoverageScores {
   simpleCoverage: number;
   /** Weighted score: Σ(found.weight) / Σ(all.weight) × 100 */
   weightedCoverage: number;
+  /** Weighted coverage discounted by each finding's decision confidence. */
+  confidenceAdjustedWeightedCoverage: number;
   /** Total number of concepts in the lesson */
   totalConcepts: number;
   /** Number of concepts found in student notes */
@@ -95,6 +136,10 @@ export interface CoverageScores {
   maxWeightedScore: number;
   /** Achieved weighted score */
   achievedWeightedScore: number;
+  /** Confidence-adjusted achieved weighted score. */
+  confidenceAdjustedWeightedScore: number;
+  /** Whether this is valid as whole-lesson coverage or only upload coverage. */
+  coverageScope: "lesson_coverage" | "note_coverage";
 }
 
 // ─── Learning Outcome Assessment ───────────────────────────────────────────
@@ -134,6 +179,10 @@ export interface ExplainableGap {
   }[];
   /** Actionable study recommendation with textbook reference */
   recommendation: string;
+  /** Distinguishes note coverage from an actual verified knowledge gap. */
+  findingStatus: LearningFindingStatus;
+  /** No diagnostic evidence exists yet, so pipeline findings start unverified. */
+  verificationStatus: "not_required" | "pending" | "verified";
 }
 
 // ─── Exam Readiness ────────────────────────────────────────────────────────
@@ -147,8 +196,6 @@ export interface ExamReadiness {
   frequentlyExaminedMissing: string[];
   /** Revision priority recommendation */
   revisionPriority: "Low" | "Medium" | "High" | "Critical";
-  /** Estimated exam score range */
-  estimatedScoreRange: string;
 }
 
 // ─── Material Priorities ───────────────────────────────────────────────────
@@ -191,7 +238,12 @@ export interface PipelineContext {
   rawOcrText?: string;
 
   // ── Stage 2: OCR Cleaning ─────────────────────────────────────────────────
+  ocrExtraction?: OcrExtractionOutput;
   ocrCleaning?: OcrCleaningOutput;
+
+  // ── Stage 3: Note Scope Assessment ─────────────────────────────────────
+  noteScope?: NoteScopeOutput;
+  contentLanguage?: LanguageDetectionOutput;
 
   // ── Stage 3: Subject Detection ────────────────────────────────────────────
   subjectDetection?: SubjectDetectionOutput;

@@ -1174,10 +1174,18 @@ export class CurriculumDbService {
     this.connectionString = normalizePostgresUrl(config.curriculumDb.url);
   }
 
+  public isConfigured(): boolean {
+    return this.connectionString.length > 0;
+  }
+
   /**
    * Returns or initializes the PostgreSQL connection pool.
    */
   private getPool(): Pool {
+    if (!this.isConfigured()) {
+      throw new Error("CURRICULUM_DB_URL or DB_URL is not configured");
+    }
+
     if (!this.pool) {
       const isNeonOrRemote =
         this.connectionString.includes("neon.tech") ||

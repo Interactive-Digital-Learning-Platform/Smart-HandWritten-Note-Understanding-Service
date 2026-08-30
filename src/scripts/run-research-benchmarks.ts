@@ -16,15 +16,19 @@ import { config } from "../config/config";
 // Evaluates the Smart Handwritten Note Understanding framework against:
 //   1. Baseline 1: Pure Keyword / Lexical Matching
 //   2. Baseline 2: Pure Semantic / LLM Matching
-//   3. Proposed System: Hybrid (Deterministic Keywords + LLM Paraphrasing + RAG)
+//   3. Proposed System: Hybrid (Deterministic Keywords + LLM Paraphrasing)
 //   4. Ablation 1: Unweighted vs. Weighted Syllabus Coverage
 //
 // Computes Standard Publication Metrics:
 //   - Precision (P)
 //   - Recall (R)
 //   - F1-Score (F1)
-//   - Overall Classification Accuracy
-//   - Weighted Gap Accuracy
+//   - Overall classification accuracy (only concepts labelled present or missing)
+//   - Curriculum-weighted agreement (only concepts labelled present or missing)
+//
+// This script evaluates system decisions; it does not train a model. A concept
+// labelled "partial" is deliberately excluded from binary P/R/F1/accuracy. It
+// is reported as an ambiguous case requiring a separate ordinal evaluation.
 //   - Markdown & LaTeX Summary Tables
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -57,6 +61,7 @@ interface ConfusionMatrix {
   fn: number;
   totalWeightCorrect: number;
   totalWeightAll: number;
+  partialExcluded: number;
 }
 
 interface EvaluationResult {
@@ -66,6 +71,8 @@ interface EvaluationResult {
   f1: number;
   accuracy: number;
   weightedGapAccuracy: number;
+  eligibleConceptCount: number;
+  partialConceptCount: number;
   confusion: ConfusionMatrix;
 }
 
@@ -161,10 +168,18 @@ const calculateMetrics = (
   let fn = 0;
   let totalWeightCorrect = 0;
   let totalWeightAll = 0;
+  let partialExcluded = 0;
 
   for (const gt of groundTruths) {
     const predicted = predictions.get(gt.conceptId) ?? false;
-    const actualIsPresent = gt.groundTruth === "present" || gt.groundTruth === "partial";
+    // A boolean prediction cannot truthfully represent a partially-covered
+    // concept. Do not silently count it as fully present.
+    if (gt.groundTruth === "partial") {
+      partialExcluded++;
+      continue;
+    }
+
+    const actualIsPresent = gt.groundTruth === "present";
     const weight = gt.weight || 3;
 
     totalWeightAll += weight;
@@ -195,7 +210,9 @@ const calculateMetrics = (
     f1: Math.round(f1 * 1000) / 10,
     accuracy: Math.round(accuracy * 1000) / 10,
     weightedGapAccuracy: Math.round(weightedGapAccuracy * 1000) / 10,
-    confusion: { tp, fp, tn, fn, totalWeightCorrect, totalWeightAll },
+    eligibleConceptCount: tp + fp + tn + fn,
+    partialConceptCount: partialExcluded,
+    confusion: { tp, fp, tn, fn, totalWeightCorrect, totalWeightAll, partialExcluded },
   };
 };
 
@@ -218,9 +235,9 @@ async function runBenchmarks() {
 
   console.log(`[Dataset] Loaded ${dataset.length} benchmark test note entries.\n`);
 
-  const aggregateKeyword: ConfusionMatrix = { tp: 0, fp: 0, tn: 0, fn: 0, totalWeightCorrect: 0, totalWeightAll: 0 };
-  const aggregateSemantic: ConfusionMatrix = { tp: 0, fp: 0, tn: 0, fn: 0, totalWeightCorrect: 0, totalWeightAll: 0 };
-  const aggregateHybrid: ConfusionMatrix = { tp: 0, fp: 0, tn: 0, fn: 0, totalWeightCorrect: 0, totalWeightAll: 0 };
+  const aggregateKeyword: ConfusionMatrix = { tp: 0, fp: 0, tn: 0, fn: 0, totalWeightCorrect: 0, totalWeightAll: 0, partialExcluded: 0 };
+  const aggregateSemantic: ConfusionMatrix = { tp: 0, fp: 0, tn: 0, fn: 0, totalWeightCorrect: 0, totalWeightAll: 0, partialExcluded: 0 };
+  const aggregateHybrid: ConfusionMatrix = { tp: 0, fp: 0, tn: 0, fn: 0, totalWeightCorrect: 0, totalWeightAll: 0, partialExcluded: 0 };
 
   const noteReports: any[] = [];
 
@@ -282,6 +299,7 @@ async function runBenchmarks() {
       target.fn += src.fn;
       target.totalWeightCorrect += src.totalWeightCorrect;
       target.totalWeightAll += src.totalWeightAll;
+      target.partialExcluded += src.partialExcluded;
     };
 
     addConfusion(aggregateKeyword, mKeyword.confusion);
@@ -291,7 +309,7 @@ async function runBenchmarks() {
     console.log(`\n   [Metrics] Note Results:`);
     console.log(`      - Keyword Baseline : Precision = ${mKeyword.precision}%, Recall = ${mKeyword.recall}%, F1 = ${mKeyword.f1}%`);
     console.log(`      - Semantic Baseline: Precision = ${mSemantic.precision}%, Recall = ${mSemantic.recall}%, F1 = ${mSemantic.f1}%`);
-    console.log(`      - Hybrid Proposed  : Precision = ${mHybrid.precision}%, Recall = ${mHybrid.recall}%, F1 = ${mHybrid.f1}% (Weighted Acc: ${mHybrid.weightedGapAccuracy}%)`);
+    console.log(`      - Hybrid Proposed  : Precision = ${mHybrid.precision}%, Recall = ${mHybrid.recall}%, F1 = ${mHybrid.f1}% (Weighted Acc: ${mHybrid.weightedGapAccuracy}%; partial excluded: ${mHybrid.partialConceptCount})`);
 
     noteReports.push({
       benchmarkId: item.benchmarkId,
@@ -317,6 +335,8 @@ async function runBenchmarks() {
       f1: Math.round(f1 * 1000) / 10,
       accuracy: Math.round(accuracy * 1000) / 10,
       weightedGapAccuracy: Math.round(weightedGapAccuracy * 1000) / 10,
+      eligibleConceptCount: c.tp + c.fp + c.tn + c.fn,
+      partialConceptCount: c.partialExcluded,
       confusion: c,
     };
   };

@@ -6,6 +6,7 @@ import {
   triggerGenerateOne,
   deleteMaterialByType,
 } from "../controllers/materialsController";
+import { aiRateLimit } from "../middleware/aiRateLimit";
 
 const router = Router();
 
@@ -17,7 +18,7 @@ const router = Router();
  * Returns 202 — runs async. Poll GET /api/materials/:noteId to check progress.
  * Body (optional): { "types": ["flashcards", "mindmap"] }
  */
-router.post("/:noteId/generate", triggerGenerateAll);
+router.post("/:noteId/generate", aiRateLimit(10, 10 * 60 * 1000), triggerGenerateAll);
 
 /**
  * POST /api/materials/:noteId/generate/:type
@@ -25,7 +26,7 @@ router.post("/:noteId/generate", triggerGenerateAll);
  * Types: structured_notes | definitions | flashcards | mindmap |
  *        revision_summary | learning_points | audio
  */
-router.post("/:noteId/generate/:type", triggerGenerateOne);
+router.post("/:noteId/generate/:type", aiRateLimit(10, 10 * 60 * 1000), triggerGenerateOne);
 
 // ─── Read routes ────────────────────────────────────────────────────────────
 

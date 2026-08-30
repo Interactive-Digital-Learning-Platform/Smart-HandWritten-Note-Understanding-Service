@@ -3,6 +3,7 @@ import { config } from "../config/config";
 import { groqPool } from "./groqPool";
 import { CurriculumLesson } from "../curriculum/types";
 import { curriculumDbService, ChapterPageBounds } from "./curriculumDbService";
+import { embeddingService } from "./embeddingService";
 
 export interface QdrantCollectionInfo {
   collection: string;
@@ -32,6 +33,7 @@ export interface IngestionSearchChunk {
   page_start: number;
   chunk_index: number;
   payload?: Record<string, unknown>;
+  retrievalMode?: "vector" | "keyword";
 }
 
 export interface SearchPageBounds {
@@ -104,8 +106,8 @@ export class QdrantService {
   }
 
   /**
-   * Performs dense/payload search across the ingested PDF knowledge base directly via Qdrant REST
-   * with optional chapter page bounding.
+   * Performs true dense-vector retrieval against the vectors written by the PDF
+   * Ingestion service, with optional chapter page bounding applied afterwards.
    */
   public async searchKnowledgeBase(
     query: string,
@@ -113,7 +115,77 @@ export class QdrantService {
     bounds?: SearchPageBounds
   ): Promise<IngestionSearchChunk[]> {
     if (!query || !query.trim()) return [];
-    return this.searchByKeywordPayload(query, limit, bounds);
+    return this.searchByVectorSimilarity(query, limit, bounds);
+  }
+
+  /**
+   * Embeds the query using the same Nomic model/prefix convention as ingestion,
+   * then asks Qdrant to rank points by its configured vector distance (cosine).
+   * This deliberately does not fall back to keyword matching: callers must not
+   * mistake an unavailable embedding provider for semantic retrieval.
+   */
+  public async searchByVectorSimilarity(
+    query: string,
+    limit: number = 10,
+    bounds?: SearchPageBounds
+  ): Promise<IngestionSearchChunk[]> {
+    const vector = await embeddingService.embedRetrievalQuery(query);
+    const collection = await this.getCollectionStats();
+    if (!collection.isAvailable) {
+      throw new Error(
+        `Qdrant collection '${this.collectionName}' is unavailable at the configured QDRANT_DB_URL.`
+      );
+    }
+    if (collection.vectorDim && collection.vectorDim !== vector.length) {
+      throw new Error(
+        `Qdrant expects ${collection.vectorDim}-dimensional vectors but the embedding model produced ${vector.length}.`
+      );
+    }
+    const candidateLimit = Math.max(limit * 8, 40);
+    const requestBody = {
+      query: vector,
+      limit: candidateLimit,
+      with_payload: true,
+      with_vector: false,
+    };
+
+    let points: any[];
+    try {
+      const response = await axios.post(
+        `${this.qdrantBaseUrl}/collections/${this.collectionName}/points/query`,
+        requestBody,
+        { timeout: 10000 }
+      );
+      points = response.data?.result?.points || [];
+    } catch (queryError) {
+      // Qdrant versions before the universal query API use /points/search.
+      try {
+        const legacyResponse = await axios.post(
+          `${this.qdrantBaseUrl}/collections/${this.collectionName}/points/search`,
+          { ...requestBody, vector },
+          { timeout: 10000 }
+        );
+        points = legacyResponse.data?.result || [];
+      } catch {
+        throw queryError;
+      }
+    }
+
+    const rankedChunks = points
+      .filter((point) => this.isWithinBounds(point.payload || {}, bounds))
+      .map((point) => this.toSearchChunk(point, "vector"));
+
+    // Re-ingestion can leave duplicate chunks in the collection. Suppress them
+    // before grounding the LLM so repeated evidence cannot dominate context.
+    const seen = new Set<string>();
+    return rankedChunks
+      .filter((chunk) => {
+        const fingerprint = `${chunk.filename}|${chunk.page_start}|${chunk.text.trim()}`;
+        if (seen.has(fingerprint)) return false;
+        seen.add(fingerprint);
+        return true;
+      })
+      .slice(0, limit);
   }
 
   /**
@@ -448,10 +520,59 @@ Rules:
         page_start: pt.payload.page_start || 0,
         chunk_index: pt.payload.chunk_index || 0,
         payload: pt.payload || {},
+        retrievalMode: "keyword",
       }));
     } catch {
       return [];
     }
+  }
+
+  private isWithinBounds(
+    payload: Record<string, unknown>,
+    bounds?: SearchPageBounds
+  ): boolean {
+    if (!bounds) return true;
+
+    const filename = String(payload.filename || "").toLowerCase();
+    const expectedFilename = bounds.filename
+      ?.toLowerCase()
+      .replace(/\.pdf$/i, "");
+    if (expectedFilename && !filename.includes(expectedFilename)) {
+      return false;
+    }
+
+    if (bounds.minPage === undefined || bounds.maxPage === undefined) {
+      return true;
+    }
+
+    const pageStart = Number(payload.page_start || 0);
+    const pages = Array.isArray(payload.pages)
+      ? payload.pages.map(Number).filter(Number.isFinite)
+      : [];
+    return (
+      (pageStart >= bounds.minPage && pageStart <= bounds.maxPage) ||
+      pages.some((page) => page >= bounds.minPage! && page <= bounds.maxPage!)
+    );
+  }
+
+  private toSearchChunk(
+    point: { id: string | number; score?: number; payload?: Record<string, unknown> },
+    retrievalMode: "vector" | "keyword"
+  ): IngestionSearchChunk {
+    const payload = point.payload || {};
+    return {
+      id: String(point.id),
+      score: Number(point.score || 0),
+      text: String(payload.text || ""),
+      filename: String(payload.filename || ""),
+      pages: Array.isArray(payload.pages)
+        ? payload.pages.map(Number).filter(Number.isFinite)
+        : [],
+      page_start: Number(payload.page_start || 0),
+      chunk_index: Number(payload.chunk_index || 0),
+      payload,
+      retrievalMode,
+    };
   }
 }
 

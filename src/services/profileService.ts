@@ -19,6 +19,7 @@ import {
   IConceptPerformance,
   ISubjectMastery,
 } from "../models/StudentProfile";
+import { IAnalysis } from "../models/Note";
 import { PipelineContext } from "../pipeline/types";
 
 // ─── Trend Calculation ─────────────────────────────────────────────────────
@@ -66,21 +67,28 @@ const upsertConceptPerformance = (
       subjectName,
       lessonId,
       weight,
-      timesFound: found ? 1 : 0,
-      timesMissed: found ? 0 : 1,
+      timesFoundInNotes: found ? 1 : 0,
+      timesNotFoundInNotes: found ? 0 : 1,
+      timesStudentConfirmedNeedsHelp: 0,
+      timesStudentConfirmedUnderstood: 0,
       lastSeen: new Date(),
-      isPersistentGap: false,
+      isPersistentSupportNeed: false,
     });
   } else {
     // Existing — update
+    // Profiles created before this change do not have the newer counters.
+    existing[idx].timesFoundInNotes ??= 0;
+    existing[idx].timesNotFoundInNotes ??= 0;
+    existing[idx].timesStudentConfirmedNeedsHelp ??= 0;
+    existing[idx].timesStudentConfirmedUnderstood ??= 0;
+    existing[idx].isPersistentSupportNeed ??= false;
+
     if (found) {
-      existing[idx].timesFound += 1;
+      existing[idx].timesFoundInNotes += 1;
     } else {
-      existing[idx].timesMissed += 1;
+      existing[idx].timesNotFoundInNotes += 1;
     }
     existing[idx].lastSeen = new Date();
-    // Mark as persistent gap if missed 2+ times
-    existing[idx].isPersistentGap = existing[idx].timesMissed >= 2;
   }
 
   return existing;
@@ -142,7 +150,8 @@ const upsertSubjectMastery = (
  * @param ctx - The completed PipelineContext
  */
 export const updateProfileFromAnalysis = async (
-  ctx: PipelineContext
+  ctx: PipelineContext,
+  previousAnalysis?: IAnalysis
 ): Promise<void> => {
   if (!ctx.matchedLesson || !ctx.conceptMatches) {
     // No curriculum match — skip profile update
@@ -165,6 +174,62 @@ export const updateProfileFromAnalysis = async (
         recentSessions: [],
         totalNotesAnalyzed: 0,
       });
+    }
+
+    // A re-run may happen after OCR retry or student context correction. It is
+    // still the same uploaded note, so counting it again would fabricate a
+    // learning trend and inflate found/not-found counters. One session per
+    // noteId acts as the profile aggregation idempotency key.
+    const alreadyProfiled = (profile.recentSessions ?? []).some(
+      (session) => session.noteId === ctx.noteId
+    );
+    if (alreadyProfiled && !previousAnalysis) {
+      console.log("  [Profile] Skipped duplicate aggregation for note " + ctx.noteId);
+      return;
+    }
+
+    if (alreadyProfiled && previousAnalysis) {
+      // Remove this note's previous contribution before adding the corrected
+      // analysis below. Student self-verification counters are deliberately
+      // retained because they are student actions, not pipeline output.
+      for (const finding of previousAnalysis.conceptFindings ?? []) {
+        const previous = (profile.conceptPerformance as IConceptPerformance[])
+          .find((concept) => concept.conceptId === finding.conceptId);
+        if (!previous) continue;
+        if (finding.found) {
+          previous.timesFoundInNotes = Math.max(0, (previous.timesFoundInNotes ?? 0) - 1);
+        } else {
+          previous.timesNotFoundInNotes = Math.max(0, (previous.timesNotFoundInNotes ?? 0) - 1);
+        }
+      }
+
+      const previousSession = (profile.recentSessions ?? [])
+        .find((session) => session.noteId === ctx.noteId);
+      profile.recentSessions = (profile.recentSessions ?? [])
+        .filter((session) => session.noteId !== ctx.noteId);
+      profile.totalNotesAnalyzed = Math.max(0, (profile.totalNotesAnalyzed ?? 0) - 1);
+
+      if (previousSession) {
+        const mastery = (profile.subjectMastery as ISubjectMastery[])
+          .find((item) => item.subjectName === previousSession.subject);
+        if (mastery) {
+          const priorCount = mastery.notesAnalyzed ?? 0;
+          mastery.notesAnalyzed = Math.max(0, priorCount - 1);
+          mastery.notesUploaded = Math.max(0, (mastery.notesUploaded ?? 0) - 1);
+          const oldScoreIndex = (mastery.recentScores ?? []).indexOf(
+            previousSession.weightedCoverage
+          );
+          if (oldScoreIndex >= 0) {
+            mastery.recentScores = (mastery.recentScores ?? []).filter(
+              (_, index) => index !== oldScoreIndex
+            );
+          }
+          mastery.averageWeightedCoverage = mastery.notesAnalyzed > 0
+            ? Math.round(((mastery.averageWeightedCoverage * priorCount) - previousSession.weightedCoverage) / mastery.notesAnalyzed)
+            : 0;
+          mastery.trend = calculateTrend(mastery.recentScores);
+        }
+      }
     }
 
     // ── Update concept performance ─────────────────────────────────────────
@@ -217,7 +282,7 @@ export const updateProfileFromAnalysis = async (
     await profile.save();
 
     const persistentGapCount = (profile.conceptPerformance as IConceptPerformance[])
-      .filter((c) => c.isPersistentGap).length;
+      .filter((c) => c.isPersistentSupportNeed).length;
 
     console.log(
       `  [Profile] ✅ Updated for user ${ctx.userId}: ` +
@@ -255,8 +320,43 @@ export const getPersistentGaps = async (
   if (!profile) return [];
 
   return (profile.conceptPerformance as IConceptPerformance[])
-    .filter((c) => c.isPersistentGap)
-    .sort((a, b) => b.timesMissed - a.timesMissed);
+    .filter((c) => c.isPersistentSupportNeed)
+    .sort((a, b) => b.timesStudentConfirmedNeedsHelp - a.timesStudentConfirmedNeedsHelp);
+};
+
+/** Records a student confirmation without treating note absence as a weakness. */
+export const recordStudentConceptVerification = async (
+  userId: string,
+  conceptId: string,
+  previousStatus: "unverified" | "understood" | "needs_help",
+  newStatus: "understood" | "needs_help"
+): Promise<void> => {
+  const profile = await StudentProfile.findOne({ userId });
+  if (!profile) return;
+
+  const concept = (profile.conceptPerformance as IConceptPerformance[])
+    .find((item) => item.conceptId === conceptId);
+  if (!concept || previousStatus === newStatus) return;
+
+  concept.timesStudentConfirmedNeedsHelp ??= 0;
+  concept.timesStudentConfirmedUnderstood ??= 0;
+
+  if (previousStatus === "needs_help") {
+    concept.timesStudentConfirmedNeedsHelp = Math.max(0, concept.timesStudentConfirmedNeedsHelp - 1);
+  } else if (previousStatus === "understood") {
+    concept.timesStudentConfirmedUnderstood = Math.max(0, concept.timesStudentConfirmedUnderstood - 1);
+  }
+
+  if (newStatus === "needs_help") {
+    concept.timesStudentConfirmedNeedsHelp += 1;
+  } else {
+    concept.timesStudentConfirmedUnderstood += 1;
+  }
+
+  concept.isPersistentSupportNeed = concept.timesStudentConfirmedNeedsHelp >= 2;
+  concept.lastSeen = new Date();
+  profile.markModified("conceptPerformance");
+  await profile.save();
 };
 
 /**

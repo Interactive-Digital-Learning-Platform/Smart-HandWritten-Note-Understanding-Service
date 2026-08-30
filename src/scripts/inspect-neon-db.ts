@@ -1,7 +1,12 @@
 import { Client } from "pg";
+import { config } from "../config/config";
 
 async function main() {
-  const dbUrl = "postgresql://neondb_owner:npg_6qliOG7utYab@ep-twilight-mode-apd0prh5-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require";
+  const dbUrl = config.curriculumDb.url;
+  if (!dbUrl) {
+    throw new Error("CURRICULUM_DB_URL or DB_URL must be set before inspecting the curriculum database.");
+  }
+
   const client = new Client({
     connectionString: dbUrl,
     ssl: { rejectUnauthorized: false },

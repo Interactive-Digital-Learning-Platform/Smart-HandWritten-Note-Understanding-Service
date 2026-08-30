@@ -223,6 +223,7 @@ export const runConceptMatching = async (
         concept,
         found: true,
         matchConfidence: 1.0,
+        decisionConfidence: 1.0,
         matchMethod: "keyword",
         evidence: km.evidence,
       });
@@ -233,6 +234,9 @@ export const runConceptMatching = async (
         concept,
         found: false,
         matchConfidence: 0,
+        // This is deliberately moderate: keyword absence alone cannot prove
+        // that a student did not write the concept in another wording.
+        decisionConfidence: 0.4,
         matchMethod: "not_found",
       });
     }
@@ -261,12 +265,33 @@ export const runConceptMatching = async (
             ...m,
             found: true,
             matchConfidence: 0.75, // Lower confidence than keyword match
+            decisionConfidence: 0.75,
             matchMethod: "semantic",
             evidence: semantic.evidence,
+          };
+        } else if (semanticResults.has(m.concept.id)) {
+          // The semantic evaluator explicitly inspected this concept and did
+          // not find it. This is still a note-coverage finding, not a claim
+          // that the student lacks the knowledge.
+          matches[i] = {
+            ...m,
+            decisionConfidence: 0.65,
           };
         }
       }
     }
+  }
+
+  // Confidence reflects both matching evidence and input reliability. Poor
+  // handwriting must reduce certainty for both positive and negative findings.
+  const ocrScore = ctx.ocrCleaning?.confidenceScore;
+  const inputReliability = typeof ocrScore === "number"
+    ? Math.max(0.45, Math.min(1, ocrScore / 100))
+    : 0.8;
+  for (const match of matches) {
+    match.decisionConfidence = Math.round(
+      Math.min(1, match.decisionConfidence * inputReliability) * 100
+    ) / 100;
   }
 
   const totalFound = matches.filter((m) => m.found).length;
