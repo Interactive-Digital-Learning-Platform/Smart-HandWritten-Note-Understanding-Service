@@ -152,10 +152,14 @@ export const extractTextFromImage = async (
                 ],
                 model,
                 temperature: 0.1,
-                // A handwritten page in this workflow is normally well below
-                // 600 output tokens. Keeping this bounded reduces quota use
-                // and limits the blast radius of a hallucinated continuation.
-                max_tokens: 600,
+                // OCR is a direct transcription task. Disabling Qwen's
+                // reasoning prevents hidden thinking tokens from consuming the
+                // completion budget before the visible transcription finishes.
+                reasoning_effort: "none",
+                // Two pages at this ceiling still fit beneath Groq's 8K TPM
+                // free-tier limit, while Sinhala and dense handwritten pages
+                // have substantially more room than the former 600-token cap.
+                max_tokens: 1800,
               },
               { signal: controller.signal }
             );
@@ -170,7 +174,10 @@ export const extractTextFromImage = async (
               );
               extractedText = "";
               console.warn("⚠️ Rejected OCR output that reached the token limit");
-              continue;
+              // Retrying the identical request with another key cannot change
+              // a deterministic output-token ceiling. Move to the next model
+              // (or return the failure) instead of burning quota repeatedly.
+              break;
             }
             const validation = validateOcrPageText(rawContent);
             if (!validation.valid) {
