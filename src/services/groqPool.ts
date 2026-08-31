@@ -18,7 +18,7 @@ export interface GroqPoolStatus {
 }
 
 class GroqPoolManager {
-  private clients: { client: Groq; key: string; index: number }[] = [];
+  private clients: { client: Groq; index: number }[] = [];
   private currentIndex = 0;
   private keyCooldowns = new Map<number, number>(); // keyIndex -> cooldownUntil timestamp
 
@@ -34,16 +34,11 @@ class GroqPoolManager {
 
     this.clients = keys.map((key, index) => ({
       client: new Groq({ apiKey: key }),
-      key,
       index,
     }));
 
-    const maskedList = this.clients
-      .map((c) => (c.key.length > 10 ? `${c.key.slice(0, 6)}...${c.key.slice(-4)}` : `key_${c.index + 1}`))
-      .join(", ");
-
     console.log(
-      `🔑 [GroqPool] Initialized pool with ${this.clients.length} Groq API key(s): [${maskedList}] | Default model: ${config.groq.model}`
+      `🔑 [GroqPool] Initialized pool with ${this.clients.length} Groq API key(s) | Default model: ${config.groq.model}`
     );
   }
 
@@ -54,7 +49,7 @@ class GroqPoolManager {
 
     this.clients.forEach((c) => {
       const cooldownUntil = this.keyCooldowns.get(c.index) || 0;
-      const masked = c.key.length > 10 ? `${c.key.slice(0, 6)}...${c.key.slice(-4)}` : `key_${c.index + 1}`;
+      const masked = `key_${c.index + 1}`;
       if (cooldownUntil > now) {
         cooldowns.push({
           keyIndex: c.index + 1,
@@ -92,8 +87,7 @@ class GroqPoolManager {
       if (cooldown <= now) {
         this.currentIndex = (idx + 1) % count;
         const entry = this.clients[idx];
-        const masked =
-          entry.key.length > 10 ? `${entry.key.slice(0, 6)}...${entry.key.slice(-4)}` : `key_${idx + 1}`;
+        const masked = `key_${idx + 1}`;
         return { client: entry.client, keyIndex: idx, maskedKey: masked };
       }
     }
@@ -111,8 +105,7 @@ class GroqPoolManager {
 
     this.currentIndex = (earliestIdx + 1) % count;
     const entry = this.clients[earliestIdx];
-    const masked =
-      entry.key.length > 10 ? `${entry.key.slice(0, 6)}...${entry.key.slice(-4)}` : `key_${earliestIdx + 1}`;
+    const masked = `key_${earliestIdx + 1}`;
     return { client: entry.client, keyIndex: earliestIdx, maskedKey: masked };
   }
 
@@ -121,12 +114,7 @@ class GroqPoolManager {
    */
   public markCooldown(keyIndex: number, cooldownMs: number = 25000) {
     this.keyCooldowns.set(keyIndex, Date.now() + cooldownMs);
-    const entry = this.clients[keyIndex];
-    const masked = entry
-      ? entry.key.length > 10
-        ? `${entry.key.slice(0, 6)}...${entry.key.slice(-4)}`
-        : `Key #${keyIndex + 1}`
-      : `Key #${keyIndex + 1}`;
+    const masked = `key_${keyIndex + 1}`;
     console.warn(`⏳ [GroqPool] Marked key #${keyIndex + 1} (${masked}) on cooldown for ${cooldownMs / 1000}s`);
   }
 

@@ -18,6 +18,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { PipelineContext, CoverageScores } from "../types";
+import { conceptCoverageValue } from "../conceptPrediction";
 
 export const runCoverageCalculation = (ctx: PipelineContext): void => {
   console.log(`  [Stage 7] Coverage Calculation...`);
@@ -32,14 +33,20 @@ export const runCoverageCalculation = (ctx: PipelineContext): void => {
 
   const matches = ctx.conceptMatches;
   const totalConcepts = matches.length;
-  const foundMatches = matches.filter((m) => m.found);
+  const foundMatches = matches.filter((m) => m.status !== "missing");
   const foundConcepts = foundMatches.length;
-  const missedConcepts = totalConcepts - foundConcepts;
+  const presentConcepts = matches.filter((m) => m.status === "present").length;
+  const partialConcepts = matches.filter((m) => m.status === "partial").length;
+  const missedConcepts = matches.filter((m) => m.status === "missing").length;
+  const achievedConceptEquivalent = matches.reduce(
+    (sum, match) => sum + conceptCoverageValue(match.status),
+    0
+  );
 
   // ── Simple Coverage ─────────────────────────────────────────────────────
   const simpleCoverage =
     totalConcepts > 0
-      ? Math.round((foundConcepts / totalConcepts) * 100)
+      ? Math.round((achievedConceptEquivalent / totalConcepts) * 100)
       : 0;
 
   // ── Weighted Coverage (Improvement 4) ───────────────────────────────────
@@ -48,8 +55,9 @@ export const runCoverageCalculation = (ctx: PipelineContext): void => {
     0
   );
 
-  const achievedWeightedScore = foundMatches.reduce(
-    (sum, m) => sum + m.concept.weight,
+  const achievedWeightedScore = matches.reduce(
+    (sum, match) =>
+      sum + match.concept.weight * conceptCoverageValue(match.status),
     0
   );
 
@@ -59,8 +67,12 @@ export const runCoverageCalculation = (ctx: PipelineContext): void => {
       : 0;
 
   // Discount each found concept by confidence from OCR and matching evidence.
-  const confidenceAdjustedWeightedScore = foundMatches.reduce(
-    (sum, match) => sum + match.concept.weight * match.decisionConfidence,
+  const confidenceAdjustedWeightedScore = matches.reduce(
+    (sum, match) =>
+      sum +
+      match.concept.weight *
+        conceptCoverageValue(match.status) *
+        match.decisionConfidence,
     0
   );
   const confidenceAdjustedWeightedCoverage =
@@ -81,6 +93,8 @@ export const runCoverageCalculation = (ctx: PipelineContext): void => {
     confidenceAdjustedWeightedCoverage,
     totalConcepts,
     foundConcepts,
+    presentConcepts,
+    partialConcepts,
     missedConcepts,
     maxWeightedScore,
     achievedWeightedScore,
@@ -92,7 +106,8 @@ export const runCoverageCalculation = (ctx: PipelineContext): void => {
 
   console.log(
     `  [Stage 7] ✅ Simple: ${simpleCoverage}% | Weighted: ${weightedCoverage}% ` +
-      `(${foundConcepts}/${totalConcepts} concepts, ` +
+      `(${presentConcepts} present, ${partialConcepts} partial, ` +
+      `${missedConcepts} missing; ` +
       `score: ${achievedWeightedScore}/${maxWeightedScore} pts, ${coverageScope})`
   );
 };

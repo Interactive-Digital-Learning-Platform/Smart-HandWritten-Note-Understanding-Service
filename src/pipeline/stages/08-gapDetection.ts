@@ -25,6 +25,10 @@ import {
   ExamReadiness,
 } from "../types";
 import { LearningOutcome } from "../../curriculum/types";
+import {
+  conceptCoverageValue,
+  determineOutcomeStatus,
+} from "../conceptPrediction";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -36,17 +40,6 @@ const weightToSeverity = (weight: number): "high" | "medium" | "low" => {
 };
 
 /** Determines achievement status from found/total concept counts */
-const determineStatus = (
-  foundCount: number,
-  totalCount: number
-): "achieved" | "partially_achieved" | "not_achieved" => {
-  if (totalCount === 0) return "achieved";
-  const ratio = foundCount / totalCount;
-  if (ratio >= 0.8) return "achieved";
-  if (ratio >= 0.4) return "partially_achieved";
-  return "not_achieved";
-};
-
 // ─── LLM: Generate study recommendations ──────────────────────────────────
 
 /**
@@ -68,7 +61,7 @@ const generateRecommendations = async (
     .map(
       (g, i) =>
         `  ${i + 1}. Outcome: "${g.outcomeDescription}"\n` +
-        `     Missing: ${g.missingConceptNames.join(", ")}`
+        `     Missing or partially covered: ${g.missingConceptNames.join(", ")}`
     )
     .join("\n");
 
@@ -140,15 +133,18 @@ const calculateExamReadiness = (
 
   // High priority = weight 4 or 5
   const highPriorityConcepts = matches.filter((m) => m.concept.weight >= 4);
-  const highPriorityFound = highPriorityConcepts.filter((m) => m.found);
+  const highPriorityEquivalent = highPriorityConcepts.reduce(
+    (sum, match) => sum + conceptCoverageValue(match.status),
+    0
+  );
   const highPriorityCoverage =
     highPriorityConcepts.length > 0
-      ? Math.round((highPriorityFound.length / highPriorityConcepts.length) * 100)
+      ? Math.round((highPriorityEquivalent / highPriorityConcepts.length) * 100)
       : 100;
 
   // Frequently examined concepts that are missing
   const frequentlyExaminedMissing = matches
-    .filter((m) => !m.found && m.concept.isFrequentlyTested)
+    .filter((m) => m.status !== "present" && m.concept.isFrequentlyTested)
     .map((m) => m.concept.name);
 
   // Rating logic
@@ -216,27 +212,36 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
       .map((cid) => matchMap.get(cid))
       .filter((m): m is NonNullable<typeof m> => m !== undefined);
 
-    const foundCount = requiredMatches.filter((m) => m.found).length;
+    const presentCount = requiredMatches.filter((m) => m.status === "present").length;
+    const partialCount = requiredMatches.filter((m) => m.status === "partial").length;
+    const foundCount = presentCount + partialCount;
+    const coverageEquivalent = requiredMatches.reduce(
+      (sum, match) => sum + conceptCoverageValue(match.status),
+      0
+    );
     const totalCount = requiredMatches.length;
-    const status = determineStatus(foundCount, totalCount);
+    const status = determineOutcomeStatus(coverageEquivalent, totalCount);
 
     const missingConceptNames = requiredMatches
-      .filter((m) => !m.found)
+      .filter((m) => m.status !== "present")
       .map((m) => m.concept.name);
 
     let evidence: string;
     if (status === "achieved") {
       evidence = `Student demonstrated understanding of all ${totalCount} required concept(s).`;
     } else if (status === "partially_achieved") {
-      evidence = `Student covered ${foundCount} of ${totalCount} required concept(s). Missing: ${missingConceptNames.join(", ")}.`;
+      evidence = `Student fully covered ${presentCount}, partially covered ${partialCount}, and needs work on ${missingConceptNames.length} of ${totalCount} required concept(s): ${missingConceptNames.join(", ")}.`;
     } else {
-      evidence = `No evidence found for this learning outcome in the student's notes. Required: ${missingConceptNames.join(", ")}.`;
+      evidence = `Limited evidence for this learning outcome: ${presentCount} fully covered and ${partialCount} partially covered of ${totalCount}. Needs further coverage: ${missingConceptNames.join(", ")}.`;
     }
 
     const assessment: OutcomeAssessment = {
       outcome,
       status,
       foundConceptCount: foundCount,
+      presentConceptCount: presentCount,
+      partialConceptCount: partialCount,
+      coverageEquivalent,
       totalConceptCount: totalCount,
       missingConceptNames,
       evidence,
@@ -272,14 +277,19 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
     // Build missing concept details
     const missingDetails = outcome.requiredConcepts
       .map((cid) => matchMap.get(cid))
-      .filter((m): m is NonNullable<typeof m> => m !== undefined && !m.found)
+      .filter((m): m is NonNullable<typeof m> => m !== undefined && m.status !== "present")
       .map((m) => ({
         id: m.concept.id,
         name: m.concept.name,
         weight: m.concept.weight,
         severity: weightToSeverity(m.concept.weight),
         category: m.concept.category,
+        status: m.status as "partial" | "missing",
       }));
+
+    const hasMissingConcept = missingDetails.some(
+      (concept) => concept.status === "missing"
+    );
 
     explainableGaps.push({
       learningOutcome: {
@@ -293,7 +303,9 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
       // An upload can be a partial note, so this is intentionally NOT
       // labelled a student knowledge gap. A future Quiz service diagnostic
       // may promote it to confirmed_learning_gap.
-      findingStatus: "not_found_in_note",
+      findingStatus: hasMissingConcept
+        ? "not_found_in_note"
+        : "partially_covered_in_note",
       verificationStatus: "pending",
     });
   }
@@ -305,7 +317,7 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
 
   if (strengthAreas.length === 0) {
     strengthAreas = matches
-      .filter((m) => m.found)
+      .filter((m) => m.status === "present")
       .map((m) => m.concept.name);
   }
 

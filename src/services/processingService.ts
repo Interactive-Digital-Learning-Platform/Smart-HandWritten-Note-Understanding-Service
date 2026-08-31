@@ -14,6 +14,18 @@ export interface ProcessingResult {
   error?: string;
 }
 
+export interface ProcessingOptions {
+  skipMaterialGeneration?: boolean;
+  updateStudentProfile?: boolean;
+  refreshOcr?: boolean;
+  analysisHints?: {
+    subject?: string;
+    grade?: number;
+    topic?: string;
+    lessonId?: string;
+  };
+}
+
 // ─── Context → IAnalysis Mapper ─────────────────────────────────────────────
 
 /**
@@ -39,19 +51,28 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
 
   // ── Found / missing concept names ───────────────────────────────────────
   const keyConcepts = (ctx.conceptMatches ?? [])
-    .filter((m) => m.found)
+    .filter((m) => m.status === "present")
+    .map((m) => m.concept.name);
+
+  const partialConcepts = (ctx.conceptMatches ?? [])
+    .filter((m) => m.status === "partial")
     .map((m) => m.concept.name);
 
   const missingConceptNames = (ctx.conceptMatches ?? [])
-    .filter((m) => !m.found)
+    .filter((m) => m.status === "missing")
     .map((m) => m.concept.name);
 
   const conceptFindings = (ctx.conceptMatches ?? []).map((m) => ({
     conceptId: m.concept.id,
     conceptName: m.concept.name,
+    status: m.status,
+    probabilities: m.probabilities,
     found: m.found,
     decisionConfidence: m.decisionConfidence,
     matchMethod: m.matchMethod,
+    source: m.source,
+    needsReview: m.needsReview,
+    modelVersion: m.modelVersion,
     evidence: m.evidence,
     curriculumCategory: m.concept.category,
     importanceWeight: m.concept.weight,
@@ -63,7 +84,7 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
   // These represent concepts not covered in this upload, not verified
   // knowledge deficits. New clients should use explainableGaps.findingStatus.
   const learningGaps = (ctx.explainableGaps ?? []).map((g) => ({
-    concept: `Not covered in this note: ${g.missingConcepts.map((c) => c.name).join(", ") || g.learningOutcome.description}`,
+    concept: `Needs further coverage in this note: ${g.missingConcepts.map((c) => c.name).join(", ") || g.learningOutcome.description}`,
     severity: (g.missingConcepts[0]?.severity ?? "medium") as "low" | "medium" | "high",
     suggestion: g.recommendation,
   }));
@@ -115,6 +136,7 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
 
     // Coverage
     keyConcepts,
+    partialConcepts,
     missingConcepts: missingConceptNames,
     conceptFindings,
     coverageScores: ctx.coverageScores,
@@ -129,6 +151,7 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     examReadiness: ctx.examReadiness,
 
     // Pipeline metadata
+    curriculumVersion: ctx.curriculumVersion,
     pipelineVersion: ctx.pipelineVersion,
     qualityWarnings: ctx.qualityWarnings ?? [],
     analyzedAt: new Date(),
@@ -150,9 +173,12 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
  */
 export const processNote = async (
   noteId: string,
-  force: boolean = false
+  force: boolean = false,
+  options: ProcessingOptions = {}
 ): Promise<ProcessingResult> => {
   let note: INote | null = null;
+  let previousAnalysis: INote["analysis"] | undefined;
+  let isForcedReanalysis = false;
 
   try {
     // ── Fetch & validate ────────────────────────────────────────────────────
@@ -180,9 +206,10 @@ export const processNote = async (
     }
 
     // ── Mark as processing ──────────────────────────────────────────────────
+    previousAnalysis = note.analysis;
+    isForcedReanalysis = force && note.status === "analyzed";
     note.status = "processing";
     await note.save();
-    const previousAnalysis = note.analysis;
 
     // ── Run the Hybrid Pipeline ─────────────────────────────────────────────
     const imageUrls = note.imageUrls && note.imageUrls.length > 0
@@ -195,14 +222,15 @@ export const processNote = async (
         userId: note.userId,
         imageUrl: note.imageUrl,
         imageUrls,
-        rawOcrText: note.rawText || undefined,
-        userSubject: note.userSubject,
-        userGrade: note.userGrade,
-        userTopic: note.userTopic,
-        userLessonId: note.userLessonId,
+        rawOcrText: options.refreshOcr ? undefined : note.rawText || undefined,
+        userSubject: note.userSubject ?? options.analysisHints?.subject,
+        userGrade: note.userGrade ?? options.analysisHints?.grade,
+        userTopic: note.userTopic ?? options.analysisHints?.topic,
+        userLessonId: note.userLessonId ?? options.analysisHints?.lessonId,
       },
       {
         asyncMaterialGeneration: true,
+        skipMaterialGeneration: options.skipMaterialGeneration,
         onAnalysisReady: async (ctx) => {
           if (!note) return;
 
@@ -214,10 +242,13 @@ export const processNote = async (
           const analysis = contextToAnalysis(ctx);
           note.analysis = analysis;
           note.status = "analyzed";
+          note.errorMessage = undefined;
           await note.save();
 
           // ── Update Student Profile (non-fatal) ─────────────────────────────
-          await updateProfileFromAnalysis(ctx, previousAnalysis);
+          if (options.updateStudentProfile !== false) {
+            await updateProfileFromAnalysis(ctx, previousAnalysis);
+          }
 
           console.log(
             `✅ Note analysis complete & saved for note ${noteId}: ` +
@@ -253,8 +284,14 @@ export const processNote = async (
     console.error(`\n❌ Processing failed for note ${noteId}: ${message}\n`);
 
     if (note) {
-      note.status = "failed";
-      note.errorMessage = message;
+      if (isForcedReanalysis && previousAnalysis) {
+        note.analysis = previousAnalysis;
+        note.status = "analyzed";
+        note.errorMessage = `Reanalysis failed; previous analysis preserved: ${message}`;
+      } else {
+        note.status = "failed";
+        note.errorMessage = message;
+      }
       await note.save();
     }
 

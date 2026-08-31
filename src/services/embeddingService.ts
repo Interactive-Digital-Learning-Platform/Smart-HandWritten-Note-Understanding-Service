@@ -1,9 +1,9 @@
 import { config } from "../config/config";
 
 type FeatureExtractor = (
-  input: string,
+  input: string | string[],
   options: { pooling: "mean"; normalize: boolean }
-) => Promise<{ data: Float32Array | number[] }>;
+) => Promise<{ data: Float32Array | number[]; dims?: number[] }>;
 
 let extractorPromise: Promise<FeatureExtractor> | undefined;
 
@@ -38,6 +38,42 @@ export class EmbeddingService {
     }
 
     return vector;
+  }
+
+  /**
+   * Creates semantic features for the learned concept-status classifier.
+   * Nomic uses task prefixes; classification features must not use the
+   * retrieval-specific search_query prefix used for Qdrant.
+   */
+  public async embedClassificationBatch(inputs: string[]): Promise<number[][]> {
+    if (inputs.length === 0) return [];
+    if (inputs.some((input) => !input.trim())) {
+      throw new Error("Classification embedding inputs must be non-empty.");
+    }
+
+    const extractor = await this.getExtractor();
+    const prepared = inputs.map((input) =>
+      this.truncate(`classification: ${input.trim()}`)
+    );
+    const response = await extractor(prepared, {
+      pooling: "mean",
+      normalize: true,
+    });
+    const flattened = Array.from(response.data);
+    const dimension = config.embedding.expectedDimension;
+    if (flattened.length !== inputs.length * dimension) {
+      throw new Error(
+        `Classification embedding shape mismatch: received ${flattened.length} values ` +
+          `for ${inputs.length} inputs; expected ${inputs.length * dimension}.`
+      );
+    }
+    if (!flattened.every(Number.isFinite)) {
+      throw new Error("Classification embedding contains non-finite values.");
+    }
+
+    return inputs.map((_, index) =>
+      flattened.slice(index * dimension, (index + 1) * dimension)
+    );
   }
 
   private async getExtractor(): Promise<FeatureExtractor> {

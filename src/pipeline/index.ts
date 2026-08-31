@@ -30,8 +30,9 @@ import { runCoverageCalculation } from "./stages/07-coverageCalculation";
 import { runGapDetection } from "./stages/08-gapDetection";
 import { runMaterialGeneration } from "./stages/09-materialGeneration";
 import { runQualityVerification } from "./stages/10-qualityVerification";
+import { CURRICULUM_VERSION } from "../curriculum/identity";
 
-const PIPELINE_VERSION = "1.0.0";
+const PIPELINE_VERSION = "2.0.0";
 
 // ─── Stage Definition ──────────────────────────────────────────────────────
 
@@ -63,6 +64,8 @@ export interface PipelineOptions {
   asyncMaterialGeneration?: boolean;
   /** Callback fired immediately when core analysis stages (1-9) are completed */
   onAnalysisReady?: (ctx: PipelineContext) => Promise<void> | void;
+  /** Internal reprocessing can skip creating student-facing materials. */
+  skipMaterialGeneration?: boolean;
 }
 
 // ─── Pipeline Runner ───────────────────────────────────────────────────────
@@ -109,6 +112,7 @@ export const runPipeline = async (
     userGrade: input.userGrade,
     userTopic: input.userTopic,
     userLessonId: input.userLessonId,
+    curriculumVersion: CURRICULUM_VERSION,
     pipelineVersion: PIPELINE_VERSION,
     startedAt: new Date(),
     stageResults: [],
@@ -193,7 +197,9 @@ export const runPipeline = async (
     }
   };
 
-  if (options?.asyncMaterialGeneration) {
+  if (options?.skipMaterialGeneration) {
+    console.log(`  [Stage 9] Skipping material generation for internal reprocessing`);
+  } else if (options?.asyncMaterialGeneration) {
     // Fire and forget material generation in background
     runMaterials()
       .then(() => {

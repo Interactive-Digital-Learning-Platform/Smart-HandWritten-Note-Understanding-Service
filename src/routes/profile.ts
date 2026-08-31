@@ -71,11 +71,13 @@ router.get("/:userId/gaps", async (req: Request, res: Response) => {
         conceptName: g.conceptName,
         subjectName: g.subjectName,
         lessonId: g.lessonId,
+        curriculumVersion: g.curriculumVersion,
         weight: g.weight,
         timesStudentConfirmedNeedsHelp: g.timesStudentConfirmedNeedsHelp,
         timesStudentConfirmedUnderstood: g.timesStudentConfirmedUnderstood,
         timesNotFoundInNotes: g.timesNotFoundInNotes,
         timesFoundInNotes: g.timesFoundInNotes,
+        timesPartiallyFoundInNotes: g.timesPartiallyFoundInNotes,
         lastSeen: g.lastSeen,
       })),
     });

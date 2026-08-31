@@ -24,8 +24,19 @@
 
 import { config } from "../../config/config";
 import { groqPool } from "../../services/groqPool";
-import { PipelineContext, ConceptMatch } from "../types";
+import { PipelineContext, ConceptMatch, ConceptStatus } from "../types";
 import { CurriculumConcept } from "../../curriculum/types";
+import {
+  probabilitiesForDecision,
+  shouldReviewConcept,
+  statusToLegacyFound,
+} from "../conceptPrediction";
+
+interface SemanticMatchResult {
+  status: ConceptStatus;
+  confidence: number;
+  evidence?: string;
+}
 
 // ─── Step 1: Keyword Matching ─────────────────────────────────────────────
 
@@ -107,8 +118,8 @@ const keywordMatch = (
 const semanticMatchBatch = async (
   text: string,
   unmatchedConcepts: CurriculumConcept[]
-): Promise<Map<string, { found: boolean; evidence?: string }>> => {
-  const result = new Map<string, { found: boolean; evidence?: string }>();
+): Promise<Map<string, SemanticMatchResult>> => {
+  const result = new Map<string, SemanticMatchResult>();
 
   if (unmatchedConcepts.length === 0) return result;
 
@@ -136,14 +147,16 @@ ${conceptList}
 
 INSTRUCTIONS:
 1. Carefully inspect the entire text for each concept.
-2. Mark "found": true if the student covered or referenced the concept (even if incomplete or in their own words).
-3. Mark "found": false ONLY if the concept is completely missing from the notes.
-4. If found, include a brief direct quote from the notes in "evidence".
+2. Use "present" when the note clearly communicates the concept, a correct explanation, calculation, example, or identifiable diagram.
+3. Use "partial" when the concept is only named, incompletely explained, fragmented, or ambiguously represented.
+4. Use "missing" only when there is no evidence of the concept.
+5. Give confidence from 0 to 1 and include a brief direct quote for present or partial evidence.
 
 Respond ONLY with a valid JSON array matching this exact format:
 [
-  { "index": 1, "found": true, "evidence": "...quote from note..." },
-  { "index": 2, "found": false, "evidence": "" }
+  { "index": 1, "status": "present", "confidence": 0.9, "evidence": "...quote from note..." },
+  { "index": 2, "status": "partial", "confidence": 0.7, "evidence": "...quote from note..." },
+  { "index": 3, "status": "missing", "confidence": 0.8, "evidence": "" }
 ]`;
 
   try {
@@ -166,17 +179,35 @@ Respond ONLY with a valid JSON array matching this exact format:
 
     const parsed: Array<{
       index: number;
-      found: boolean;
+      status?: ConceptStatus;
+      confidence?: number;
+      /** Accepted temporarily for older cached/prompt responses. */
+      found?: boolean;
       evidence?: string;
     }> = JSON.parse(jsonStr);
 
     for (const entry of parsed) {
       const concept = unmatchedConcepts[entry.index - 1];
       if (concept) {
+        const status: ConceptStatus =
+          entry.status === "present" ||
+          entry.status === "partial" ||
+          entry.status === "missing"
+            ? entry.status
+            : entry.found
+              ? "present"
+              : "missing";
+        const defaultConfidence =
+          status === "present" ? 0.75 : status === "partial" ? 0.7 : 0.65;
+        const confidence =
+          typeof entry.confidence === "number"
+            ? Math.min(1, Math.max(0, entry.confidence))
+            : defaultConfidence;
         result.set(concept.id, {
-          found: Boolean(entry.found),
+          status,
+          confidence,
           evidence:
-            entry.found && entry.evidence
+            status !== "missing" && entry.evidence
               ? `"${entry.evidence.slice(0, 120).trim()}"`
               : undefined,
         });
@@ -221,10 +252,14 @@ export const runConceptMatching = async (
     if (km.found) {
       matches.push({
         concept,
+        status: "present",
+        probabilities: probabilitiesForDecision("present", 1),
         found: true,
         matchConfidence: 1.0,
         decisionConfidence: 1.0,
         matchMethod: "keyword",
+        source: "rule",
+        needsReview: false,
         evidence: km.evidence,
       });
     } else {
@@ -232,12 +267,16 @@ export const runConceptMatching = async (
       notFoundByKeyword.push(concept);
       matches.push({
         concept,
+        status: "missing",
+        probabilities: probabilitiesForDecision("missing", 0.4),
         found: false,
         matchConfidence: 0,
         // This is deliberately moderate: keyword absence alone cannot prove
         // that a student did not write the concept in another wording.
         decisionConfidence: 0.4,
         matchMethod: "not_found",
+        source: "fallback",
+        needsReview: true,
       });
     }
   }
@@ -258,24 +297,27 @@ export const runConceptMatching = async (
     // Update the matches array with semantic results
     for (let i = 0; i < matches.length; i++) {
       const m = matches[i];
-      if (!m.found) {
+      if (m.status === "missing") {
         const semantic = semanticResults.get(m.concept.id);
-        if (semantic?.found) {
+        if (semantic) {
+          const found = statusToLegacyFound(semantic.status);
           matches[i] = {
             ...m,
-            found: true,
-            matchConfidence: 0.75, // Lower confidence than keyword match
-            decisionConfidence: 0.75,
-            matchMethod: "semantic",
+            status: semantic.status,
+            probabilities: probabilitiesForDecision(
+              semantic.status,
+              semantic.confidence
+            ),
+            found,
+            matchConfidence: found ? semantic.confidence : 0,
+            decisionConfidence: semantic.confidence,
+            matchMethod: semantic.status === "missing" ? "not_found" : "semantic",
+            source: "semantic_llm",
+            needsReview: shouldReviewConcept(
+              semantic.status,
+              semantic.confidence
+            ),
             evidence: semantic.evidence,
-          };
-        } else if (semanticResults.has(m.concept.id)) {
-          // The semantic evaluator explicitly inspected this concept and did
-          // not find it. This is still a note-coverage finding, not a claim
-          // that the student lacks the knowledge.
-          matches[i] = {
-            ...m,
-            decisionConfidence: 0.65,
           };
         }
       }
@@ -292,12 +334,25 @@ export const runConceptMatching = async (
     match.decisionConfidence = Math.round(
       Math.min(1, match.decisionConfidence * inputReliability) * 100
     ) / 100;
+    match.found = statusToLegacyFound(match.status);
+    match.probabilities = probabilitiesForDecision(
+      match.status,
+      match.decisionConfidence
+    );
+    match.needsReview = shouldReviewConcept(
+      match.status,
+      match.decisionConfidence,
+      ctx.ocrCleaning?.lowQualityWarning === true
+    );
   }
 
-  const totalFound = matches.filter((m) => m.found).length;
+  const presentCount = matches.filter((m) => m.status === "present").length;
+  const partialCount = matches.filter((m) => m.status === "partial").length;
+  const totalFound = presentCount + partialCount;
   console.log(
-    `  [Stage 6] ✅ Total found: ${totalFound}/${concepts.length} concepts ` +
-      `(keyword: ${keywordFound}, semantic: ${totalFound - keywordFound})`
+    `  [Stage 6] ✅ Present: ${presentCount}, partial: ${partialCount}, ` +
+      `missing: ${concepts.length - totalFound} ` +
+      `(keyword: ${keywordFound}, semantic coverage: ${totalFound - keywordFound})`
   );
 
   ctx.conceptMatches = matches;

@@ -48,6 +48,7 @@ Two Main Stages:
    - Regeneration of RuBP consumes additional ATP.
    - 6 cycles produce 1 molecule of glucose.
     `,
+    curriculumVersion: "1.1.0",
     pipelineVersion: "2.0.0-rag",
     startedAt: new Date(),
     stageResults: [

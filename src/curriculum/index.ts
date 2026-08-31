@@ -22,10 +22,14 @@ import {
   CurriculumConcept,
 } from "./types";
 import { validateLesson } from "./validator";
+import {
+  assertUniqueCurriculumIds,
+  createRegistryLessonId,
+  CURRICULUM_VERSION,
+} from "./identity";
 
 // ─── Module state ──────────────────────────────────────────────────────────
 
-const KB_VERSION = "1.0.0";
 const DATA_DIR = path.resolve(__dirname, "data");
 
 let curriculumIndex: CurriculumIndex | null = null;
@@ -85,7 +89,10 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
       const relativePath = path.relative(DATA_DIR, file);
       try {
         const raw = fs.readFileSync(file, "utf-8");
-        const lesson: CurriculumLesson = JSON.parse(raw);
+        const lesson: CurriculumLesson = {
+          ...JSON.parse(raw),
+          curriculumVersion: CURRICULUM_VERSION,
+        };
         const result = validateLesson(lesson, relativePath);
         if (!result.valid) continue;
 
@@ -93,7 +100,7 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
         if (!subjects[subjectKey]) {
           subjects[subjectKey] = {
             subject: subjectKey,
-            version: KB_VERSION,
+            version: CURRICULUM_VERSION,
             lastUpdated: new Date().toISOString(),
             grades: {},
           };
@@ -116,7 +123,7 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
     if (!subjects[sKey]) {
       subjects[sKey] = {
         subject: sKey,
-        version: KB_VERSION,
+        version: CURRICULUM_VERSION,
         lastUpdated: new Date().toISOString(),
         grades: {},
       };
@@ -125,9 +132,11 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
       subjects[sKey].grades[toc.grade] = [];
     }
 
-    const slug = toc.unitName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const subPrefix = toc.subject.toLowerCase().slice(0, 3);
-    const lessonId = `${subPrefix}-g${toc.grade}-${slug}`;
+    const lessonId = createRegistryLessonId(
+      toc.subject,
+      toc.grade,
+      toc.unitName
+    );
 
     const existing = subjects[sKey].grades[toc.grade].find((l) => l.lessonName === toc.unitName);
     if (!existing) {
@@ -163,6 +172,7 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
           ];
 
       const dbLesson: CurriculumLesson = {
+        curriculumVersion: CURRICULUM_VERSION,
         lessonId,
         subject: toc.subject,
         grade: toc.grade,
@@ -186,11 +196,16 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
 
   // ── Build index ────────────────────────────────────────────────────────
 
+  const allLessons = Object.values(subjects).flatMap((subject) =>
+    Object.values(subject.grades).flat()
+  );
+  assertUniqueCurriculumIds(allLessons);
+
   curriculumIndex = {
     subjects,
     totalLessons,
     totalConcepts,
-    version: KB_VERSION,
+    version: CURRICULUM_VERSION,
     loadedAt: new Date(),
   };
 
@@ -198,7 +213,7 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
   console.log(`   Subjects: ${Object.keys(subjects).join(", ")}`);
   console.log(`   Total lessons: ${totalLessons}`);
   console.log(`   Total concepts: ${totalConcepts}`);
-  console.log(`   Version: ${KB_VERSION}`);
+  console.log(`   Version: ${CURRICULUM_VERSION}`);
   if (totalErrors > 0) {
     console.warn(`   ⚠️  ${totalErrors} file(s) had errors and were skipped`);
   }
@@ -219,6 +234,8 @@ export const getCurriculum = (): CurriculumIndex => {
   }
   return curriculumIndex;
 };
+
+export const getCurriculumVersion = (): string => CURRICULUM_VERSION;
 
 /**
  * Returns whether the curriculum KB has been loaded.

@@ -11,6 +11,9 @@ dist/
 # Uploads (user files — don't commit to git)
 uploads/
 
+# Privacy-sensitive annotation exports
+data/annotations/
+
 # Logs
 *.log
 npm-debug.log*

@@ -20,7 +20,8 @@ import {
   ISubjectMastery,
 } from "../models/StudentProfile";
 import { IAnalysis } from "../models/Note";
-import { PipelineContext } from "../pipeline/types";
+import { ConceptStatus, PipelineContext } from "../pipeline/types";
+import { normalizeConceptStatus } from "../pipeline/conceptPrediction";
 
 // ─── Trend Calculation ─────────────────────────────────────────────────────
 
@@ -54,8 +55,9 @@ const upsertConceptPerformance = (
   conceptName: string,
   subjectName: string,
   lessonId: string,
+  curriculumVersion: string,
   weight: number,
-  found: boolean
+  status: ConceptStatus
 ): IConceptPerformance[] => {
   const idx = existing.findIndex((c) => c.conceptId === conceptId);
 
@@ -66,9 +68,11 @@ const upsertConceptPerformance = (
       conceptName,
       subjectName,
       lessonId,
+      curriculumVersion,
       weight,
-      timesFoundInNotes: found ? 1 : 0,
-      timesNotFoundInNotes: found ? 0 : 1,
+      timesFoundInNotes: status === "present" ? 1 : 0,
+      timesPartiallyFoundInNotes: status === "partial" ? 1 : 0,
+      timesNotFoundInNotes: status === "missing" ? 1 : 0,
       timesStudentConfirmedNeedsHelp: 0,
       timesStudentConfirmedUnderstood: 0,
       lastSeen: new Date(),
@@ -78,13 +82,17 @@ const upsertConceptPerformance = (
     // Existing — update
     // Profiles created before this change do not have the newer counters.
     existing[idx].timesFoundInNotes ??= 0;
+    existing[idx].timesPartiallyFoundInNotes ??= 0;
     existing[idx].timesNotFoundInNotes ??= 0;
     existing[idx].timesStudentConfirmedNeedsHelp ??= 0;
     existing[idx].timesStudentConfirmedUnderstood ??= 0;
     existing[idx].isPersistentSupportNeed ??= false;
+    existing[idx].curriculumVersion = curriculumVersion;
 
-    if (found) {
+    if (status === "present") {
       existing[idx].timesFoundInNotes += 1;
+    } else if (status === "partial") {
+      existing[idx].timesPartiallyFoundInNotes += 1;
     } else {
       existing[idx].timesNotFoundInNotes += 1;
     }
@@ -196,8 +204,14 @@ export const updateProfileFromAnalysis = async (
         const previous = (profile.conceptPerformance as IConceptPerformance[])
           .find((concept) => concept.conceptId === finding.conceptId);
         if (!previous) continue;
-        if (finding.found) {
+        const previousStatus = normalizeConceptStatus(finding);
+        if (previousStatus === "present") {
           previous.timesFoundInNotes = Math.max(0, (previous.timesFoundInNotes ?? 0) - 1);
+        } else if (previousStatus === "partial") {
+          previous.timesPartiallyFoundInNotes = Math.max(
+            0,
+            (previous.timesPartiallyFoundInNotes ?? 0) - 1
+          );
         } else {
           previous.timesNotFoundInNotes = Math.max(0, (previous.timesNotFoundInNotes ?? 0) - 1);
         }
@@ -242,8 +256,9 @@ export const updateProfileFromAnalysis = async (
         match.concept.name,
         subject,
         lessonId,
+        ctx.curriculumVersion,
         match.concept.weight,
-        match.found
+        match.status
       );
     }
 
@@ -265,8 +280,11 @@ export const updateProfileFromAnalysis = async (
       subject,
       lessonId,
       lessonName: ctx.matchedLesson.lessonName,
+      curriculumVersion: ctx.curriculumVersion,
       weightedCoverage,
       conceptsFound: ctx.coverageScores?.foundConcepts ?? 0,
+      conceptsPresent: ctx.coverageScores?.presentConcepts ?? 0,
+      conceptsPartial: ctx.coverageScores?.partialConcepts ?? 0,
       conceptsMissed: ctx.coverageScores?.missedConcepts ?? 0,
       examReadinessRating: ctx.examReadiness?.rating,
       analyzedAt: new Date(),

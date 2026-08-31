@@ -5,6 +5,22 @@ import { findLesson, searchLessons, getLessonsBySubject, getLessonById } from ".
 import { CurriculumLesson } from "../../curriculum/types";
 import { qdrantService } from "../../services/qdrantService";
 import { curriculumDbService } from "../../services/curriculumDbService";
+import { createRegistryLessonId } from "../../curriculum/identity";
+
+const scienceFamily = new Set(["science", "biology", "chemistry", "physics"]);
+
+const lessonMatchesDetectedScope = (
+  lesson: CurriculumLesson,
+  subject: string,
+  grade: number
+): boolean => {
+  const detectedSubject = subject.toLowerCase();
+  const lessonSubject = lesson.subject.toLowerCase();
+  const subjectMatches =
+    detectedSubject === lessonSubject ||
+    (scienceFamily.has(detectedSubject) && scienceFamily.has(lessonSubject));
+  return subjectMatches && (!grade || lesson.grade === grade);
+};
 
 // ─── LLM-assisted lesson picker ────────────────────────────────────────────
 
@@ -130,7 +146,9 @@ export const runLessonIdentification = async (
       // Check if static lesson exists
       let staticMatch = subject !== "Unknown" ? findLesson(subject, topicHint, grade || undefined) : null;
       if (!staticMatch && topicHint !== "Unknown Topic") {
-        const sr = searchLessons(topicHint);
+        const sr = searchLessons(topicHint).filter((result) =>
+          lessonMatchesDetectedScope(result.lesson, subject, grade)
+        );
         if (sr.length > 0 && sr[0].confidence >= 0.2) {
           staticMatch = sr[0];
         }
@@ -248,10 +266,15 @@ export const runLessonIdentification = async (
 
   // 4. Global search
   let globalResults = searchLessons(topicHint);
+  globalResults = globalResults.filter((result) =>
+    lessonMatchesDetectedScope(result.lesson, subject, grade)
+  );
   if (globalResults.length === 0 || globalResults[0].confidence < 0.2) {
     const textFirstLines = text.split("\n").slice(0, 3).join(" ").trim();
     if (textFirstLines) {
-      globalResults = searchLessons(textFirstLines);
+      globalResults = searchLessons(textFirstLines).filter((result) =>
+        lessonMatchesDetectedScope(result.lesson, subject, grade)
+      );
     }
   }
 
@@ -281,9 +304,13 @@ export const runLessonIdentification = async (
 
   // 5. If chapter bounds matched from TOC, construct a clean dynamic lesson
   if (chapterBounds) {
-    const slug = chapterBounds.unitName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    ctx.matchedLessonId = `db-${slug}-${chapterBounds.grade}`;
+    ctx.matchedLessonId = createRegistryLessonId(
+      chapterBounds.subject,
+      chapterBounds.grade,
+      chapterBounds.unitName
+    );
     ctx.matchedLesson = {
+      curriculumVersion: ctx.curriculumVersion,
       lessonId: ctx.matchedLessonId,
       subject: chapterBounds.subject,
       grade: chapterBounds.grade,

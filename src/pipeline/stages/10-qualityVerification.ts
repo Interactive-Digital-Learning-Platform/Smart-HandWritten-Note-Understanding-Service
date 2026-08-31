@@ -16,7 +16,9 @@ import { PipelineContext } from "../types";
 export const runQualityVerification = (ctx: PipelineContext): void => {
   console.log(`  [Stage 10] Quality Verification...`);
 
-  const warnings: string[] = [];
+  // Preserve warnings raised by earlier stages (for example, failed or
+  // quarantined OCR pages) and add the final deterministic checks below.
+  const warnings: string[] = [...(ctx.qualityWarnings ?? [])];
 
   // ── Check OCR quality ──────────────────────────────────────────────────
   if (!ctx.rawOcrText || ctx.rawOcrText.trim().length < 10) {

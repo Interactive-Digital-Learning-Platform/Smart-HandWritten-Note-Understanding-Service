@@ -1,5 +1,9 @@
 import { Router, Request, Response } from "express";
-import { TeacherValidation, ITeacherCorrection } from "../models/TeacherValidation";
+import {
+  TeacherValidation,
+  ITeacherConceptReview,
+  ITeacherCorrection,
+} from "../models/TeacherValidation";
 import { Note } from "../models/Note";
 import { computeEvaluationMetrics } from "../services/evaluationService";
 import { sendSuccess, sendError } from "../middleware/errorHandler";
@@ -71,9 +75,61 @@ router.post("/validate", async (req: Request, res: Response) => {
       return;
     }
 
+    if (!Array.isArray(conceptReviews)) {
+      sendError(res, "conceptReviews must be an array", 400);
+      return;
+    }
+
+    const normalizedConceptReviews: ITeacherConceptReview[] = [];
+    for (const value of conceptReviews as Array<Record<string, unknown>>) {
+      const systemStatus =
+        value.systemStatus === "present" ||
+        value.systemStatus === "partial" ||
+        value.systemStatus === "missing"
+          ? value.systemStatus
+          : typeof value.systemFound === "boolean"
+            ? value.systemFound
+              ? "present"
+              : "missing"
+            : null;
+      const teacherVerdict = value.teacherVerdict;
+
+      if (
+        !value.conceptId ||
+        !value.conceptName ||
+        !systemStatus ||
+        (teacherVerdict !== "present" &&
+          teacherVerdict !== "partial" &&
+          teacherVerdict !== "missing")
+      ) {
+        sendError(
+          res,
+          "Each concept review requires conceptId, conceptName, a valid systemStatus/systemFound, and teacherVerdict",
+          400
+        );
+        return;
+      }
+
+      normalizedConceptReviews.push({
+        conceptId: String(value.conceptId),
+        conceptName: String(value.conceptName),
+        systemFound: systemStatus !== "missing",
+        systemStatus,
+        systemProbabilities:
+          value.systemProbabilities && typeof value.systemProbabilities === "object"
+            ? (value.systemProbabilities as ITeacherConceptReview["systemProbabilities"])
+            : undefined,
+        teacherVerdict,
+        agreement: systemStatus === teacherVerdict,
+        teacherNote:
+          typeof value.teacherNote === "string" ? value.teacherNote : undefined,
+      });
+    }
+
     // Determine validation status
     const hasCorrections =
       corrections.length > 0 ||
+      normalizedConceptReviews.some((review) => !review.agreement) ||
       teacherAddedGaps.length > 0 ||
       teacherAddedStrengths.length > 0;
     const isDisputed =
@@ -94,6 +150,7 @@ router.post("/validate", async (req: Request, res: Response) => {
       {
         noteId,
         studentUserId: note.userId,
+        curriculumVersion: note.analysis?.curriculumVersion,
         teacherUserId,
         teacherName,
         status,
@@ -102,7 +159,7 @@ router.post("/validate", async (req: Request, res: Response) => {
         coverageScoreAccurate,
         gapsRelevant,
         corrections: corrections as ITeacherCorrection[],
-        conceptReviews,
+        conceptReviews: normalizedConceptReviews,
         explainabilitySurvey,
         teacherAddedGaps,
         teacherAddedStrengths,

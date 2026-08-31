@@ -113,6 +113,9 @@ export interface LearningOutcome {
  * Example: "Photosynthesis" under Biology → Grade 10 → Plant Nutrition
  */
 export interface CurriculumLesson {
+  /** Version of the curriculum snapshot that supplied this lesson. */
+  curriculumVersion: string;
+
   /** Unique lesson identifier, e.g., "bio-g10-photosynthesis" */
   lessonId: string;
 

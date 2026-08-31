@@ -281,6 +281,7 @@ export const verifyConceptFinding = async (
             grade: Number.parseInt(note.analysis.gradeLevel.replace(/\D/g, ""), 10) || undefined,
             lessonId: note.analysis.lessonId,
             lessonName: note.analysis.topic,
+            curriculumVersion: note.analysis.curriculumVersion,
             conceptId,
             conceptName: matchedConcept?.conceptName ?? gapDetail?.name ?? conceptId,
             conceptWeight: gapDetail?.weight ?? 3,

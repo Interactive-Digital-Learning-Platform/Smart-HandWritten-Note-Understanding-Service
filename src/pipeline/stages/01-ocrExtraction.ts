@@ -56,8 +56,9 @@ export const runOcrExtraction = async (
     `  [Stage 1] OCR Extraction — note: ${ctx.noteId} (${pages.length} page(s))`
   );
 
-  const pageTexts: string[] = [];
+  const pageTexts: Array<{ pageNumber: number; text: string }> = [];
   let failedPages = 0;
+  const pageErrors: string[] = [];
 
   for (let i = 0; i < pages.length; i++) {
     const pageNum = i + 1;
@@ -72,6 +73,10 @@ export const runOcrExtraction = async (
     console.log(`  [Stage 1] 📄 OCR Page ${pageNum}/${pages.length} (${path.basename(imagePath)})`);
     let result = await extractTextFromImage(imagePath);
 
+    if (!result.success && /rate limited/i.test(result.error ?? "")) {
+      throw new Error(result.error);
+    }
+
     // Retry page once if initial attempt failed
     if (!result.success) {
       console.warn(`  [Stage 1] 🔄 Retrying page ${pageNum} after error: ${result.error}`);
@@ -80,28 +85,53 @@ export const runOcrExtraction = async (
     }
 
     if (result.success && result.text) {
-      if (pages.length > 1) {
-        pageTexts.push(`--- Page ${pageNum} ---\n${result.text.trim()}`);
-      } else {
-        pageTexts.push(result.text.trim());
-      }
+      pageTexts.push({ pageNumber: pageNum, text: result.text.trim() });
     } else {
       console.warn(`  [Stage 1] ⚠️ Page ${pageNum} OCR failed after retries: ${result.error}`);
       failedPages++;
+      if (result.error) pageErrors.push(result.error);
     }
   }
 
   if (pageTexts.length === 0) {
     throw new Error(
-      `OCR failed on all ${pages.length} page(s) of note ${ctx.noteId}`
+      `OCR failed on all ${pages.length} page(s) of note ${ctx.noteId}. ${pageErrors[pageErrors.length - 1] || ""}`.trim()
     );
   }
 
-  const combinedText = pageTexts.join("\n\n");
+  const sortedLengths = pageTexts
+    .map((page) => page.text.length)
+    .sort((left, right) => left - right);
+  const medianLength = sortedLengths[Math.floor(sortedLengths.length / 2)] || 0;
+  const relativeOutlierLimit = Math.max(3_500, medianLength * 5);
+  const acceptedPages = pageTexts.filter((page) => {
+    if (pageTexts.length < 3 || page.text.length <= relativeOutlierLimit) {
+      return true;
+    }
+    failedPages++;
+    ctx.qualityWarnings = [
+      ...(ctx.qualityWarnings ?? []),
+      `OCR page ${page.pageNumber} was excluded because its ${page.text.length}-character transcription was an extreme cross-page outlier (median ${medianLength}).`,
+    ];
+    console.warn(
+      `  [Stage 1] ⚠️ Excluding suspicious OCR Page ${page.pageNumber}: ${page.text.length} characters vs median ${medianLength}`
+    );
+    return false;
+  });
+  if (acceptedPages.length === 0) {
+    throw new Error(`OCR quality checks rejected every page of note ${ctx.noteId}`);
+  }
+  const combinedText = acceptedPages
+    .map((page) =>
+      pages.length > 1
+        ? `--- Page ${page.pageNumber} ---\n${page.text}`
+        : page.text
+    )
+    .join("\n\n");
   ctx.rawOcrText = combinedText;
   ctx.ocrExtraction = {
     totalPages: pages.length,
-    extractedPages: pageTexts.length,
+    extractedPages: acceptedPages.length,
     failedPages,
   };
   if (failedPages > 0) {
@@ -112,7 +142,7 @@ export const runOcrExtraction = async (
   }
 
   console.log(
-    `  [Stage 1] ✅ OCR complete across ${pageTexts.length}/${pages.length} pages — ` +
+    `  [Stage 1] ✅ OCR complete across ${acceptedPages.length}/${pages.length} pages — ` +
       `${combinedText.length} total chars extracted` +
       (failedPages > 0 ? ` (${failedPages} page(s) failed)` : "")
   );

@@ -6,6 +6,7 @@ import path from "path";
 import { loadCurriculum, getLessonById } from "../curriculum";
 import { runPipeline } from "../pipeline";
 import { CurriculumConcept } from "../curriculum/types";
+import { statusToLegacyFound } from "../pipeline/conceptPrediction";
 import { groqPool } from "../services/groqPool";
 import { config } from "../config/config";
 
@@ -275,7 +276,7 @@ async function runBenchmarks() {
 
     const hybridPredictions = new Map<string, boolean>();
     for (const m of hybridMatches) {
-      hybridPredictions.set(m.concept.id, m.found);
+      hybridPredictions.set(m.concept.id, statusToLegacyFound(m.status));
     }
 
     // 2. Run Baseline 1: Keyword Only

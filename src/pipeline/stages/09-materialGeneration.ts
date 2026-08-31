@@ -72,11 +72,11 @@ export const runMaterialGeneration = async (
     const rawText = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
 
     const foundConcepts = (ctx.conceptMatches ?? [])
-      .filter((m) => m.found)
+      .filter((m) => m.status === "present")
       .map((m) => m.concept.name);
 
     const missingConcepts = (ctx.conceptMatches ?? [])
-      .filter((m) => !m.found)
+      .filter((m) => m.status !== "present")
       .map((m) => m.concept.name);
 
     const explainableGaps = (ctx.explainableGaps ?? []).map((g) => ({

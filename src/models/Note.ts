@@ -29,10 +29,11 @@ export interface IExplainableGap {
     weight: number;
     severity: "high" | "medium" | "low";
     category: string;
+    status?: "partial" | "missing";
   }>;
   recommendation: string;
   /** Absence from one note is not automatically a learning gap. */
-  findingStatus: "covered_in_note" | "not_found_in_note" | "confirmed_learning_gap";
+  findingStatus: "covered_in_note" | "partially_covered_in_note" | "not_found_in_note" | "confirmed_learning_gap";
   /** Diagnostic/quiz verification state. */
   verificationStatus: "not_required" | "pending" | "verified";
 }
@@ -40,11 +41,13 @@ export interface IExplainableGap {
 // ─── Coverage Scores ────────────────────────────────────────────────────────
 
 export interface ICoverageScores {
-  simpleCoverage: number;          // foundConcepts / totalConcepts × 100
-  weightedCoverage: number;        // Σ(weight found) / Σ(weight all) × 100
+  simpleCoverage: number;          // present=1, partial=0.5, missing=0
+  weightedCoverage: number;        // weighted equivalent / max weight × 100
   confidenceAdjustedWeightedCoverage: number;
   totalConcepts: number;
   foundConcepts: number;
+  presentConcepts?: number;
+  partialConcepts?: number;
   missedConcepts: number;
   confidenceAdjustedWeightedScore: number;
   maxWeightedScore: number;
@@ -55,9 +58,18 @@ export interface ICoverageScores {
 export interface IConceptFinding {
   conceptId: string;
   conceptName: string;
+  status?: "present" | "partial" | "missing";
+  probabilities?: {
+    present: number;
+    partial: number;
+    missing: number;
+  };
   found: boolean;
   decisionConfidence: number;
   matchMethod: "keyword" | "semantic" | "not_found";
+  source?: "rule" | "semantic_llm" | "fallback";
+  needsReview?: boolean;
+  modelVersion?: string;
   evidence?: string;
   curriculumCategory: string;
   importanceWeight: number;
@@ -117,6 +129,7 @@ export interface IAnalysis {
 
   // ── Coverage scores ────────────────────────────────────────────────────
   keyConcepts: string[];           // concept names found
+  partialConcepts?: string[];      // concept names only partly covered
   missingConcepts: string[];       // concept names not found
   conceptFindings?: IConceptFinding[];
   coverageScores?: ICoverageScores;
@@ -131,6 +144,7 @@ export interface IAnalysis {
   examReadiness?: IExamReadiness;
 
   // ── Pipeline metadata ──────────────────────────────────────────────────
+  curriculumVersion?: string;
   pipelineVersion?: string;
   qualityWarnings?: string[];
   analyzedAt: Date;
@@ -184,13 +198,14 @@ const ExplainableGapSchema = new Schema<IExplainableGap>(
         weight: { type: Number },
         severity: { type: String, enum: ["high", "medium", "low"] },
         category: { type: String },
+        status: { type: String, enum: ["partial", "missing"] },
         _id: false,
       },
     ],
     recommendation: { type: String, default: "" },
     findingStatus: {
       type: String,
-      enum: ["covered_in_note", "not_found_in_note", "confirmed_learning_gap"],
+      enum: ["covered_in_note", "partially_covered_in_note", "not_found_in_note", "confirmed_learning_gap"],
       default: "not_found_in_note",
     },
     verificationStatus: {
@@ -209,6 +224,8 @@ const CoverageScoresSchema = new Schema<ICoverageScores>(
     confidenceAdjustedWeightedCoverage: { type: Number, min: 0, max: 100, default: 0 },
     totalConcepts: { type: Number, default: 0 },
     foundConcepts: { type: Number, default: 0 },
+    presentConcepts: { type: Number, default: 0 },
+    partialConcepts: { type: Number, default: 0 },
     missedConcepts: { type: Number, default: 0 },
     confidenceAdjustedWeightedScore: { type: Number, default: 0 },
     maxWeightedScore: { type: Number, default: 0 },
@@ -226,9 +243,19 @@ const ConceptFindingSchema = new Schema<IConceptFinding>(
   {
     conceptId: { type: String, required: true },
     conceptName: { type: String, required: true },
+    status: { type: String, enum: ["present", "partial", "missing"] },
+    probabilities: {
+      present: { type: Number, min: 0, max: 1 },
+      partial: { type: Number, min: 0, max: 1 },
+      missing: { type: Number, min: 0, max: 1 },
+      _id: false,
+    },
     found: { type: Boolean, required: true },
     decisionConfidence: { type: Number, min: 0, max: 1, required: true },
     matchMethod: { type: String, enum: ["keyword", "semantic", "not_found"], required: true },
+    source: { type: String, enum: ["rule", "semantic_llm", "fallback"] },
+    needsReview: { type: Boolean },
+    modelVersion: { type: String },
     evidence: { type: String },
     curriculumCategory: { type: String, required: true },
     importanceWeight: { type: Number, min: 1, max: 5, required: true },
@@ -303,6 +330,7 @@ const AnalysisSchema = new Schema<IAnalysis>(
 
     // Coverage
     keyConcepts: { type: [String], default: [] },
+    partialConcepts: { type: [String], default: [] },
     missingConcepts: { type: [String], default: [] },
     conceptFindings: { type: [ConceptFindingSchema], default: [] },
     coverageScores: { type: CoverageScoresSchema },
@@ -317,6 +345,7 @@ const AnalysisSchema = new Schema<IAnalysis>(
     examReadiness: { type: ExamReadinessSchema },
 
     // Pipeline metadata
+    curriculumVersion: { type: String },
     pipelineVersion: { type: String },
     qualityWarnings: { type: [String], default: [] },
     analyzedAt: { type: Date, default: Date.now },

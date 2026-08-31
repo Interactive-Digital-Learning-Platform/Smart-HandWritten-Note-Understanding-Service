@@ -43,6 +43,13 @@ export interface ITeacherConceptReview {
   conceptName: string;
   /** Whether the system identified this concept as found */
   systemFound: boolean;
+  /** Authoritative three-class system decision for new analyses. */
+  systemStatus?: "present" | "partial" | "missing";
+  systemProbabilities?: {
+    present: number;
+    partial: number;
+    missing: number;
+  };
   /** Teacher's manual verdict */
   teacherVerdict: "present" | "partial" | "missing";
   /** Whether teacher agrees with system decision */
@@ -67,6 +74,8 @@ export interface ITeacherValidation extends Document {
   noteId: string;
   /** The student's user ID */
   studentUserId: string;
+  /** Curriculum snapshot used to produce the reviewed analysis */
+  curriculumVersion?: string;
   /** The teacher's user ID (Clerk) */
   teacherUserId: string;
   /** Teacher's display name */
@@ -133,6 +142,16 @@ const TeacherConceptReviewSchema = new Schema<ITeacherConceptReview>(
     conceptId: { type: String, required: true },
     conceptName: { type: String, required: true },
     systemFound: { type: Boolean, required: true },
+    systemStatus: {
+      type: String,
+      enum: ["present", "partial", "missing"],
+    },
+    systemProbabilities: {
+      present: { type: Number, min: 0, max: 1 },
+      partial: { type: Number, min: 0, max: 1 },
+      missing: { type: Number, min: 0, max: 1 },
+      _id: false,
+    },
     teacherVerdict: {
       type: String,
       enum: ["present", "partial", "missing"],
@@ -158,6 +177,7 @@ const TeacherValidationSchema = new Schema<ITeacherValidation>(
   {
     noteId: { type: String, required: true, index: true },
     studentUserId: { type: String, required: true, index: true },
+    curriculumVersion: { type: String, index: true },
     teacherUserId: { type: String, required: true },
     teacherName: { type: String },
     status: {

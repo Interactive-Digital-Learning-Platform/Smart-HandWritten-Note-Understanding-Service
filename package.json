@@ -9,8 +9,17 @@
     "start": "node dist/server.js",
     "eval:benchmarks": "ts-node src/scripts/run-research-benchmarks.ts",
     "eval:dashboard": "ts-node src/scripts/generate-eval-dashboard.ts",
-    "test": "node --test -r ts-node/register src/config/validateConfig.test.ts",
-    "security:secrets": "ts-node src/scripts/check-committed-secrets.ts"
+    "test": "node --test -r ts-node/register src/config/validateConfig.test.ts src/curriculum/identity.test.ts src/pipeline/conceptPrediction.test.ts src/pipeline/stages/10-qualityVerification.test.ts src/annotations/contract.test.ts src/ml/conceptClassifier.test.ts src/services/ocrService.test.ts src/services/textbookFilename.test.ts",
+    "security:secrets": "ts-node src/scripts/check-committed-secrets.ts",
+    "annotations:export": "ts-node src/scripts/export-annotation-candidates.ts",
+    "annotations:import": "ts-node src/scripts/import-reviewed-annotations.ts",
+    "annotations:stats": "ts-node src/scripts/annotation-stats.ts",
+    "annotations:readiness": "ts-node src/scripts/annotation-readiness.ts",
+    "annotations:reprocess": "ts-node src/scripts/reprocess-legacy-notes.ts",
+    "annotations:ingest-notes": "ts-node src/scripts/ingest-offline-note-batch.ts",
+    "annotations:release": "ts-node src/scripts/release-annotation-dataset.ts",
+    "kb:verify": "ts-node src/scripts/verify-knowledge-base-coverage.ts",
+    "model:train": "ts-node src/scripts/train-concept-classifier.ts"
   },
   "repository": {
     "type": "git",

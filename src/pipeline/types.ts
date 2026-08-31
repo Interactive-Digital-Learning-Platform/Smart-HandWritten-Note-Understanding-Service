@@ -71,8 +71,20 @@ export interface SubjectDetectionOutput {
 // ─── Concept Match ─────────────────────────────────────────────────────────
 
 /** Result of matching a single curriculum concept against student notes */
+export type ConceptStatus = "present" | "partial" | "missing";
+
+export interface ConceptProbabilities {
+  present: number;
+  partial: number;
+  missing: number;
+}
+
 export interface ConceptMatch {
   concept: CurriculumConcept;
+  /** Authoritative three-class coverage decision. */
+  status: ConceptStatus;
+  /** Calibratable probability contract for the future learned model. */
+  probabilities: ConceptProbabilities;
   /** Whether the concept was found in the student's notes */
   found: boolean;
   /**
@@ -84,6 +96,12 @@ export interface ConceptMatch {
   decisionConfidence: number;
   /** The method used to detect this concept */
   matchMethod: "keyword" | "semantic" | "not_found";
+  /** Component that produced this decision. */
+  source: "rule" | "semantic_llm" | "fallback";
+  /** True when confidence or partial coverage warrants human review. */
+  needsReview: boolean;
+  /** Populated once a trained classifier is introduced. */
+  modelVersion?: string;
   /** Snippet from student text that triggered the match, if found */
   evidence?: string;
 }
@@ -114,13 +132,14 @@ export interface LanguageDetectionOutput {
  */
 export type LearningFindingStatus =
   | "covered_in_note"
+  | "partially_covered_in_note"
   | "not_found_in_note"
   | "confirmed_learning_gap";
 
 // ─── Coverage Scores ───────────────────────────────────────────────────────
 
 export interface CoverageScores {
-  /** Simple count-based score: foundConcepts / totalConcepts × 100 */
+  /** Simple score where present=1, partial=0.5, and missing=0. */
   simpleCoverage: number;
   /** Weighted score: Σ(found.weight) / Σ(all.weight) × 100 */
   weightedCoverage: number;
@@ -128,8 +147,12 @@ export interface CoverageScores {
   confidenceAdjustedWeightedCoverage: number;
   /** Total number of concepts in the lesson */
   totalConcepts: number;
-  /** Number of concepts found in student notes */
+  /** Legacy covered count: present + partial concepts. */
   foundConcepts: number;
+  /** Number of concepts judged fully present. */
+  presentConcepts: number;
+  /** Number of concepts judged partially present. */
+  partialConcepts: number;
   /** Number of concepts missed by student */
   missedConcepts: number;
   /** Max possible weighted score */
@@ -149,6 +172,12 @@ export interface OutcomeAssessment {
   status: "achieved" | "partially_achieved" | "not_achieved";
   /** How many required concepts were found */
   foundConceptCount: number;
+  /** How many required concepts were fully present. */
+  presentConceptCount: number;
+  /** How many required concepts were only partially present. */
+  partialConceptCount: number;
+  /** Present=1, partial=0.5, missing=0 coverage equivalent. */
+  coverageEquivalent: number;
   /** How many required concepts are in the lesson */
   totalConceptCount: number;
   /** Names of missing concepts for this outcome */
@@ -176,6 +205,7 @@ export interface ExplainableGap {
     weight: number;
     severity: "high" | "medium" | "low";
     category: string;
+    status: "partial" | "missing";
   }[];
   /** Actionable study recommendation with textbook reference */
   recommendation: string;
@@ -281,6 +311,7 @@ export interface PipelineContext {
   qualityWarnings?: string[];
 
   // ── Pipeline Metadata ─────────────────────────────────────────────────────
+  curriculumVersion: string;
   pipelineVersion: string;
   startedAt: Date;
   stageResults: StageResult[];

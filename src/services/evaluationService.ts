@@ -53,6 +53,7 @@ export interface EvaluationMetrics {
     conceptAgreementRate: number | null;
     falsePositiveCount: number;
     falseNegativeCount: number;
+    partialMismatchCount: number;
   };
 
   /** Explainability & Trust Evaluation (5-point Likert Scale) */
@@ -158,18 +159,27 @@ export const computeEvaluationMetrics = async (
   let agreedConceptReviews = 0;
   let falsePositiveCount = 0;
   let falseNegativeCount = 0;
+  let partialMismatchCount = 0;
 
   for (const v of validations) {
     if (v.conceptReviews && v.conceptReviews.length > 0) {
       for (const cr of v.conceptReviews) {
         totalConceptReviews++;
-        if (cr.agreement) {
+        const systemStatus =
+          cr.systemStatus ?? (cr.systemFound ? "present" : "missing");
+        if (systemStatus === cr.teacherVerdict) {
           agreedConceptReviews++;
         } else {
-          if (cr.systemFound && cr.teacherVerdict === "missing") {
+          if (systemStatus === "present" && cr.teacherVerdict === "missing") {
             falsePositiveCount++;
-          } else if (!cr.systemFound && cr.teacherVerdict === "present") {
+          } else if (systemStatus === "missing" && cr.teacherVerdict === "present") {
             falseNegativeCount++;
+          }
+          if (
+            systemStatus === "partial" ||
+            cr.teacherVerdict === "partial"
+          ) {
+            partialMismatchCount++;
           }
         }
       }
@@ -269,6 +279,7 @@ export const computeEvaluationMetrics = async (
       conceptAgreementRate,
       falsePositiveCount,
       falseNegativeCount,
+      partialMismatchCount,
     },
     explainabilityScores,
     qualityDistribution: {

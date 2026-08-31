@@ -4,6 +4,12 @@ import { groqPool } from "./groqPool";
 import { CurriculumLesson } from "../curriculum/types";
 import { curriculumDbService, ChapterPageBounds } from "./curriculumDbService";
 import { embeddingService } from "./embeddingService";
+import { buildDynamicCurriculumLesson } from "../curriculum/identity";
+import { validateLesson } from "../curriculum/validator";
+import {
+  getTextbookStorageSources,
+  matchesTextbookFilename,
+} from "./textbookFilename";
 
 export interface QdrantCollectionInfo {
   collection: string;
@@ -44,6 +50,11 @@ export interface SearchPageBounds {
   bookPageEnd?: number;
   unitName?: string;
   textbookReference?: string;
+  sources?: Array<{
+    filename: string;
+    minPage: number;
+    maxPage: number;
+  }>;
 }
 
 export interface CurriculumRetrievalContext {
@@ -277,6 +288,13 @@ export class QdrantService {
           bookPageEnd: chapterBounds.bookPageEnd,
           unitName: chapterBounds.unitName,
           textbookReference: chapterBounds.textbookReference,
+          sources: getTextbookStorageSources(
+            chapterBounds.textbookFilename
+          ).map((source) => ({
+            filename: source.filename,
+            minPage: chapterBounds.pdfPageStart + source.pageOffset,
+            maxPage: chapterBounds.pdfPageEnd + source.pageOffset,
+          })),
         }
       : undefined;
 
@@ -313,7 +331,7 @@ export class QdrantService {
 
     return {
       isAvailable: true,
-      sourceTextbook: chapterBounds?.textbookFilename || passages[0].filename,
+      sourceTextbook: passages[0].filename,
       textbookReference,
       chapterBounds,
       passages,
@@ -406,25 +424,28 @@ Rules:
       const jsonMatch = stripped.match(/\{[\s\S]*\}/);
       const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
 
-      const parsed = JSON.parse(jsonStr);
-      const slug = effectiveTopic.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      const lessonId = `db-${slug}-${effectiveGrade}`;
-
-      return {
-        lessonId,
+      const lesson = buildDynamicCurriculumLesson({
         subject: effectiveSubject,
         grade: effectiveGrade,
-        unit: parsed.unit || effectiveTopic,
-        lessonName: parsed.lessonName || effectiveTopic,
+        topic: effectiveTopic,
         textbookReference: textbookRef,
-        matchingKeywords: Array.isArray(parsed.matchingKeywords) ? parsed.matchingKeywords : [effectiveTopic.toLowerCase()],
-        learningOutcomes: Array.isArray(parsed.learningOutcomes) ? parsed.learningOutcomes : [],
-        concepts: Array.isArray(parsed.concepts) ? parsed.concepts : [],
-        definitions: Array.isArray(parsed.definitions) ? parsed.definitions : [],
-        formulae: Array.isArray(parsed.formulae) ? parsed.formulae : [],
-        expectedDiagrams: Array.isArray(parsed.expectedDiagrams) ? parsed.expectedDiagrams : [],
-        examKeywords: [effectiveTopic],
-      };
+        generated: JSON.parse(jsonStr),
+      });
+      if (!lesson) {
+        console.warn("⚠️ Dynamic lesson extraction produced no usable concepts.");
+        return null;
+      }
+
+      const validation = validateLesson(lesson, `dynamic:${lesson.lessonId}`);
+      if (!validation.valid) {
+        console.warn(
+          "⚠️ Dynamic lesson extraction failed schema validation:",
+          validation.errors.map((error) => `${error.field}: ${error.message}`)
+        );
+        return null;
+      }
+
+      return lesson;
     } catch (err) {
       console.warn("⚠️ Dynamic lesson extraction from database passages failed:", err);
       return null;
@@ -484,23 +505,11 @@ Rules:
         const payload = pt.payload || {};
         const text = (payload.text || "").toLowerCase();
         const filename = (payload.filename || "").toLowerCase();
-        const pageStart = Number(payload.page_start || 0);
-        const pages = (payload.pages || []) as number[];
 
-        // 1. Filename filter
-        if (bounds?.filename && !filename.includes(bounds.filename.toLowerCase().replace(/\.pdf$/i, ""))) {
+        // Strict filename and chapter-page boundary, including explicitly
+        // mapped alternate textbook editions.
+        if (!this.isWithinBounds(payload, bounds)) {
           return false;
-        }
-
-        // 2. Strict Chapter Page Range Bounding (PDF Pages)
-        if (bounds?.minPage !== undefined && bounds?.maxPage !== undefined) {
-          const isWithinBounds =
-            (pageStart >= bounds.minPage && pageStart <= bounds.maxPage) ||
-            pages.some((p) => p >= bounds.minPage! && p <= bounds.maxPage!);
-
-          if (!isWithinBounds) {
-            return false; // Reject chunks outside chapter range
-          }
         }
 
         // 3. Keyword / text match
@@ -534,10 +543,26 @@ Rules:
     if (!bounds) return true;
 
     const filename = String(payload.filename || "").toLowerCase();
-    const expectedFilename = bounds.filename
-      ?.toLowerCase()
-      .replace(/\.pdf$/i, "");
-    if (expectedFilename && !filename.includes(expectedFilename)) {
+    const pageStart = Number(payload.page_start || 0);
+    const pages = Array.isArray(payload.pages)
+      ? payload.pages.map(Number).filter(Number.isFinite)
+      : [];
+    const overlaps = (minPage: number, maxPage: number): boolean =>
+      (pageStart >= minPage && pageStart <= maxPage) ||
+      pages.some((page) => page >= minPage && page <= maxPage);
+
+    if (bounds.sources && bounds.sources.length > 0) {
+      return bounds.sources.some(
+        (source) =>
+          matchesTextbookFilename(filename, source.filename) &&
+          overlaps(source.minPage, source.maxPage)
+      );
+    }
+
+    if (
+      bounds.filename &&
+      !matchesTextbookFilename(filename, bounds.filename)
+    ) {
       return false;
     }
 
@@ -545,14 +570,7 @@ Rules:
       return true;
     }
 
-    const pageStart = Number(payload.page_start || 0);
-    const pages = Array.isArray(payload.pages)
-      ? payload.pages.map(Number).filter(Number.isFinite)
-      : [];
-    return (
-      (pageStart >= bounds.minPage && pageStart <= bounds.maxPage) ||
-      pages.some((page) => page >= bounds.minPage! && page <= bounds.maxPage!)
-    );
+    return overlaps(bounds.minPage, bounds.maxPage);
   }
 
   private toSearchChunk(

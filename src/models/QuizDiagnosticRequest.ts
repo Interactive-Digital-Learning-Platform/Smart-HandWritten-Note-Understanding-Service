@@ -12,6 +12,7 @@ export interface IQuizDiagnosticRequest extends Document {
   grade?: number;
   lessonId?: string;
   lessonName?: string;
+  curriculumVersion?: string;
   conceptId: string;
   conceptName: string;
   conceptWeight: number;
@@ -29,6 +30,7 @@ const QuizDiagnosticRequestSchema = new Schema<IQuizDiagnosticRequest>(
     grade: { type: Number },
     lessonId: { type: String },
     lessonName: { type: String },
+    curriculumVersion: { type: String, index: true },
     conceptId: { type: String, required: true },
     conceptName: { type: String, required: true },
     conceptWeight: { type: Number, min: 1, max: 5, default: 3 },
