@@ -71,9 +71,13 @@ router.get("/:userId/gaps", async (req: Request, res: Response) => {
         conceptName: g.conceptName,
         subjectName: g.subjectName,
         lessonId: g.lessonId,
+        curriculumVersion: g.curriculumVersion,
         weight: g.weight,
-        timesMissed: g.timesMissed,
-        timesFound: g.timesFound,
+        timesStudentConfirmedNeedsHelp: g.timesStudentConfirmedNeedsHelp,
+        timesStudentConfirmedUnderstood: g.timesStudentConfirmedUnderstood,
+        timesNotFoundInNotes: g.timesNotFoundInNotes,
+        timesFoundInNotes: g.timesFoundInNotes,
+        timesPartiallyFoundInNotes: g.timesPartiallyFoundInNotes,
         lastSeen: g.lastSeen,
       })),
     });
@@ -164,10 +168,14 @@ router.get("/:userId/summary", async (req: Request, res: Response) => {
     const worstSubject = mastery[mastery.length - 1] ?? null;
 
     const topPersistentGaps = (profile.conceptPerformance ?? [])
-      .filter((c) => c.isPersistentGap)
-      .sort((a, b) => b.timesMissed - a.timesMissed)
+      .filter((c) => c.isPersistentSupportNeed)
+      .sort((a, b) => b.timesStudentConfirmedNeedsHelp - a.timesStudentConfirmedNeedsHelp)
       .slice(0, 5)
-      .map((g) => ({ name: g.conceptName, subject: g.subjectName, timesMissed: g.timesMissed }));
+      .map((g) => ({
+        name: g.conceptName,
+        subject: g.subjectName,
+        timesStudentConfirmedNeedsHelp: g.timesStudentConfirmedNeedsHelp,
+      }));
 
     const lastSession = profile.recentSessions.slice(-1)[0] ?? null;
 

@@ -1,9 +1,31 @@
 import { Request, Response, NextFunction } from "express";
 import path from "path";
+import fs from "fs/promises";
 import { Note } from "../models/Note";
 import { LearningMaterial } from "../models/LearningMaterial";
 import { sendSuccess, sendError, AppError } from "../middleware/errorHandler";
 import { processNote as runPipeline } from "../services/processingService";
+import { recordStudentConceptVerification } from "../services/profileService";
+import { generateMaterials } from "../services/materialsService";
+import { QuizDiagnosticRequest } from "../models/QuizDiagnosticRequest";
+import { config } from "../config/config";
+
+/** Deletes a storage file only by its basename inside an approved directory. */
+const deleteStoredFile = async (directory: string, storedUrl?: string): Promise<void> => {
+  if (!storedUrl) return;
+  const filename = path.basename(storedUrl.split("?")[0]);
+  if (!filename || filename === "." || filename === path.sep) return;
+  const root = path.resolve(directory);
+  const target = path.resolve(root, filename);
+  if (!target.startsWith(root + path.sep)) return;
+  try {
+    await fs.unlink(target);
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.warn("Could not remove stored file " + target, error);
+    }
+  }
+};
 
 /**
  * Helper to extract all uploaded Multer files from req.file or req.files
@@ -52,12 +74,7 @@ export const uploadNote = async (
       return;
     }
 
-    const { userId, title } = req.body;
-
-    if (!userId) {
-      sendError(res, "userId is required in the request body", 400);
-      return;
-    }
+    const { userId, title, subject, grade, topic, lessonName, lessonId } = req.body;
 
     const imageUrls = uploadedFiles.map(
       (file) => `/uploads/${path.basename(file.path)}`
@@ -65,14 +82,21 @@ export const uploadNote = async (
     const primaryImageUrl = imageUrls[0];
     const pageCount = imageUrls.length;
 
+    const parsedGrade = grade ? parseInt(String(grade), 10) : undefined;
+    const userTopic = topic || lessonName || undefined;
+
     const note = await Note.create({
       userId,
-      title: title || "Untitled Note",
+      title: title || (userTopic ? `${userTopic} Note` : "Untitled Note"),
       imageUrl: primaryImageUrl,
       imageUrls,
       pageCount,
       rawText: "",
       status: "uploaded",
+      userSubject: subject || undefined,
+      userGrade: !isNaN(parsedGrade as number) ? parsedGrade : undefined,
+      userTopic,
+      userLessonId: lessonId || undefined,
     });
 
     sendSuccess(
@@ -84,6 +108,9 @@ export const uploadNote = async (
         pageCount: note.pageCount,
         status: note.status,
         title: note.title,
+        userSubject: note.userSubject,
+        userGrade: note.userGrade,
+        userTopic: note.userTopic,
         createdAt: note.createdAt,
       },
       `Note uploaded successfully (${pageCount} page(s)). Ready for processing.`,
@@ -107,17 +134,13 @@ export const getNotes = async (
   try {
     const { userId, status } = req.query;
 
-    if (!userId) {
-      sendError(res, "userId query parameter is required", 400);
-      return;
-    }
-
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
     const skip = (page - 1) * limit;
 
     // Build filter
-    const filter: Record<string, unknown> = { userId };
+    const filter: Record<string, unknown> = {};
+    if (userId) filter.userId = userId;
     if (status) filter.status = status;
 
     const [notes, total] = await Promise.all([
@@ -166,6 +189,130 @@ export const getNoteById = async (
   }
 };
 
+/**
+ * PATCH /api/notes/:id/concepts/:conceptId/verification
+ * Records the student's own response to a note-coverage finding. This is not
+ * a teacher workflow: "needs_help" is the student's explicit confirmation
+ * that this concept should become a personalised learning priority.
+ */
+export const verifyConceptFinding = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id, conceptId } = req.params as { id: string; conceptId: string };
+    const { status } = req.body as { status?: "understood" | "needs_help" };
+
+    if (status !== "understood" && status !== "needs_help") {
+      sendError(res, "status must be either 'understood' or 'needs_help'", 400);
+      return;
+    }
+
+    const note = await Note.findById(id);
+    if (!note || !note.analysis) {
+      throw new AppError("Analyzed note not found", 404);
+    }
+
+    const findings = note.analysis.conceptFindings ?? [];
+    const finding = findings.find((item) => item.conceptId === conceptId);
+    if (!finding) {
+      throw new AppError("Concept finding not found for this note", 404);
+    }
+
+    const previousStatus: "unverified" | "understood" | "needs_help" =
+      finding.studentVerification === "understood"
+        ? "understood"
+        : finding.studentVerification === "needs_help"
+        ? "needs_help"
+        : "unverified";
+    finding.studentVerification = status;
+    finding.verifiedAt = new Date();
+
+    // A student asking for help is sufficient to prioritise this concept for
+    // personalised materials and the future Quiz-service diagnostic handoff.
+    if (status === "needs_help") {
+      for (const gap of note.analysis.explainableGaps ?? []) {
+        if (gap.missingConcepts.some((concept) => concept.id === conceptId)) {
+          gap.findingStatus = "confirmed_learning_gap";
+          gap.verificationStatus = "verified";
+        }
+      }
+    }
+
+    note.markModified("analysis");
+    await note.save();
+    await recordStudentConceptVerification(note.userId, conceptId, previousStatus, status);
+
+    let quizRequest: InstanceType<typeof QuizDiagnosticRequest> | null = null;
+
+    if (status === "needs_help") {
+      const confirmedConcepts = (note.analysis.conceptFindings ?? [])
+        .filter((item) => item.studentVerification === "needs_help")
+        .map((item) => item.conceptName);
+
+      // Material generation is asynchronous, matching the rest of the note
+      // workflow. It uses only concepts the student confirmed need support.
+      generateMaterials(
+        id,
+        ["structured_notes", "flashcards", "learning_points"],
+        undefined,
+        { targetConcepts: confirmedConcepts }
+      ).catch((err) => {
+        console.error(`Targeted material generation failed for note ${id}:`, err);
+      });
+
+      const matchedConcept = note.analysis.conceptFindings?.find(
+        (item) => item.conceptId === conceptId
+      );
+      const gapDetail = note.analysis.explainableGaps
+        ?.flatMap((gap) => gap.missingConcepts)
+        .find((concept) => concept.id === conceptId);
+
+      // This writes an outbox record only. The Quiz service is not called
+      // until the microservice integration is enabled.
+      quizRequest = await QuizDiagnosticRequest.findOneAndUpdate(
+        { noteId: note._id, conceptId },
+        {
+          $set: {
+            userId: note.userId,
+            noteId: note._id,
+            subject: note.analysis.subject,
+            grade: Number.parseInt(note.analysis.gradeLevel.replace(/\D/g, ""), 10) || undefined,
+            lessonId: note.analysis.lessonId,
+            lessonName: note.analysis.topic,
+            curriculumVersion: note.analysis.curriculumVersion,
+            conceptId,
+            conceptName: matchedConcept?.conceptName ?? gapDetail?.name ?? conceptId,
+            conceptWeight: gapDetail?.weight ?? 3,
+            requestedQuestionCount: gapDetail?.weight && gapDetail.weight >= 4 ? 5 : 3,
+            status: "pending_integration",
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
+
+    sendSuccess(res, {
+      noteId: id,
+      conceptId,
+      status,
+      note,
+      quizIntegration: status === "needs_help"
+        ? {
+            ready: true,
+            requestId: quizRequest?._id,
+            conceptId,
+            action: "request_targeted_diagnostic",
+            status: quizRequest?.status,
+          }
+        : { ready: false },
+    }, "Your learning preference has been saved.");
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ─── Delete Note ───────────────────────────────────────────────────────────
 
 /**
@@ -177,16 +324,32 @@ export const deleteNote = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const note = await Note.findByIdAndDelete(req.params.id);
+    const note = await Note.findById(req.params.id);
 
     if (!note) {
       throw new AppError("Note not found", 404);
     }
 
-    // Also remove all generated materials for this note
-    await LearningMaterial.deleteMany({ noteId: req.params.id });
+    // Remove derived audio before its material metadata is deleted.
+    const materials = await LearningMaterial.find({ noteId: req.params.id }).select("audioUrl");
+    await Promise.all(
+      materials.map((material) =>
+        deleteStoredFile(path.resolve(process.cwd(), "generated_audio"), material.audioUrl)
+      )
+    );
 
-    sendSuccess(res, { deletedId: req.params.id }, "Note deleted successfully");
+    // Uploaded handwriting is sensitive student data. Only basenames are used,
+    // so a database value can never delete a file outside the uploads directory.
+    const noteImageUrls = note.imageUrls?.length ? note.imageUrls : [note.imageUrl];
+    await Promise.all(
+      noteImageUrls.map((imageUrl) => deleteStoredFile(config.uploads.uploadDir, imageUrl))
+    );
+
+    await LearningMaterial.deleteMany({ noteId: req.params.id });
+    await QuizDiagnosticRequest.deleteMany({ noteId: req.params.id });
+    await note.deleteOne();
+
+    sendSuccess(res, { deletedId: req.params.id }, "Note and associated stored data deleted successfully");
   } catch (error) {
     next(error);
   }
@@ -221,8 +384,8 @@ export const processNote = async (
       return;
     }
 
-    // Fire-and-forget: run pipeline in background
-    runPipeline(id as string).catch((err) => {
+    // Fire-and-forget: run pipeline in background (force=true so already analyzed notes can be re-analyzed)
+    runPipeline(id as string, true).catch((err) => {
       console.error(`Background pipeline error for note ${id}:`, err);
     });
 
@@ -242,6 +405,67 @@ export const processNote = async (
 };
 
 // ─── Upload and immediately trigger processing ────────────────────────────
+
+/**
+ * PATCH /api/notes/:id/context
+ * Lets a student correct optional curriculum context and immediately reruns
+ * analysis. This is an explicit correction, not silent model retraining.
+ */
+export const updateNoteContextAndProcess = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const note = await Note.findById(id);
+
+    if (!note) throw new AppError("Note not found", 404);
+    if (note.status === "processing") {
+      sendError(res, "Note is already being processed.", 409);
+      return;
+    }
+
+    const { subject, grade, topic, lessonId } = req.body as Record<string, unknown>;
+    const update: Record<string, string | number | undefined> = {};
+    if (subject !== undefined) update.userSubject = String(subject).trim() || undefined;
+    if (topic !== undefined) update.userTopic = String(topic).trim() || undefined;
+    if (lessonId !== undefined) update.userLessonId = String(lessonId).trim() || undefined;
+    if (grade !== undefined && grade !== "") {
+      const parsedGrade = Number(grade);
+      if (parsedGrade !== 10 && parsedGrade !== 11) {
+        sendError(res, "grade must be 10 or 11 when provided", 400);
+        return;
+      }
+      update.userGrade = parsedGrade;
+    } else if (grade !== undefined) {
+      update.userGrade = undefined;
+    }
+
+    Object.assign(note, update);
+    // Materials were generated for the previous curriculum mapping.
+    await LearningMaterial.deleteMany({ noteId: id });
+    await note.save();
+
+    runPipeline(id as string, true).catch((err) => {
+      console.error(`Background re-analysis error for note ${id}:`, err);
+    });
+
+    sendSuccess(res, {
+      noteId: id,
+      status: "processing",
+      context: {
+        subject: note.userSubject,
+        grade: note.userGrade,
+        topic: note.userTopic,
+        lessonId: note.userLessonId,
+      },
+      pollUrl: `/api/notes/${id}`,
+    }, "Context saved and re-analysis started.", 202);
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * POST /api/notes/upload-and-process
@@ -264,27 +488,30 @@ export const uploadAndProcess = async (
       return;
     }
 
-    const { userId, title } = req.body;
-
-    if (!userId) {
-      sendError(res, "userId is required in the request body", 400);
-      return;
-    }
+    // These hints are optional: they give the pipeline student-provided context
+    // without preventing automatic identification when a student does not know it.
+    const { userId, title, subject, grade, topic, lessonName, lessonId } = req.body;
 
     const imageUrls = uploadedFiles.map(
       (file) => `/uploads/${path.basename(file.path)}`
     );
     const primaryImageUrl = imageUrls[0];
     const pageCount = imageUrls.length;
+    const parsedGrade = grade ? parseInt(String(grade), 10) : undefined;
+    const userTopic = topic || lessonName || undefined;
 
     const note = await Note.create({
       userId,
-      title: title || "Untitled Note",
+      title: title || (userTopic ? `${userTopic} Note` : "Untitled Note"),
       imageUrl: primaryImageUrl,
       imageUrls,
       pageCount,
       rawText: "",
       status: "uploaded",
+      userSubject: subject || undefined,
+      userGrade: !isNaN(parsedGrade as number) ? parsedGrade : undefined,
+      userTopic,
+      userLessonId: lessonId || undefined,
     });
 
     const noteId = (note._id as unknown as string).toString();
@@ -303,6 +530,10 @@ export const uploadAndProcess = async (
         pageCount: note.pageCount,
         status: "processing",
         title: note.title,
+        userSubject: note.userSubject,
+        userGrade: note.userGrade,
+        userTopic: note.userTopic,
+        userLessonId: note.userLessonId,
         pollUrl: `/api/notes/${noteId}`,
         createdAt: note.createdAt,
       },

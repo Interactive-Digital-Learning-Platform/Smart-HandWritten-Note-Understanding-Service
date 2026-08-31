@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import Groq from "groq-sdk";
 import { config } from "../config/config";
+import { groqPool } from "./groqPool";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -12,18 +12,45 @@ export interface OcrResult {
   error?: string;
 }
 
+const MAX_REASONABLE_PAGE_CHARACTERS = 2_200;
+
+export const validateOcrPageText = (
+  text: string
+): { valid: boolean; reason?: string } => {
+  const trimmed = text.trim();
+  if (!trimmed) return { valid: false, reason: "OCR returned empty text" };
+  if (/<\/?think>/i.test(trimmed)) {
+    return { valid: false, reason: "OCR returned model reasoning instead of only transcription" };
+  }
+  if (trimmed.length > MAX_REASONABLE_PAGE_CHARACTERS) {
+    return {
+      valid: false,
+      reason: `OCR returned ${trimmed.length} characters for one handwritten page (limit ${MAX_REASONABLE_PAGE_CHARACTERS})`,
+    };
+  }
+  return { valid: true };
+};
+
+const parseRetryAfterMs = (message: string): number | undefined => {
+  const minutesAndSeconds = message.match(
+    /try again in\s+(\d+)m(?:(\d+(?:\.\d+)?)s)?/i
+  );
+  if (minutesAndSeconds) {
+    return (
+      Number.parseInt(minutesAndSeconds[1], 10) * 60_000 +
+      Number.parseFloat(minutesAndSeconds[2] || "0") * 1_000
+    );
+  }
+  const seconds = message.match(/try again in\s+(\d+(?:\.\d+)?)s/i);
+  return seconds ? Number.parseFloat(seconds[1]) * 1_000 : undefined;
+};
+
 // ─── OCR Service ───────────────────────────────────────────────────────────
 
-const groq = new Groq({
-  apiKey: config.groq.apiKey,
-});
-
 /**
- * Extracts text from a handwritten note image using Llama 3.2 Vision on Groq.
+ * Extracts text from a handwritten note image using Llama 3.2 / Qwen Vision on Groq.
  *
- * This replaces the previous TrOCR implementation which is no longer available.
- * Groq Vision is significantly faster and better at understanding context
- * in handwritten notes.
+ * Automatically rotates across available Groq pool keys.
  *
  * @param imagePath - Absolute path to the uploaded image file
  * @returns OcrResult with the extracted text or an error message
@@ -31,11 +58,11 @@ const groq = new Groq({
 export const extractTextFromImage = async (
   imagePath: string
 ): Promise<OcrResult> => {
-  if (!config.groq.apiKey) {
+  if (!config.groq.apiKey && config.groq.apiKeys.length === 0) {
     return {
       success: false,
       text: "",
-      error: "Groq API key is not configured. Set GROQ_API_KEY in .env",
+      error: "Groq API key is not configured. Set GROQ_API_KEY or GROQ_API_KEYS in .env",
     };
   }
 
@@ -76,12 +103,27 @@ export const extractTextFromImage = async (
 
     let extractedText = "";
     let lastError: any = null;
+    let lastFailureKind: "rate_limit" | "capacity" | "other" = "other";
+    let retryAfterMs = 0;
 
     for (const model of VISION_MODELS) {
       for (let attempt = 1; attempt <= 3; attempt++) {
+        const poolStatus = groqPool.getStatus();
+        if (poolStatus.totalKeys > 0 && poolStatus.healthyKeys === 0) {
+          lastFailureKind = "rate_limit";
+          retryAfterMs = Math.max(
+            retryAfterMs,
+            ...poolStatus.cooldowns.map(
+              (cooldown) => cooldown.cooldownSecondsRemaining * 1_000
+            )
+          );
+          break;
+        }
+        const { client, keyIndex, maskedKey } = groqPool.getNextClient();
+
         try {
           if (attempt > 1 || model !== VISION_MODELS[0]) {
-            console.log(`🔄 OCR model ${model} (attempt ${attempt}/3)...`);
+            console.log(`🔄 OCR model ${model} via Key #${keyIndex + 1} (${maskedKey}) (attempt ${attempt}/3)...`);
           }
 
           // Wrap each API call with a timeout so we never hang indefinitely
@@ -89,7 +131,7 @@ export const extractTextFromImage = async (
           const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
           try {
-            const chatCompletion = await groq.chat.completions.create(
+            const chatCompletion = await client.chat.completions.create(
               {
                 messages: [
                   {
@@ -97,7 +139,7 @@ export const extractTextFromImage = async (
                     content: [
                       {
                         type: "text",
-                        text: "Exhaustively transcribe ALL text from this handwritten note image. Include every single word, title, header, sub-header, bullet point, numbered list, marginal note, equation, formula, definition, and diagram label. Do not omit, summarize, skip, or truncate any content. If there are diagrams or drawings, describe them in brackets like [Diagram: Description of process]. Return ONLY the full transcription text from top to bottom.",
+                        text: "Act only as an OCR transcription engine. Transcribe the text that is visibly written in this image from top to bottom, including headings, bullets, equations, corrections, marginal notes, and visible diagram labels. Preserve the exact original language and script (including Sinhala); never translate or romanize it. Never infer, explain, expand, complete, or continue the educational content. Never add textbook knowledge that is not visibly written. Use [illegible] for unreadable text. Return only the transcription.",
                       },
                       {
                         type: "image_url",
@@ -110,14 +152,40 @@ export const extractTextFromImage = async (
                 ],
                 model,
                 temperature: 0.1,
-                max_tokens: 4096,
+                // OCR is a direct transcription task. Disabling Qwen's
+                // reasoning prevents hidden thinking tokens from consuming the
+                // completion budget before the visible transcription finishes.
+                reasoning_effort: "none",
+                // Two pages at this ceiling still fit beneath Groq's 8K TPM
+                // free-tier limit, while Sinhala and dense handwritten pages
+                // have substantially more room than the former 600-token cap.
+                max_tokens: 1800,
               },
               { signal: controller.signal }
             );
 
-            let rawContent = chatCompletion.choices[0]?.message?.content?.trim() || "";
+            const choice = chatCompletion.choices[0];
+            let rawContent = choice?.message?.content?.trim() || "";
             // Strip Qwen <think>...</think> reasoning blocks if present
             rawContent = rawContent.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+            if (choice?.finish_reason === "length") {
+              lastError = new Error(
+                "OCR output reached the token limit and may contain a hallucinated continuation"
+              );
+              extractedText = "";
+              console.warn("⚠️ Rejected OCR output that reached the token limit");
+              // Retrying the identical request with another key cannot change
+              // a deterministic output-token ceiling. Move to the next model
+              // (or return the failure) instead of burning quota repeatedly.
+              break;
+            }
+            const validation = validateOcrPageText(rawContent);
+            if (!validation.valid) {
+              lastError = new Error(validation.reason);
+              extractedText = "";
+              console.warn(`⚠️ Rejected suspicious OCR output: ${validation.reason}`);
+              continue;
+            }
             extractedText = rawContent;
           } finally {
             clearTimeout(timeoutId);
@@ -130,16 +198,25 @@ export const extractTextFromImage = async (
           const status = err?.status || err?.statusCode;
           const msg = err?.message || String(err);
 
-          console.warn(`⚠️ Groq OCR model ${model} attempt ${attempt} failed: ${status || "Timeout/Error"} ${msg}`);
+          console.warn(
+            `⚠️ Groq OCR model ${model} on Key #${keyIndex + 1} attempt ${attempt} failed (${status || "timeout/error"})`
+          );
 
           if (err.name === "AbortError" || msg.includes("aborted")) {
+            lastFailureKind = "capacity";
             console.warn(`⚠️ Groq OCR model ${model} request timed out (${REQUEST_TIMEOUT_MS / 1000}s)`);
           }
 
           if (status === 503 || status === 429 || msg.includes("over capacity") || msg.includes("rate limit")) {
-            // Exponential backoff for rate limit / capacity: wait 2s, 4s, 6s... then retry
-            const backoffMs = attempt * 2500;
-            console.log(`⏳ Groq rate limit/capacity hit. Waiting ${backoffMs / 1000}s before retry...`);
+            lastFailureKind = status === 429 || msg.includes("rate limit")
+              ? "rate_limit"
+              : "capacity";
+            const providerRetryMs = parseRetryAfterMs(msg);
+            const cooldownMs = Math.max(20_000, providerRetryMs ?? 0);
+            retryAfterMs = Math.max(retryAfterMs, cooldownMs);
+            groqPool.markCooldown(keyIndex, cooldownMs);
+            const backoffMs = attempt * 1500;
+            console.log(`⏳ Groq rate limit/capacity hit on Key #${keyIndex + 1}. Switching/waiting ${backoffMs / 1000}s before retry...`);
             await new Promise((resolve) => setTimeout(resolve, backoffMs));
           } else if (status === 500) {
             await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
@@ -158,9 +235,14 @@ export const extractTextFromImage = async (
         String(lastError?.message).includes("over capacity") ||
         String(lastError?.message).includes("aborted");
 
-      const userMessage = isCapacity
-        ? "The AI vision service is currently at capacity. Please try again in a few minutes."
-        : `OCR failed: ${lastError?.message || "Groq Vision was unavailable or returned empty text"}`;
+      const userMessage = lastFailureKind === "rate_limit"
+        ? `The AI vision service is rate limited. Retry after approximately ${Math.max(
+            1,
+            Math.ceil(retryAfterMs / 60_000)
+          )} minute(s).`
+        : isCapacity || lastFailureKind === "capacity"
+          ? "The AI vision service is currently at capacity. Please try again in a few minutes."
+          : "OCR failed because the vision provider was unavailable or returned unusable text.";
 
       return { success: false, text: "", error: userMessage };
     }

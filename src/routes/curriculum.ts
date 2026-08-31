@@ -10,6 +10,8 @@ import {
 } from "../curriculum";
 import { sendSuccess, sendError } from "../middleware/errorHandler";
 import { qdrantService } from "../services/qdrantService";
+import { curriculumDbService } from "../services/curriculumDbService";
+import { config } from "../config/config";
 
 const router = Router();
 
@@ -19,13 +21,20 @@ const router = Router();
  * Returns a summary of the loaded curriculum KB.
  * Useful for health checks and debugging.
  */
-router.get("/stats", (_req: Request, res: Response) => {
+router.get("/stats", async (_req: Request, res: Response) => {
   try {
     if (!isCurriculumLoaded()) {
       sendError(res, "Curriculum KB has not been loaded yet", 503);
       return;
     }
-    sendSuccess(res, getCurriculumStats());
+    const dbHealth = await curriculumDbService.checkDatabaseHealth();
+    const qdrantStats = await qdrantService.getCollectionStats();
+
+    sendSuccess(res, {
+      ...getCurriculumStats(),
+      database: dbHealth,
+      qdrant: qdrantStats,
+    });
   } catch (error) {
     sendError(res, "Failed to retrieve curriculum stats", 500);
   }
@@ -186,41 +195,100 @@ router.get("/search", (req: Request, res: Response) => {
   }
 });
 
+// ─── GET /api/curriculum/documents ─────────────────────────────────────────
+
 /**
- * Returns stats for the official Qdrant vector collection (pdf_knowledge_base).
+ * Returns all official ingested PDF textbook documents directly from PostgreSQL database.
  */
-router.get("/qdrant-stats", async (_req: Request, res: Response) => {
+router.get("/documents", async (_req: Request, res: Response) => {
   try {
+    const docs = await qdrantService.getIngestedDocuments();
     const stats = await qdrantService.getCollectionStats();
-    sendSuccess(res, stats);
+
+    sendSuccess(res, {
+      totalPoints: stats.totalPoints,
+      documentCount: docs.length,
+      documents: docs,
+    });
   } catch (error) {
-    sendError(res, "Failed to retrieve Qdrant stats", 500);
+    sendError(res, "Failed to retrieve ingested documents", 500);
   }
 });
 
-// ─── GET /api/curriculum/qdrant-search?q=photosynthesis ──────────────────────
+// ─── GET /api/curriculum/jobs ──────────────────────────────────────────────
 
 /**
- * Searches the official Qdrant vector KB points for keyword / text matches.
+ * Returns all completed ingestion jobs directly from Neon PostgreSQL.
  */
-router.get("/qdrant-search", async (req: Request, res: Response) => {
+router.get("/jobs", async (_req: Request, res: Response) => {
   try {
-    const { q, limit } = req.query;
+    const jobs = await curriculumDbService.getCompletedCurriculumJobs();
+    sendSuccess(res, {
+      count: jobs.length,
+      jobs,
+    });
+  } catch (error) {
+    sendError(res, "Failed to retrieve curriculum ingestion jobs", 500);
+  }
+});
+
+// ─── GET /api/curriculum/chapters ──────────────────────────────────────────
+
+/**
+ * Returns all registered textbook chapters with Book Page and PDF Page boundaries.
+ */
+router.get("/chapters", (req: Request, res: Response) => {
+  try {
+    const { subject, grade } = req.query;
+    const gradeNum = grade ? parseInt(grade as string, 10) : undefined;
+    const subjectStr = typeof subject === "string" ? subject : undefined;
+
+    const chapters = curriculumDbService.getAvailableTextbookChapters(subjectStr, gradeNum);
+    sendSuccess(res, {
+      count: chapters.length,
+      chapters,
+    });
+  } catch (error) {
+    sendError(res, "Failed to retrieve textbook chapters", 500);
+  }
+});
+
+// ─── GET /api/curriculum/pdf-search?q=photosynthesis ─────────────────────────
+
+/**
+ * Searches the official PDF Ingestion Knowledge Base by true vector similarity.
+ * The Smart Note service creates a Nomic query embedding and sends it directly
+ * to Qdrant; it does not call or modify the ingestion microservice.
+ */
+router.get("/pdf-search", async (req: Request, res: Response) => {
+  try {
+    const { q, limit, filename, minPage, maxPage } = req.query;
     if (!q || typeof q !== "string") {
       sendError(res, "Query parameter 'q' is required", 400);
       return;
     }
 
-    const limitNum = limit ? parseInt(limit as string, 10) : 10;
-    const results = await qdrantService.searchByKeywordPayload(q, limitNum);
+    const requestedLimit = limit ? parseInt(limit as string, 10) : 8;
+    const limitNum = Number.isFinite(requestedLimit)
+      ? Math.min(Math.max(requestedLimit, 1), 20)
+      : 8;
+    const bounds = {
+      filename: typeof filename === "string" ? filename : undefined,
+      minPage: minPage ? parseInt(minPage as string, 10) : undefined,
+      maxPage: maxPage ? parseInt(maxPage as string, 10) : undefined,
+    };
+
+    const passages = await qdrantService.searchKnowledgeBase(q, limitNum, bounds);
 
     sendSuccess(res, {
       query: q,
-      count: results.length,
-      results,
+      retrievalMode: "vector",
+      embeddingModel: config.embedding.model,
+      count: passages.length,
+      passages,
     });
   } catch (error) {
-    sendError(res, "Failed to search Qdrant knowledge base", 500);
+    sendError(res, "Failed to search PDF knowledge base", 500);
   }
 });
 

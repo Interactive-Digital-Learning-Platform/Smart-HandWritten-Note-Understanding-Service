@@ -123,6 +123,13 @@ export const validateLesson = (
   const warnings: string[] = [];
 
   // ── Top-level required fields ──────────────────────────────────────────
+  if (!isNonEmptyString(lesson.curriculumVersion)) {
+    errors.push({
+      file,
+      field: "curriculumVersion",
+      message: "Must be a non-empty string",
+    });
+  }
   if (!isNonEmptyString(lesson.lessonId)) {
     errors.push({ file, field: "lessonId", message: "Must be a non-empty string" });
   }

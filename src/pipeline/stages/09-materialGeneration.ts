@@ -21,6 +21,7 @@
 import { PipelineContext, MaterialPriorities } from "../types";
 import { generateMaterials, NoteDataOverride } from "../../services/materialsService";
 import { MaterialType } from "../../models/LearningMaterial";
+import mongoose from "mongoose";
 
 // ─── Severity Analysis ─────────────────────────────────────────────────────
 
@@ -30,40 +31,16 @@ import { MaterialType } from "../../models/LearningMaterial";
 const determineMaterialPriorities = (
   ctx: PipelineContext
 ): MaterialPriorities => {
-  const gaps = ctx.explainableGaps ?? [];
-  const examReadiness = ctx.examReadiness;
+  // A missing concept in one upload is note-coverage evidence, not a verified
+  // knowledge deficit. The pipeline runs before a student can self-verify, so
+  // it must not automatically create a remediation pack from those omissions.
+  // A neutral revision summary remains useful without making that assumption.
+  return {
+    typesToGenerate: ["revision_summary"],
+    severityProfile: { high: 0, medium: 0, low: 0 },
+    rationale: "Generating a neutral revision summary. Targeted materials are created after the student confirms they need help with a concept.",
+  };
 
-  let highCount = 0, mediumCount = 0, lowCount = 0;
-
-  for (const gap of gaps) {
-    for (const mc of gap.missingConcepts) {
-      if (mc.severity === "high") highCount++;
-      else if (mc.severity === "medium") mediumCount++;
-      else lowCount++;
-    }
-  }
-
-  const severityProfile = { high: highCount, medium: mediumCount, low: lowCount };
-  const rating = examReadiness?.rating ?? "Needs Work";
-
-  let typesToGenerate: string[];
-  let rationale: string;
-
-  if (rating === "At Risk" || highCount >= 3) {
-    typesToGenerate = ["structured_notes", "definitions", "flashcards", "revision_summary", "learning_points"];
-    rationale = `Critical gaps detected (${highCount} high-severity concepts missing). Generating full study pack.`;
-  } else if (rating === "Needs Work" || highCount >= 1) {
-    typesToGenerate = ["structured_notes", "flashcards", "learning_points"];
-    rationale = `Significant gaps found. Generating targeted structured notes and practice materials.`;
-  } else if (rating === "Good") {
-    typesToGenerate = ["flashcards", "learning_points", "revision_summary"];
-    rationale = `Minor gaps only. Generating flashcards and revision summary for reinforcement.`;
-  } else {
-    typesToGenerate = ["revision_summary"];
-    rationale = `Excellent coverage. Generating a concise revision summary.`;
-  }
-
-  return { typesToGenerate, severityProfile, rationale };
 };
 
 // ─── Stage Runner ──────────────────────────────────────────────────────────
@@ -79,6 +56,12 @@ export const runMaterialGeneration = async (
   console.log(`  [Stage 9] Strategy: ${priorities.rationale}`);
   console.log(`  [Stage 9] Types: ${priorities.typesToGenerate.join(", ")}`);
 
+  // If MongoDB is not connected (e.g. offline evaluation scripts), skip material generation
+  if (mongoose.connection.readyState === 0) {
+    console.log(`  [Stage 9] ⏭️ Skipping material storage (MongoDB offline in benchmark mode)`);
+    return;
+  }
+
   try {
     // Build an override so generateMaterials doesn't need to re-read note.analysis
     // from MongoDB — at this point in the pipeline it hasn't been saved yet.
@@ -88,12 +71,38 @@ export const runMaterialGeneration = async (
     const gradeLevel = grade ? `Grade ${grade}` : "Unknown";
     const rawText = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
 
+    const foundConcepts = (ctx.conceptMatches ?? [])
+      .filter((m) => m.status === "present")
+      .map((m) => m.concept.name);
+
+    const missingConcepts = (ctx.conceptMatches ?? [])
+      .filter((m) => m.status !== "present")
+      .map((m) => m.concept.name);
+
+    const explainableGaps = (ctx.explainableGaps ?? []).map((g) => ({
+      outcomeId: g.learningOutcome.id,
+      outcomeDescription: g.learningOutcome.description,
+      missingConcepts: g.missingConcepts.map((c) => ({
+        id: c.id,
+        name: c.name,
+        severity: c.severity,
+      })),
+      recommendation: g.recommendation,
+      evidence: g.evidence,
+      findingStatus: g.findingStatus,
+      verificationStatus: g.verificationStatus,
+    }));
+
     const override: NoteDataOverride = {
       rawText,
       subject,
       topic,
       gradeLevel,
       userId: ctx.userId,
+      foundConcepts,
+      missingConcepts,
+      explainableGaps,
+      contentLanguage: ctx.contentLanguage?.primaryLanguage,
     };
 
     const result = await generateMaterials(

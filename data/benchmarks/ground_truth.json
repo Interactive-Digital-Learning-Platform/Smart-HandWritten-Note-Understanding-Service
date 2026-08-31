@@ -1,0 +1,390 @@
+[
+  {
+    "benchmarkId": "bm-sci-g10-u1-note-01",
+    "noteTitle": "Grade 10 Science - Unit 1 Chemical Basis of Life (Student A)",
+    "subject": "Science",
+    "grade": 10,
+    "unitNumber": 1,
+    "lessonId": "sci-g10-chemical-basis-of-life",
+    "imagePaths": [
+      "../grade 10 lesson for testing/grade 10 science lesson 1 notes/1000329134.jpg",
+      "../grade 10 lesson for testing/grade 10 science lesson 1 notes/1000329135.jpg"
+    ],
+    "ocrLegibilityScore": 85,
+    "annotator": "Expert Teacher Evaluator",
+    "annotatedAt": "2026-08-28T00:00:00.000Z",
+    "groundTruthConcepts": [
+      {
+        "conceptId": "sci-g10-cbl-001",
+        "name": "Elements in Living Matter",
+        "weight": 4,
+        "groundTruth": "present",
+        "evidenceNote": "Lists C, H, O, N and 25 elements in living matter"
+      },
+      {
+        "conceptId": "sci-g10-cbl-002",
+        "name": "Organic Compounds",
+        "weight": 4,
+        "groundTruth": "present",
+        "evidenceNote": "Defines organic compounds as carbon-containing"
+      },
+      {
+        "conceptId": "sci-g10-cbl-003",
+        "name": "Inorganic Compounds",
+        "weight": 3,
+        "groundTruth": "present",
+        "evidenceNote": "Mentions compounds without carbon"
+      },
+      {
+        "conceptId": "sci-g10-cbl-004",
+        "name": "Monosaccharides",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Student only listed the high-level category carbohydrates without detailing monosaccharides (glucose, fructose, galactose)"
+      },
+      {
+        "conceptId": "sci-g10-cbl-005",
+        "name": "Disaccharides",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Disaccharides (sucrose, maltose, lactose) not written on these pages"
+      },
+      {
+        "conceptId": "sci-g10-cbl-006",
+        "name": "Polysaccharides",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Polysaccharides (starch, cellulose, glycogen) not covered"
+      },
+      {
+        "conceptId": "sci-g10-cbl-007",
+        "name": "Benedict Test for Reducing Sugars",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Benedict test procedure and brick-red precipitate not written"
+      },
+      {
+        "conceptId": "sci-g10-cbl-008",
+        "name": "Iodine Test for Starch",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Iodine test not covered"
+      },
+      {
+        "conceptId": "sci-g10-cbl-009",
+        "name": "Amino Acids as Building Blocks of Proteins",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Amino acids and peptide bonds not detailed"
+      },
+      {
+        "conceptId": "sci-g10-cbl-010",
+        "name": "Biological Importance of Proteins",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Functions of proteins (enzymes, antibodies) omitted"
+      },
+      {
+        "conceptId": "sci-g10-cbl-011",
+        "name": "Biuret Test for Proteins",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Biuret test not written"
+      },
+      {
+        "conceptId": "sci-g10-cbl-012",
+        "name": "Lipid Composition (Fatty Acids and Glycerol)",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Fatty acids and glycerol breakdown omitted"
+      },
+      {
+        "conceptId": "sci-g10-cbl-013",
+        "name": "Functions of Lipids",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Does not explain thermal insulation or organ protection"
+      },
+      {
+        "conceptId": "sci-g10-cbl-014",
+        "name": "Sudan III Test for Lipids",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Sudan III test not written"
+      },
+      {
+        "conceptId": "sci-g10-cbl-015",
+        "name": "Nucleotides as Units of Nucleic Acids",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Nucleotides and pentose sugar breakdown not detailed"
+      },
+      {
+        "conceptId": "sci-g10-cbl-016",
+        "name": "DNA (Deoxyribonucleic Acid)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "DNA double helix not detailed"
+      },
+      {
+        "conceptId": "sci-g10-cbl-017",
+        "name": "RNA (Ribonucleic Acid)",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "RNA single strand not detailed"
+      },
+      {
+        "conceptId": "sci-g10-cbl-018",
+        "name": "Properties of Water Supporting Life",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Water properties section not covered"
+      },
+      {
+        "conceptId": "sci-g10-cbl-019",
+        "name": "Biological Roles of Water",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Water biological roles omitted"
+      },
+      {
+        "conceptId": "sci-g10-cbl-020",
+        "name": "Calcium (Ca) and Phosphorus (P)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Mineral section missing"
+      },
+      {
+        "conceptId": "sci-g10-cbl-021",
+        "name": "Iron (Fe) and Iodine (I)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Mineral section missing"
+      },
+      {
+        "conceptId": "sci-g10-cbl-022",
+        "name": "Plant Minerals (N, P, K, Mg)",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Plant mineral deficiencies missing"
+      },
+      {
+        "conceptId": "sci-g10-cbl-023",
+        "name": "Fat-Soluble Vitamins (A, D, E, K)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Vitamins missing"
+      },
+      {
+        "conceptId": "sci-g10-cbl-024",
+        "name": "Water-Soluble Vitamins (B Complex, C)",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Vitamins missing"
+      },
+      {
+        "conceptId": "sci-g10-cbl-025",
+        "name": "Vitamin Deficiency Diseases",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Vitamin deficiencies missing"
+      }
+    ]
+  },
+  {
+    "benchmarkId": "bm-sci-g10-u2-note-01",
+    "noteTitle": "Grade 10 Science - Unit 2 Motion in a Straight Line (Student B)",
+    "subject": "Science",
+    "grade": 10,
+    "unitNumber": 2,
+    "lessonId": "sci-g10-motion-in-a-straight-line",
+    "imagePaths": [
+      "../grade 10 lesson for testing/grade 10 science lesson 2 notes/1.jpeg"
+    ],
+    "ocrLegibilityScore": 75,
+    "annotator": "Expert Teacher Evaluator",
+    "annotatedAt": "2026-08-28T00:00:00.000Z",
+    "groundTruthConcepts": [
+      {
+        "conceptId": "sci-g10-mot-001",
+        "name": "Scalar and Vector Quantities",
+        "weight": 4,
+        "groundTruth": "present",
+        "evidenceNote": "Defines scalar (magnitude only) and vector (magnitude + direction)"
+      },
+      {
+        "conceptId": "sci-g10-mot-002",
+        "name": "Distance and Displacement (2.1)",
+        "weight": 5,
+        "groundTruth": "present",
+        "evidenceNote": "Explains difference between total path distance and displacement with examples and vector addition"
+      },
+      {
+        "conceptId": "sci-g10-mot-003",
+        "name": "Speed (Uniform and Non-uniform) (2.2)",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Speed calculation and formula not written on this single page"
+      },
+      {
+        "conceptId": "sci-g10-mot-004",
+        "name": "Velocity (2.3)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Velocity definition and rate of displacement omitted"
+      },
+      {
+        "conceptId": "sci-g10-mot-005",
+        "name": "Acceleration and Deceleration (2.4)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Acceleration definition omitted on this page"
+      },
+      {
+        "conceptId": "sci-g10-mot-006",
+        "name": "Displacement - Time Graphs (2.5)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Graph sketches are absent on this page"
+      },
+      {
+        "conceptId": "sci-g10-mot-007",
+        "name": "Velocity - Time Graphs and Area Under Graph (2.6)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "V-t graph and area calculations missing"
+      },
+      {
+        "conceptId": "sci-g10-mot-008",
+        "name": "First Equation of Motion: v = u + at",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Equations of motion not reached on this page"
+      },
+      {
+        "conceptId": "sci-g10-mot-009",
+        "name": "Second Equation of Motion: s = ut + 1/2at²",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Second equation missing"
+      },
+      {
+        "conceptId": "sci-g10-mot-010",
+        "name": "Third Equation of Motion: v² = u² + 2as",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Third equation missing"
+      },
+      {
+        "conceptId": "sci-g10-mot-011",
+        "name": "Average Velocity Equation: s = ((u+v)/2)t",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Average velocity formula missing"
+      },
+      {
+        "conceptId": "sci-g10-mot-012",
+        "name": "Gravitational Acceleration (2.7)",
+        "weight": 5,
+        "groundTruth": "missing",
+        "evidenceNote": "Motion under gravity missing"
+      },
+      {
+        "conceptId": "sci-g10-mot-013",
+        "name": "Terminal Velocity",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Terminal velocity missing"
+      }
+    ]
+  },
+  {
+    "benchmarkId": "bm-his-g10-u3-note-01",
+    "noteTitle": "Grade 10 History - Unit 3 Evolution of Political Power (Student C)",
+    "subject": "History",
+    "grade": 10,
+    "unitNumber": 3,
+    "lessonId": "his-g10-evolution-of-political-power-in-sri-lanka",
+    "imagePaths": [
+      "../grade 10 lesson for testing/grade 10 history lesson 3 notes/1.png",
+      "../grade 10 lesson for testing/grade 10 history lesson 3 notes/2.png",
+      "../grade 10 lesson for testing/grade 10 history lesson 3 notes/3.png",
+      "../grade 10 lesson for testing/grade 10 history lesson 3 notes/4.png"
+    ],
+    "ocrLegibilityScore": 90,
+    "annotator": "Expert Teacher Evaluator",
+    "annotatedAt": "2026-08-28T00:00:00.000Z",
+    "groundTruthConcepts": [
+      {
+        "conceptId": "his-g10-epp-001",
+        "name": "Pre-Monarchical Political Organization (Grahapati → Gamika → Parumaka)",
+        "weight": 5,
+        "groundTruth": "present",
+        "evidenceNote": "Explicit flowchart and description of Grahapati, Gamika, and Parumaka"
+      },
+      {
+        "conceptId": "his-g10-epp-002",
+        "name": "Decentralization vs Centralization of Political Power",
+        "weight": 5,
+        "groundTruth": "present",
+        "evidenceNote": "Contrasts decentralized village power with centralized monarchy"
+      },
+      {
+        "conceptId": "his-g10-epp-003",
+        "name": "Arrival of Prince Vijaya and Early Legends",
+        "weight": 4,
+        "groundTruth": "present",
+        "evidenceNote": "Notes the 6th century B.C. arrival of Prince Vijaya"
+      },
+      {
+        "conceptId": "his-g10-epp-004",
+        "name": "Role and Dominance of Parumakas in Provincial Leadership",
+        "weight": 5,
+        "groundTruth": "present",
+        "evidenceNote": "Details the role of Parumakas in cave inscriptions and provincial control"
+      },
+      {
+        "conceptId": "his-g10-epp-005",
+        "name": "Concept of Mahasammatha and People's Consent in Kingship",
+        "weight": 5,
+        "groundTruth": "present",
+        "evidenceNote": "Defines Mahasammatha as authority given by the general will of people"
+      },
+      {
+        "conceptId": "his-g10-epp-006",
+        "name": "Concepts of Monarchy (Parvatha Raja, Bodhisathwa, Deva, Chakravarthi, Veerathva)",
+        "weight": 5,
+        "groundTruth": "present",
+        "evidenceNote": "Lists Parvatha Raja, Bodhisathwa, Deva, and Chakravarthi monarchy concepts"
+      },
+      {
+        "conceptId": "his-g10-epp-007",
+        "name": "Royal Succession Rules (Father to Son, Brother to Brother)",
+        "weight": 4,
+        "groundTruth": "present",
+        "evidenceNote": "Explains father to son and brother to brother succession traditions"
+      },
+      {
+        "conceptId": "his-g10-epp-008",
+        "name": "Epigraphical Evidence of Early Statecraft (Kothgalakanda & Periyapuliyankulama)",
+        "weight": 5,
+        "groundTruth": "present",
+        "evidenceNote": "Cites Kothgalakanda and Periyapuliyankulama inscriptions"
+      },
+      {
+        "conceptId": "his-g10-epp-009",
+        "name": "Archaeological Evidence of Early Settlements (Beragala & Haldummulla)",
+        "weight": 4,
+        "groundTruth": "missing",
+        "evidenceNote": "Beragala burial ground evidence omitted in this section"
+      },
+      {
+        "conceptId": "his-g10-epp-010",
+        "name": "Great Centralizing Rulers (Pandukabhaya, Devanampiyatissa, Dutugemunu, Vasabha, Mahasen)",
+        "weight": 5,
+        "groundTruth": "present",
+        "evidenceNote": "Mentions King Pandukabhaya and Dutugemunu centralizing rule"
+      }
+    ]
+  }
+]

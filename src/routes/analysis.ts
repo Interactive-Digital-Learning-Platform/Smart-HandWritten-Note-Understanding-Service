@@ -23,7 +23,7 @@ router.get("/:noteId", getAnalysis);
 
 /**
  * POST /api/analyze/:noteId
- * Manually re-run AI analysis on a note that already has rawText.
+ * Backward-compatible alias for the full curriculum-grounded note pipeline.
  */
 router.post("/:noteId", analyzeNote);
 

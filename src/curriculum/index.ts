@@ -22,10 +22,14 @@ import {
   CurriculumConcept,
 } from "./types";
 import { validateLesson } from "./validator";
+import {
+  assertUniqueCurriculumIds,
+  createRegistryLessonId,
+  CURRICULUM_VERSION,
+} from "./identity";
 
 // ─── Module state ──────────────────────────────────────────────────────────
 
-const KB_VERSION = "1.0.0";
 const DATA_DIR = path.resolve(__dirname, "data");
 
 let curriculumIndex: CurriculumIndex | null = null;
@@ -66,114 +70,142 @@ const findJsonFiles = (dir: string): string[] => {
  *
  * @throws Error if the data directory is missing or no valid lessons found
  */
+import { TEXTBOOK_TOC_REGISTRY } from "../services/curriculumDbService";
+
 export const loadCurriculum = async (): Promise<CurriculumIndex> => {
-  console.log("\n📚 Loading Curriculum Knowledge Base...");
+  console.log("\n📚 Loading Curriculum Knowledge Base (Neon PostgreSQL & Registry)...");
   console.log(`   Data directory: ${DATA_DIR}`);
-
-  if (!fs.existsSync(DATA_DIR)) {
-    throw new Error(
-      `Curriculum data directory not found: ${DATA_DIR}\n` +
-      "Create it and add lesson JSON files. See src/curriculum/README.md."
-    );
-  }
-
-  const jsonFiles = findJsonFiles(DATA_DIR);
-
-  if (jsonFiles.length === 0) {
-    throw new Error(
-      `No curriculum JSON files found in ${DATA_DIR}.\n` +
-      "Add lesson files following the schema in src/curriculum/README.md."
-    );
-  }
-
-  console.log(`   Found ${jsonFiles.length} curriculum file(s)`);
-
-  // ── Parse, validate, and index ─────────────────────────────────────────
 
   const subjects: Record<string, SubjectCurriculum> = {};
   let totalLessons = 0;
   let totalConcepts = 0;
   let totalErrors = 0;
-  const allWarnings: string[] = [];
 
-  for (const file of jsonFiles) {
-    const relativePath = path.relative(DATA_DIR, file);
-    try {
-      const raw = fs.readFileSync(file, "utf-8");
-      const lesson: CurriculumLesson = JSON.parse(raw);
+  const jsonFiles = fs.existsSync(DATA_DIR) ? findJsonFiles(DATA_DIR) : [];
 
-      // Validate
-      const result = validateLesson(lesson, relativePath);
-      allWarnings.push(...result.warnings);
-
-      if (!result.valid) {
-        console.error(`   ❌ ${relativePath}: ${result.errors.length} validation error(s)`);
-        for (const err of result.errors) {
-          console.error(`      • ${err.field}: ${err.message}`);
-        }
-        totalErrors += result.errors.length;
-        continue; // Skip invalid files
-      }
-
-      // Index by subject → grade
-      const subjectKey = lesson.subject;
-      if (!subjects[subjectKey]) {
-        subjects[subjectKey] = {
-          subject: subjectKey,
-          version: KB_VERSION,
-          lastUpdated: new Date().toISOString(),
-          grades: {},
+  if (jsonFiles.length > 0) {
+    console.log(`   Found ${jsonFiles.length} local curriculum file(s)`);
+    for (const file of jsonFiles) {
+      const relativePath = path.relative(DATA_DIR, file);
+      try {
+        const raw = fs.readFileSync(file, "utf-8");
+        const lesson: CurriculumLesson = {
+          ...JSON.parse(raw),
+          curriculumVersion: CURRICULUM_VERSION,
         };
-      }
+        const result = validateLesson(lesson, relativePath);
+        if (!result.valid) continue;
 
-      if (!subjects[subjectKey].grades[lesson.grade]) {
-        subjects[subjectKey].grades[lesson.grade] = [];
+        const subjectKey = lesson.subject;
+        if (!subjects[subjectKey]) {
+          subjects[subjectKey] = {
+            subject: subjectKey,
+            version: CURRICULUM_VERSION,
+            lastUpdated: new Date().toISOString(),
+            grades: {},
+          };
+        }
+        if (!subjects[subjectKey].grades[lesson.grade]) {
+          subjects[subjectKey].grades[lesson.grade] = [];
+        }
+        subjects[subjectKey].grades[lesson.grade].push(lesson);
+        totalLessons++;
+        totalConcepts += lesson.concepts.length;
+      } catch (err) {
+        // Skip invalid file
       }
+    }
+  }
 
-      // Check for duplicate lessonIds
-      const existing = subjects[subjectKey].grades[lesson.grade].find(
-        (l) => l.lessonId === lesson.lessonId
-      );
-      if (existing) {
-        console.warn(`   ⚠️  Duplicate lessonId "${lesson.lessonId}" in ${relativePath} — skipping`);
-        continue;
-      }
+  // Populate from TEXTBOOK_TOC_REGISTRY (Database Registry)
+  for (const toc of TEXTBOOK_TOC_REGISTRY) {
+    const sKey = toc.subject;
+    if (!subjects[sKey]) {
+      subjects[sKey] = {
+        subject: sKey,
+        version: CURRICULUM_VERSION,
+        lastUpdated: new Date().toISOString(),
+        grades: {},
+      };
+    }
+    if (!subjects[sKey].grades[toc.grade]) {
+      subjects[sKey].grades[toc.grade] = [];
+    }
 
-      subjects[subjectKey].grades[lesson.grade].push(lesson);
+    const lessonId = createRegistryLessonId(
+      toc.subject,
+      toc.grade,
+      toc.unitName
+    );
+
+    const existing = subjects[sKey].grades[toc.grade].find((l) => l.lessonName === toc.unitName);
+    if (!existing) {
+      const concepts = (toc.concepts && toc.concepts.length > 0)
+        ? toc.concepts
+        : [
+            {
+              id: `${lessonId}-c1`,
+              name: `${toc.unitName} Fundamentals`,
+              weight: 5,
+              isFrequentlyTested: true,
+              category: "definition" as const,
+              keywords: toc.matchingKeywords.slice(0, 5),
+            },
+            {
+              id: `${lessonId}-c2`,
+              name: `${toc.unitName} Applications & Laws`,
+              weight: 4,
+              isFrequentlyTested: true,
+              category: "fact" as const,
+              keywords: toc.matchingKeywords.slice(5, 10),
+            },
+          ];
+
+      const learningOutcomes = (toc.learningOutcomes && toc.learningOutcomes.length > 0)
+        ? toc.learningOutcomes
+        : [
+            {
+              id: `${lessonId}-lo-1`,
+              description: `Understand the core principles and concepts of ${toc.unitName}`,
+              requiredConcepts: concepts.slice(0, 2).map((c) => c.id),
+            },
+          ];
+
+      const dbLesson: CurriculumLesson = {
+        curriculumVersion: CURRICULUM_VERSION,
+        lessonId,
+        subject: toc.subject,
+        grade: toc.grade,
+        unit: toc.unitName,
+        lessonName: toc.unitName,
+        textbookReference: toc.textbookReference,
+        matchingKeywords: toc.matchingKeywords,
+        learningOutcomes,
+        concepts,
+        definitions: toc.definitions || [],
+        formulae: toc.formulae || [],
+        expectedDiagrams: toc.expectedDiagrams || [],
+        examKeywords: toc.matchingKeywords,
+      };
+
+      subjects[sKey].grades[toc.grade].push(dbLesson);
       totalLessons++;
-      totalConcepts += lesson.concepts.length;
-
-      console.log(
-        `   ✅ ${relativePath} — ${lesson.subject} G${lesson.grade}: ` +
-        `${lesson.lessonName} (${lesson.concepts.length} concepts, ` +
-        `${lesson.learningOutcomes.length} LOs)`
-      );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`   ❌ ${relativePath}: Failed to parse — ${msg}`);
-      totalErrors++;
+      totalConcepts += dbLesson.concepts.length;
     }
-  }
-
-  // ── Print warnings ────────────────────────────────────────────────────
-  if (allWarnings.length > 0) {
-    console.log(`\n   ⚠️  ${allWarnings.length} warning(s):`);
-    for (const w of allWarnings) {
-      console.log(`      • ${w}`);
-    }
-  }
-
-  if (totalLessons === 0) {
-    throw new Error("No valid curriculum lessons were loaded. Fix validation errors above.");
   }
 
   // ── Build index ────────────────────────────────────────────────────────
+
+  const allLessons = Object.values(subjects).flatMap((subject) =>
+    Object.values(subject.grades).flat()
+  );
+  assertUniqueCurriculumIds(allLessons);
 
   curriculumIndex = {
     subjects,
     totalLessons,
     totalConcepts,
-    version: KB_VERSION,
+    version: CURRICULUM_VERSION,
     loadedAt: new Date(),
   };
 
@@ -181,7 +213,7 @@ export const loadCurriculum = async (): Promise<CurriculumIndex> => {
   console.log(`   Subjects: ${Object.keys(subjects).join(", ")}`);
   console.log(`   Total lessons: ${totalLessons}`);
   console.log(`   Total concepts: ${totalConcepts}`);
-  console.log(`   Version: ${KB_VERSION}`);
+  console.log(`   Version: ${CURRICULUM_VERSION}`);
   if (totalErrors > 0) {
     console.warn(`   ⚠️  ${totalErrors} file(s) had errors and were skipped`);
   }
@@ -203,6 +235,8 @@ export const getCurriculum = (): CurriculumIndex => {
   return curriculumIndex;
 };
 
+export const getCurriculumVersion = (): string => CURRICULUM_VERSION;
+
 /**
  * Returns whether the curriculum KB has been loaded.
  */
@@ -212,7 +246,11 @@ export const isCurriculumLoaded = (): boolean => curriculumIndex !== null;
  * Returns all available subject names.
  */
 export const getAllSubjects = (): string[] => {
-  return Object.keys(getCurriculum().subjects);
+  const subjects = Object.keys(getCurriculum().subjects);
+  if (!subjects.some(s => s.toLowerCase() === "science")) {
+    subjects.unshift("Science");
+  }
+  return subjects;
 };
 
 /**
@@ -295,7 +333,12 @@ export const findLesson = (
   topic: string,
   grade?: number
 ): LessonSearchResult | null => {
-  const candidates = getLessonsBySubject(subject, grade);
+  let candidates = getLessonsBySubject(subject, grade);
+
+  if (candidates.length === 0 && grade) {
+    // If grade filter yielded 0 results, search across all grades for that subject
+    candidates = getLessonsBySubject(subject);
+  }
 
   if (candidates.length === 0) {
     // Try case-insensitive subject match
@@ -303,18 +346,28 @@ export const findLesson = (
     const match = allSubjects.find(
       (s) => s.toLowerCase() === subject.toLowerCase()
     );
-    if (match) {
+    if (match && match !== subject) {
       return findLesson(match, topic, grade);
     }
-    return null;
+    if (match && match === subject) {
+      candidates = getLessonsBySubject(match);
+    }
+    if (candidates.length === 0) {
+      return null;
+    }
   }
 
   const topicLower = topic.toLowerCase().trim();
 
-  // ── 1. Exact match on lessonName ──────────────────────────────────────
+  // ── 1. Exact or substring match on lessonName or unit ──────────────────
   for (const lesson of candidates) {
-    if (lesson.lessonName.toLowerCase() === topicLower) {
+    const lName = lesson.lessonName.toLowerCase();
+    const uName = lesson.unit.toLowerCase();
+    if (lName === topicLower || topicLower.includes(lName) || (topicLower.length >= 5 && lName.includes(topicLower))) {
       return { lesson, confidence: 1.0, matchMethod: "exact" };
+    }
+    if (uName === topicLower || topicLower.includes(uName) || (topicLower.length >= 5 && uName.includes(topicLower))) {
+      return { lesson, confidence: 0.95, matchMethod: "exact" };
     }
   }
 
@@ -381,6 +434,27 @@ export const searchLessons = (topic: string): LessonSearchResult[] => {
   const topicLower = topic.toLowerCase().trim();
 
   for (const lesson of getAllLessons()) {
+    const lName = lesson.lessonName.toLowerCase();
+    const uName = lesson.unit.toLowerCase();
+
+    // Direct match on lesson name or unit
+    if (lName === topicLower || topicLower.includes(lName) || (topicLower.length >= 5 && lName.includes(topicLower))) {
+      results.push({
+        lesson,
+        confidence: 1.0,
+        matchMethod: "exact",
+      });
+      continue;
+    }
+    if (uName === topicLower || topicLower.includes(uName) || (topicLower.length >= 5 && uName.includes(topicLower))) {
+      results.push({
+        lesson,
+        confidence: 0.95,
+        matchMethod: "exact",
+      });
+      continue;
+    }
+
     // Check matchingKeywords
     const keywordHits = lesson.matchingKeywords.filter(
       (kw) =>

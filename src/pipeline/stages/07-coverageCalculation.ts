@@ -18,6 +18,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { PipelineContext, CoverageScores } from "../types";
+import { conceptCoverageValue } from "../conceptPrediction";
 
 export const runCoverageCalculation = (ctx: PipelineContext): void => {
   console.log(`  [Stage 7] Coverage Calculation...`);
@@ -32,14 +33,20 @@ export const runCoverageCalculation = (ctx: PipelineContext): void => {
 
   const matches = ctx.conceptMatches;
   const totalConcepts = matches.length;
-  const foundMatches = matches.filter((m) => m.found);
+  const foundMatches = matches.filter((m) => m.status !== "missing");
   const foundConcepts = foundMatches.length;
-  const missedConcepts = totalConcepts - foundConcepts;
+  const presentConcepts = matches.filter((m) => m.status === "present").length;
+  const partialConcepts = matches.filter((m) => m.status === "partial").length;
+  const missedConcepts = matches.filter((m) => m.status === "missing").length;
+  const achievedConceptEquivalent = matches.reduce(
+    (sum, match) => sum + conceptCoverageValue(match.status),
+    0
+  );
 
   // ── Simple Coverage ─────────────────────────────────────────────────────
   const simpleCoverage =
     totalConcepts > 0
-      ? Math.round((foundConcepts / totalConcepts) * 100)
+      ? Math.round((achievedConceptEquivalent / totalConcepts) * 100)
       : 0;
 
   // ── Weighted Coverage (Improvement 4) ───────────────────────────────────
@@ -48,8 +55,9 @@ export const runCoverageCalculation = (ctx: PipelineContext): void => {
     0
   );
 
-  const achievedWeightedScore = foundMatches.reduce(
-    (sum, m) => sum + m.concept.weight,
+  const achievedWeightedScore = matches.reduce(
+    (sum, match) =>
+      sum + match.concept.weight * conceptCoverageValue(match.status),
     0
   );
 
@@ -58,21 +66,48 @@ export const runCoverageCalculation = (ctx: PipelineContext): void => {
       ? Math.round((achievedWeightedScore / maxWeightedScore) * 100)
       : 0;
 
+  // Discount each found concept by confidence from OCR and matching evidence.
+  const confidenceAdjustedWeightedScore = matches.reduce(
+    (sum, match) =>
+      sum +
+      match.concept.weight *
+        conceptCoverageValue(match.status) *
+        match.decisionConfidence,
+    0
+  );
+  const confidenceAdjustedWeightedCoverage =
+    maxWeightedScore > 0
+      ? Math.round((confidenceAdjustedWeightedScore / maxWeightedScore) * 100)
+      : 0;
+
+  // A partial page is still useful to measure, but it cannot fairly represent
+  // whole-lesson completeness. Only a complete lesson note is labelled as
+  // lesson coverage; all other uploads are explicitly note coverage.
+  const coverageScope = ctx.noteScope?.scope === "complete_lesson_note"
+    ? "lesson_coverage" as const
+    : "note_coverage" as const;
+
   const scores: CoverageScores = {
     simpleCoverage,
     weightedCoverage,
+    confidenceAdjustedWeightedCoverage,
     totalConcepts,
     foundConcepts,
+    presentConcepts,
+    partialConcepts,
     missedConcepts,
     maxWeightedScore,
     achievedWeightedScore,
+    confidenceAdjustedWeightedScore,
+    coverageScope,
   };
 
   ctx.coverageScores = scores;
 
   console.log(
     `  [Stage 7] ✅ Simple: ${simpleCoverage}% | Weighted: ${weightedCoverage}% ` +
-      `(${foundConcepts}/${totalConcepts} concepts, ` +
-      `score: ${achievedWeightedScore}/${maxWeightedScore} pts)`
+      `(${presentConcepts} present, ${partialConcepts} partial, ` +
+      `${missedConcepts} missing; ` +
+      `score: ${achievedWeightedScore}/${maxWeightedScore} pts, ${coverageScope})`
   );
 };

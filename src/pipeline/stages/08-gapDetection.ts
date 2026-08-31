@@ -16,8 +16,8 @@
 //   - Improvement 5: Exam readiness goes beyond simple completeness %
 // ═══════════════════════════════════════════════════════════════════════════
 
-import Groq from "groq-sdk";
 import { config } from "../../config/config";
+import { groqPool } from "../../services/groqPool";
 import {
   PipelineContext,
   ExplainableGap,
@@ -25,8 +25,10 @@ import {
   ExamReadiness,
 } from "../types";
 import { LearningOutcome } from "../../curriculum/types";
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
+import {
+  conceptCoverageValue,
+  determineOutcomeStatus,
+} from "../conceptPrediction";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -38,17 +40,6 @@ const weightToSeverity = (weight: number): "high" | "medium" | "low" => {
 };
 
 /** Determines achievement status from found/total concept counts */
-const determineStatus = (
-  foundCount: number,
-  totalCount: number
-): "achieved" | "partially_achieved" | "not_achieved" => {
-  if (totalCount === 0) return "achieved";
-  const ratio = foundCount / totalCount;
-  if (ratio >= 0.8) return "achieved";
-  if (ratio >= 0.4) return "partially_achieved";
-  return "not_achieved";
-};
-
 // ─── LLM: Generate study recommendations ──────────────────────────────────
 
 /**
@@ -70,17 +61,22 @@ const generateRecommendations = async (
     .map(
       (g, i) =>
         `  ${i + 1}. Outcome: "${g.outcomeDescription}"\n` +
-        `     Missing: ${g.missingConceptNames.join(", ")}`
+        `     Missing or partially covered: ${g.missingConceptNames.join(", ")}`
     )
     .join("\n");
 
   const prompt = `You are an expert ${subject} teacher helping a Sri Lankan O/L student.
 
 The student is studying: "${lessonName}"
-${textbookRef ? `Textbook reference: ${textbookRef}` : ""}
+${textbookRef ? `Official Textbook Reference: ${textbookRef}` : ""}
 
 For each learning gap below, write ONE concise, actionable study recommendation (1–2 sentences).
-Mention specific study actions (e.g., "Draw the diagram", "Memorize the equation", "Re-read section X").
+Mention specific study actions (e.g., "Draw the diagram", "Memorize the equation", "Review the table") and reference the textbook/chapter pages.
+
+IMPORTANT CITATION RULES:
+1. ONLY reference page numbers within the chapter page range specified in the Textbook Reference above (e.g., Book Pages 1–22 / PDF Pages 15–36).
+2. Never invent or cite page numbers outside this chapter's range.
+3. Format page references clearly, e.g.: "Refer to Book Page X (PDF Page Y)" or "Review pages in Unit ${lessonName}".
 
 Gaps:
 ${gapList}
@@ -88,22 +84,26 @@ ${gapList}
 Respond ONLY with a JSON array of strings, one per gap:
 ["recommendation for gap 1", "recommendation for gap 2", ...]`;
 
+
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groqPool.createChatCompletion({
       model: config.groq.model,
       temperature: 0.3,
-      max_tokens: 512,
+      max_tokens: 2048,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const raw =
-      completion.choices[0]?.message?.content
-        ?.trim()
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/, "")
-        .trim() ?? "[]";
+    let raw = completion.choices[0]?.message?.content?.trim() ?? "[]";
+    raw = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+    const stripped = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
 
-    const parsed = JSON.parse(raw);
+    const jsonMatch = stripped.match(/\[[\s\S]*\]/);
+    const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
+
+    const parsed = JSON.parse(jsonStr);
 
     if (Array.isArray(parsed)) {
       return parsed.map((r) =>
@@ -133,21 +133,23 @@ const calculateExamReadiness = (
 
   // High priority = weight 4 or 5
   const highPriorityConcepts = matches.filter((m) => m.concept.weight >= 4);
-  const highPriorityFound = highPriorityConcepts.filter((m) => m.found);
+  const highPriorityEquivalent = highPriorityConcepts.reduce(
+    (sum, match) => sum + conceptCoverageValue(match.status),
+    0
+  );
   const highPriorityCoverage =
     highPriorityConcepts.length > 0
-      ? Math.round((highPriorityFound.length / highPriorityConcepts.length) * 100)
+      ? Math.round((highPriorityEquivalent / highPriorityConcepts.length) * 100)
       : 100;
 
   // Frequently examined concepts that are missing
   const frequentlyExaminedMissing = matches
-    .filter((m) => !m.found && m.concept.isFrequentlyTested)
+    .filter((m) => m.status !== "present" && m.concept.isFrequentlyTested)
     .map((m) => m.concept.name);
 
   // Rating logic
   let rating: ExamReadiness["rating"];
   let revisionPriority: ExamReadiness["revisionPriority"];
-  let estimatedScoreRange: string;
 
   if (
     highPriorityCoverage >= 90 &&
@@ -155,22 +157,18 @@ const calculateExamReadiness = (
   ) {
     rating = "Excellent";
     revisionPriority = "Low";
-    estimatedScoreRange = "85–100%";
   } else if (
     highPriorityCoverage >= 75 &&
     frequentlyExaminedMissing.length <= 2
   ) {
     rating = "Good";
     revisionPriority = "Medium";
-    estimatedScoreRange = "65–85%";
   } else if (highPriorityCoverage >= 50) {
     rating = "Needs Work";
     revisionPriority = "High";
-    estimatedScoreRange = "40–65%";
   } else {
     rating = "At Risk";
     revisionPriority = "Critical";
-    estimatedScoreRange = "Below 40%";
   }
 
   return {
@@ -178,7 +176,6 @@ const calculateExamReadiness = (
     highPriorityConceptsCoverage: highPriorityCoverage,
     frequentlyExaminedMissing,
     revisionPriority,
-    estimatedScoreRange,
   };
 };
 
@@ -215,27 +212,36 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
       .map((cid) => matchMap.get(cid))
       .filter((m): m is NonNullable<typeof m> => m !== undefined);
 
-    const foundCount = requiredMatches.filter((m) => m.found).length;
+    const presentCount = requiredMatches.filter((m) => m.status === "present").length;
+    const partialCount = requiredMatches.filter((m) => m.status === "partial").length;
+    const foundCount = presentCount + partialCount;
+    const coverageEquivalent = requiredMatches.reduce(
+      (sum, match) => sum + conceptCoverageValue(match.status),
+      0
+    );
     const totalCount = requiredMatches.length;
-    const status = determineStatus(foundCount, totalCount);
+    const status = determineOutcomeStatus(coverageEquivalent, totalCount);
 
     const missingConceptNames = requiredMatches
-      .filter((m) => !m.found)
+      .filter((m) => m.status !== "present")
       .map((m) => m.concept.name);
 
     let evidence: string;
     if (status === "achieved") {
       evidence = `Student demonstrated understanding of all ${totalCount} required concept(s).`;
     } else if (status === "partially_achieved") {
-      evidence = `Student covered ${foundCount} of ${totalCount} required concept(s). Missing: ${missingConceptNames.join(", ")}.`;
+      evidence = `Student fully covered ${presentCount}, partially covered ${partialCount}, and needs work on ${missingConceptNames.length} of ${totalCount} required concept(s): ${missingConceptNames.join(", ")}.`;
     } else {
-      evidence = `No evidence found for this learning outcome in the student's notes. Required: ${missingConceptNames.join(", ")}.`;
+      evidence = `Limited evidence for this learning outcome: ${presentCount} fully covered and ${partialCount} partially covered of ${totalCount}. Needs further coverage: ${missingConceptNames.join(", ")}.`;
     }
 
     const assessment: OutcomeAssessment = {
       outcome,
       status,
       foundConceptCount: foundCount,
+      presentConceptCount: presentCount,
+      partialConceptCount: partialCount,
+      coverageEquivalent,
       totalConceptCount: totalCount,
       missingConceptNames,
       evidence,
@@ -271,14 +277,19 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
     // Build missing concept details
     const missingDetails = outcome.requiredConcepts
       .map((cid) => matchMap.get(cid))
-      .filter((m): m is NonNullable<typeof m> => m !== undefined && !m.found)
+      .filter((m): m is NonNullable<typeof m> => m !== undefined && m.status !== "present")
       .map((m) => ({
         id: m.concept.id,
         name: m.concept.name,
         weight: m.concept.weight,
         severity: weightToSeverity(m.concept.weight),
         category: m.concept.category,
+        status: m.status as "partial" | "missing",
       }));
+
+    const hasMissingConcept = missingDetails.some(
+      (concept) => concept.status === "missing"
+    );
 
     explainableGaps.push({
       learningOutcome: {
@@ -289,16 +300,34 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
       evidence: assessment.evidence,
       missingConcepts: missingDetails,
       recommendation: recommendations[i] ?? `Review ${assessment.missingConceptNames.join(", ")} in your textbook.`,
+      // An upload can be a partial note, so this is intentionally NOT
+      // labelled a student knowledge gap. A future Quiz service diagnostic
+      // may promote it to confirmed_learning_gap.
+      findingStatus: hasMissingConcept
+        ? "not_found_in_note"
+        : "partially_covered_in_note",
+      verificationStatus: "pending",
     });
   }
 
-  // ── Identify strength areas (achieved outcomes) ───────────────────────
-  const strengthAreas = outcomeAssessments
+  // ── Identify strength areas (achieved outcomes or verified found concepts) ──
+  let strengthAreas = outcomeAssessments
     .filter((a) => a.status === "achieved")
     .map((a) => a.outcome.description);
 
+  if (strengthAreas.length === 0) {
+    strengthAreas = matches
+      .filter((m) => m.status === "present")
+      .map((m) => m.concept.name);
+  }
+
   // ── Calculate exam readiness ──────────────────────────────────────────
-  const examReadiness = calculateExamReadiness(ctx);
+  // Exam readiness is meaningful only when the upload represents a complete
+  // lesson note. A single section, worksheet, or formula page must not be
+  // used to estimate a student's likely exam score.
+  const examReadiness = ctx.noteScope?.scope === "complete_lesson_note"
+    ? calculateExamReadiness(ctx)
+    : undefined;
 
   // ── Write to context ──────────────────────────────────────────────────
   ctx.outcomeAssessments = outcomeAssessments;
@@ -319,9 +348,13 @@ export const runGapDetection = async (ctx: PipelineContext): Promise<void> => {
   console.log(
     `  [Stage 8] ✅ Outcomes: ${achieved} achieved, ${partial} partial, ${notAchieved} not achieved`
   );
-  console.log(
-    `  [Stage 8]    Exam Readiness: ${examReadiness.rating} | ` +
-      `High-priority coverage: ${examReadiness.highPriorityConceptsCoverage}% | ` +
-      `Frequently examined missing: ${examReadiness.frequentlyExaminedMissing.length}`
-  );
+  if (examReadiness) {
+    console.log(
+      `  [Stage 8]    Exam Readiness: ${examReadiness.rating} | ` +
+        `High-priority coverage: ${examReadiness.highPriorityConceptsCoverage}% | ` +
+        `Frequently examined missing: ${examReadiness.frequentlyExaminedMissing.length}`
+    );
+  } else {
+    console.log("  [Stage 8]    Exam readiness skipped: upload is not a complete lesson note");
+  }
 };

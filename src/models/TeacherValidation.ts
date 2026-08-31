@@ -36,11 +36,46 @@ export interface ITeacherCorrection {
   reason?: string;
 }
 
+export interface ITeacherConceptReview {
+  /** Curriculum Concept ID e.g. 'sci-g10-cbl-001' */
+  conceptId: string;
+  /** Concept Name */
+  conceptName: string;
+  /** Whether the system identified this concept as found */
+  systemFound: boolean;
+  /** Authoritative three-class system decision for new analyses. */
+  systemStatus?: "present" | "partial" | "missing";
+  systemProbabilities?: {
+    present: number;
+    partial: number;
+    missing: number;
+  };
+  /** Teacher's manual verdict */
+  teacherVerdict: "present" | "partial" | "missing";
+  /** Whether teacher agrees with system decision */
+  agreement: boolean;
+  /** Optional teacher annotation on this specific concept */
+  teacherNote?: string;
+}
+
+export interface IExplainabilitySurvey {
+  /** 1-5: Clarity of gap explanation and learning outcome links */
+  explanationClarity?: number;
+  /** 1-5: Trustworthiness of textbook citations and page bounds */
+  textbookEvidenceTrust?: number;
+  /** 1-5: Pedagogical usefulness of generated remedial flashcards/notes */
+  remediationUsefulness?: number;
+  /** 1-5: Overall perceived pedagogical accuracy */
+  overallPerceivedAccuracy?: number;
+}
+
 export interface ITeacherValidation extends Document {
   /** The note that was analyzed */
   noteId: string;
   /** The student's user ID */
   studentUserId: string;
+  /** Curriculum snapshot used to produce the reviewed analysis */
+  curriculumVersion?: string;
   /** The teacher's user ID (Clerk) */
   teacherUserId: string;
   /** Teacher's display name */
@@ -60,6 +95,12 @@ export interface ITeacherValidation extends Document {
 
   /** Specific corrections made by the teacher */
   corrections: ITeacherCorrection[];
+
+  /** Granular concept-by-concept ground truth reviews */
+  conceptReviews: ITeacherConceptReview[];
+
+  /** Explainability and trust ratings (1-5 Likert scale) */
+  explainabilitySurvey?: IExplainabilitySurvey;
 
   /** Additional gaps the teacher says the system missed */
   teacherAddedGaps: string[];
@@ -96,10 +137,47 @@ const TeacherCorrectionSchema = new Schema<ITeacherCorrection>(
   { _id: false }
 );
 
+const TeacherConceptReviewSchema = new Schema<ITeacherConceptReview>(
+  {
+    conceptId: { type: String, required: true },
+    conceptName: { type: String, required: true },
+    systemFound: { type: Boolean, required: true },
+    systemStatus: {
+      type: String,
+      enum: ["present", "partial", "missing"],
+    },
+    systemProbabilities: {
+      present: { type: Number, min: 0, max: 1 },
+      partial: { type: Number, min: 0, max: 1 },
+      missing: { type: Number, min: 0, max: 1 },
+      _id: false,
+    },
+    teacherVerdict: {
+      type: String,
+      enum: ["present", "partial", "missing"],
+      required: true,
+    },
+    agreement: { type: Boolean, required: true },
+    teacherNote: { type: String },
+  },
+  { _id: false }
+);
+
+const ExplainabilitySurveySchema = new Schema<IExplainabilitySurvey>(
+  {
+    explanationClarity: { type: Number, min: 1, max: 5 },
+    textbookEvidenceTrust: { type: Number, min: 1, max: 5 },
+    remediationUsefulness: { type: Number, min: 1, max: 5 },
+    overallPerceivedAccuracy: { type: Number, min: 1, max: 5 },
+  },
+  { _id: false }
+);
+
 const TeacherValidationSchema = new Schema<ITeacherValidation>(
   {
     noteId: { type: String, required: true, index: true },
     studentUserId: { type: String, required: true, index: true },
+    curriculumVersion: { type: String, index: true },
     teacherUserId: { type: String, required: true },
     teacherName: { type: String },
     status: {
@@ -112,6 +190,8 @@ const TeacherValidationSchema = new Schema<ITeacherValidation>(
     coverageScoreAccurate: { type: Boolean },
     gapsRelevant: { type: Boolean },
     corrections: { type: [TeacherCorrectionSchema], default: [] },
+    conceptReviews: { type: [TeacherConceptReviewSchema], default: [] },
+    explainabilitySurvey: { type: ExplainabilitySurveySchema },
     teacherAddedGaps: { type: [String], default: [] },
     teacherAddedStrengths: { type: [String], default: [] },
     comment: { type: String },

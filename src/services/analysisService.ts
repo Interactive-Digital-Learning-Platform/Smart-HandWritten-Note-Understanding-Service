@@ -1,10 +1,6 @@
-import Groq from "groq-sdk";
 import { config } from "../config/config";
+import { groqPool } from "./groqPool";
 import { IAnalysis, ILearningGap } from "../models/Note";
-
-// ─── Groq client (singleton) ───────────────────────────────────────────────
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -91,13 +87,16 @@ what you can detect.`;
  * Handles cases where the model wraps JSON in markdown code fences.
  */
 const extractJson = (content: string): RawAnalysis => {
-  // Strip markdown fences if present
-  const stripped = content
+  let cleaned = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const stripped = cleaned
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
 
-  return JSON.parse(stripped) as RawAnalysis;
+  const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+  const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
+
+  return JSON.parse(jsonStr) as RawAnalysis;
 };
 
 // ─── Validator ──────────────────────────────────────────────────────────────
@@ -171,68 +170,40 @@ export const analyzeNoteContent = async (
     };
   }
 
-  const MAX_RETRIES = 3;
+  try {
+    const completion = await groqPool.createChatCompletion({
+      model: config.groq.model,
+      temperature: 0.2,
+      max_tokens: 2048,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: buildAnalysisPrompt(rawText) },
+      ],
+    });
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      console.log(`🤖 Groq analysis attempt ${attempt}/${MAX_RETRIES}...`);
+    const content = completion.choices[0]?.message?.content;
 
-      const completion = await groq.chat.completions.create({
-        model: config.groq.model,
-        temperature: 0.2,
-        max_tokens: 2048,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildAnalysisPrompt(rawText) },
-        ],
-      });
-
-      const content = completion.choices[0]?.message?.content;
-
-      if (!content || content.trim() === "") {
-        throw new Error("model output must contain text — Groq returned empty response");
-      }
-
-      console.log(`📋 Groq raw response length: ${content.length} chars`);
-
-      const raw = extractJson(content);
-      const analysis = validateAnalysis(raw);
-
-      console.log(
-        `✅ Analysis complete — Subject: ${analysis.subject}, Topic: ${analysis.topic}, ` +
-          `Completeness: ${analysis.overallCompleteness}%, Gaps: ${analysis.learningGaps.length}`
-      );
-
-      return { success: true, analysis };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`❌ Groq analysis attempt ${attempt} failed: ${message}`);
-
-      // Empty-output and rate-limit errors are always retried
-      const isRetriable =
-        message.includes("model output must contain") ||
-        message.includes("empty") ||
-        message.includes("429") ||
-        message.includes("rate");
-
-      const waitMs = message.includes("rate") ? 20000 : 2000;
-
-      if (attempt < MAX_RETRIES && isRetriable) {
-        console.warn(`⏳ Waiting ${waitMs / 1000}s before retry...`);
-        await new Promise(r => setTimeout(r, waitMs));
-        continue;
-      }
-
-      if (attempt === MAX_RETRIES) {
-        return {
-          success: false,
-          error: `AI analysis failed after ${MAX_RETRIES} attempts: ${message}`,
-        };
-      }
-
-      await new Promise(r => setTimeout(r, 2000));
+    if (!content || content.trim() === "") {
+      throw new Error("model output must contain text — Groq returned empty response");
     }
-  }
 
-  return { success: false, error: "AI analysis failed: maximum retries exceeded" };
+    console.log(`📋 Groq raw response length: ${content.length} chars`);
+
+    const raw = extractJson(content);
+    const analysis = validateAnalysis(raw);
+
+    console.log(
+      `✅ Analysis complete — Subject: ${analysis.subject}, Topic: ${analysis.topic}, ` +
+        `Completeness: ${analysis.overallCompleteness}%, Gaps: ${analysis.learningGaps.length}`
+    );
+
+    return { success: true, analysis };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`❌ Groq analysis failed: ${message}`);
+    return {
+      success: false,
+      error: `AI analysis failed: ${message}`,
+    };
+  }
 };

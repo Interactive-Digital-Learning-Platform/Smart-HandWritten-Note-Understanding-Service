@@ -20,22 +20,29 @@ export interface IConceptPerformance {
   conceptName: string;
   subjectName: string;
   lessonId: string;
+  curriculumVersion?: string;
   /** Weight from the KB (1–5) */
   weight: number;
   /**
    * Number of times this concept appeared in an analysis
    * and was found in the student's notes
    */
-  timesFound: number;
+  timesFoundInNotes: number;
+  /** Number of times the concept was only partially covered in a note. */
+  timesPartiallyFoundInNotes: number;
   /**
    * Number of times this concept appeared in an analysis
    * and was MISSING from the student's notes
    */
-  timesMissed: number;
+  timesNotFoundInNotes: number;
+  /** Number of times the student explicitly selected "I need help". */
+  timesStudentConfirmedNeedsHelp: number;
+  /** Number of times the student explicitly selected "I understand this". */
+  timesStudentConfirmedUnderstood: number;
   /** Most recent analysis result for this concept */
   lastSeen: Date;
   /** Whether the concept is currently flagged as a persistent gap (missed 2+ times) */
-  isPersistentGap: boolean;
+  isPersistentSupportNeed: boolean;
 }
 
 // ─── Per-subject mastery record ────────────────────────────────────────────
@@ -63,8 +70,11 @@ export interface IStudySession {
   subject: string;
   lessonId?: string;
   lessonName?: string;
+  curriculumVersion?: string;
   weightedCoverage: number;
   conceptsFound: number;
+  conceptsPresent?: number;
+  conceptsPartial?: number;
   conceptsMissed: number;
   examReadinessRating?: string;
   analyzedAt: Date;
@@ -101,11 +111,15 @@ const ConceptPerformanceSchema = new Schema<IConceptPerformance>(
     conceptName: { type: String, required: true },
     subjectName: { type: String, required: true },
     lessonId: { type: String, required: true },
+    curriculumVersion: { type: String },
     weight: { type: Number, required: true },
-    timesFound: { type: Number, default: 0 },
-    timesMissed: { type: Number, default: 0 },
+    timesFoundInNotes: { type: Number, default: 0 },
+    timesPartiallyFoundInNotes: { type: Number, default: 0 },
+    timesNotFoundInNotes: { type: Number, default: 0 },
+    timesStudentConfirmedNeedsHelp: { type: Number, default: 0 },
+    timesStudentConfirmedUnderstood: { type: Number, default: 0 },
     lastSeen: { type: Date, default: Date.now },
-    isPersistentGap: { type: Boolean, default: false },
+    isPersistentSupportNeed: { type: Boolean, default: false },
   },
   { _id: false }
 );
@@ -133,8 +147,11 @@ const StudySessionSchema = new Schema<IStudySession>(
     subject: { type: String, required: true },
     lessonId: { type: String },
     lessonName: { type: String },
+    curriculumVersion: { type: String },
     weightedCoverage: { type: Number, default: 0 },
     conceptsFound: { type: Number, default: 0 },
+    conceptsPresent: { type: Number, default: 0 },
+    conceptsPartial: { type: Number, default: 0 },
     conceptsMissed: { type: Number, default: 0 },
     examReadinessRating: { type: String },
     analyzedAt: { type: Date, default: Date.now },

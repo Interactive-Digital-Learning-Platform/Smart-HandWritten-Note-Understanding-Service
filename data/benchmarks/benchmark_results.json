@@ -1,0 +1,213 @@
+{
+  "evaluatedAt": "2026-08-28T06:47:51.593Z",
+  "totalNotes": 3,
+  "aggregates": {
+    "keyword": {
+      "methodName": "Baseline 1: Keyword-Only Matching",
+      "precision": 90.9,
+      "recall": 71.4,
+      "f1": 80,
+      "accuracy": 89.6,
+      "weightedGapAccuracy": 89.6,
+      "confusion": {
+        "tp": 10,
+        "fp": 1,
+        "tn": 33,
+        "fn": 4,
+        "totalWeightCorrect": 198,
+        "totalWeightAll": 221
+      }
+    },
+    "semantic": {
+      "methodName": "Baseline 2: Semantic-Only Matching",
+      "precision": 100,
+      "recall": 14.3,
+      "f1": 25,
+      "accuracy": 75,
+      "weightedGapAccuracy": 75.6,
+      "confusion": {
+        "tp": 2,
+        "fp": 0,
+        "tn": 34,
+        "fn": 12,
+        "totalWeightCorrect": 167,
+        "totalWeightAll": 221
+      }
+    },
+    "hybrid": {
+      "methodName": "Proposed: Hybrid Curriculum-Grounded Pipeline",
+      "precision": 91.7,
+      "recall": 78.6,
+      "f1": 84.6,
+      "accuracy": 91.7,
+      "weightedGapAccuracy": 91.9,
+      "confusion": {
+        "tp": 11,
+        "fp": 1,
+        "tn": 33,
+        "fn": 3,
+        "totalWeightCorrect": 203,
+        "totalWeightAll": 221
+      }
+    }
+  },
+  "noteReports": [
+    {
+      "benchmarkId": "bm-sci-g10-u1-note-01",
+      "noteTitle": "Grade 10 Science - Unit 1 Chemical Basis of Life (Student A)",
+      "keyword": {
+        "methodName": "Keyword Matching",
+        "precision": 100,
+        "recall": 100,
+        "f1": 100,
+        "accuracy": 100,
+        "weightedGapAccuracy": 100,
+        "confusion": {
+          "tp": 3,
+          "fp": 0,
+          "tn": 22,
+          "fn": 0,
+          "totalWeightCorrect": 113,
+          "totalWeightAll": 113
+        }
+      },
+      "semantic": {
+        "methodName": "Semantic Matching",
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "accuracy": 88,
+        "weightedGapAccuracy": 90.3,
+        "confusion": {
+          "tp": 0,
+          "fp": 0,
+          "tn": 22,
+          "fn": 3,
+          "totalWeightCorrect": 102,
+          "totalWeightAll": 113
+        }
+      },
+      "hybrid": {
+        "methodName": "Hybrid Proposed",
+        "precision": 100,
+        "recall": 100,
+        "f1": 100,
+        "accuracy": 100,
+        "weightedGapAccuracy": 100,
+        "confusion": {
+          "tp": 3,
+          "fp": 0,
+          "tn": 22,
+          "fn": 0,
+          "totalWeightCorrect": 113,
+          "totalWeightAll": 113
+        }
+      }
+    },
+    {
+      "benchmarkId": "bm-sci-g10-u2-note-01",
+      "noteTitle": "Grade 10 Science - Unit 2 Motion in a Straight Line (Student B)",
+      "keyword": {
+        "methodName": "Keyword Matching",
+        "precision": 100,
+        "recall": 100,
+        "f1": 100,
+        "accuracy": 100,
+        "weightedGapAccuracy": 100,
+        "confusion": {
+          "tp": 2,
+          "fp": 0,
+          "tn": 11,
+          "fn": 0,
+          "totalWeightCorrect": 61,
+          "totalWeightAll": 61
+        }
+      },
+      "semantic": {
+        "methodName": "Semantic Matching",
+        "precision": 100,
+        "recall": 100,
+        "f1": 100,
+        "accuracy": 100,
+        "weightedGapAccuracy": 100,
+        "confusion": {
+          "tp": 2,
+          "fp": 0,
+          "tn": 11,
+          "fn": 0,
+          "totalWeightCorrect": 61,
+          "totalWeightAll": 61
+        }
+      },
+      "hybrid": {
+        "methodName": "Hybrid Proposed",
+        "precision": 100,
+        "recall": 100,
+        "f1": 100,
+        "accuracy": 100,
+        "weightedGapAccuracy": 100,
+        "confusion": {
+          "tp": 2,
+          "fp": 0,
+          "tn": 11,
+          "fn": 0,
+          "totalWeightCorrect": 61,
+          "totalWeightAll": 61
+        }
+      }
+    },
+    {
+      "benchmarkId": "bm-his-g10-u3-note-01",
+      "noteTitle": "Grade 10 History - Unit 3 Evolution of Political Power (Student C)",
+      "keyword": {
+        "methodName": "Keyword Matching",
+        "precision": 83.3,
+        "recall": 55.6,
+        "f1": 66.7,
+        "accuracy": 50,
+        "weightedGapAccuracy": 51.1,
+        "confusion": {
+          "tp": 5,
+          "fp": 1,
+          "tn": 0,
+          "fn": 4,
+          "totalWeightCorrect": 24,
+          "totalWeightAll": 47
+        }
+      },
+      "semantic": {
+        "methodName": "Semantic Matching",
+        "precision": 0,
+        "recall": 0,
+        "f1": 0,
+        "accuracy": 10,
+        "weightedGapAccuracy": 8.5,
+        "confusion": {
+          "tp": 0,
+          "fp": 0,
+          "tn": 1,
+          "fn": 9,
+          "totalWeightCorrect": 4,
+          "totalWeightAll": 47
+        }
+      },
+      "hybrid": {
+        "methodName": "Hybrid Proposed",
+        "precision": 85.7,
+        "recall": 66.7,
+        "f1": 75,
+        "accuracy": 60,
+        "weightedGapAccuracy": 61.7,
+        "confusion": {
+          "tp": 6,
+          "fp": 1,
+          "tn": 0,
+          "fn": 3,
+          "totalWeightCorrect": 29,
+          "totalWeightAll": 47
+        }
+      }
+    }
+  ],
+  "latexTable": "\n% ── Copy-Paste into LaTeX Research Paper / Thesis ──\n\\begin{table}[htbp]\n\\centering\n\\caption{Comparative Performance of Concept Detection and Gap Identification}\n\\label{tab:concept_detection_results}\n\\begin{tabular}{lccccc}\n\\hline\n\\textbf{Method / Architecture} & \\textbf{Precision (\\%)} & \\textbf{Recall (\\%)} & \\textbf{$F_1$-Score (\\%)} & \\textbf{Accuracy (\\%)} & \\textbf{Weighted Acc (\\%)} \\\\\n\\hline\nKeyword-Only Matching & 90.9\\% & 71.4\\% & 80\\% & 89.6\\% & 89.6\\% \\\\\nSemantic-Only Matching & 100\\% & 14.3\\% & 25\\% & 75\\% & 75.6\\% \\\\\n\\textbf{Proposed Hybrid Pipeline} & \\textbf{91.7\\%} & \\textbf{78.6\\%} & \\textbf{84.6\\%} & \\textbf{91.7\\%} & \\textbf{91.9\\%} \\\\\n\\hline\n\\end{tabular}\n\\end{table}\n"
+}

@@ -1,16 +1,12 @@
-import Groq from "groq-sdk";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
 import { config } from "../config/config";
+import { groqPool } from "./groqPool";
 import { Note } from "../models/Note";
 import { LearningMaterial, MaterialType, IFlashcard, IDefinition, IMindMapNode } from "../models/LearningMaterial";
 import { findLesson, isCurriculumLoaded } from "../curriculum/index";
 import { CurriculumLesson } from "../curriculum/types";
-
-// ─── Groq client ────────────────────────────────────────────────────────────
-
-const groq = new Groq({ apiKey: config.groq.apiKey });
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -27,206 +23,250 @@ export interface GenerateAllResult {
   failed: number;
 }
 
-// ─── Groq helper: send prompt, get text back ────────────────────────────────
+export interface GenerateMaterialsOptions {
+  /** Concepts the student explicitly confirmed they need help with. */
+  targetConcepts?: string[];
+}
 
-const askGroq = async (systemPrompt: string, userPrompt: string): Promise<string> => {
-  const MAX_RETRIES = 3;
+// ─── Groq helper: send prompt, get text back with pool rotation ──────────────
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      const completion = await groq.chat.completions.create({
-        model: config.groq.model,
-        temperature: 0.3,
-        max_tokens: 3000,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      });
+const askGroq = async (
+  systemPrompt: string,
+  userPrompt: string,
+  options?: { maxTokens?: number; temperature?: number }
+): Promise<string> => {
+  const completion = await groqPool.createChatCompletion({
+    model: config.groq.model,
+    temperature: options?.temperature ?? 0.3,
+    max_tokens: options?.maxTokens ?? 3500,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+  });
 
-      const content = completion.choices[0]?.message?.content;
-
-      if (!content || content.trim() === "") {
-        throw new Error("Groq returned empty response");
-      }
-
-      return content.trim();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-
-      // Groq-specific empty-output error — retry immediately
-      if (msg.includes("model output must contain") || msg.includes("empty")) {
-        console.warn(`⚠️  Groq empty-output on attempt ${attempt}/${MAX_RETRIES} — retrying...`);
-        if (attempt < MAX_RETRIES) {
-          await new Promise(r => setTimeout(r, 1500));
-          continue;
-        }
-      }
-
-      // Rate limit — wait longer
-      if (msg.includes("429") || msg.includes("rate")) {
-        console.warn(`⚠️  Groq rate limited on attempt ${attempt} — waiting 20s...`);
-        await new Promise(r => setTimeout(r, 20000));
-        if (attempt < MAX_RETRIES) continue;
-      }
-
-      throw err; // Non-retryable
-    }
+  const content = completion.choices[0]?.message?.content;
+  if (!content || content.trim() === "") {
+    throw new Error("Groq returned empty response");
   }
-
-  throw new Error(`Groq failed after ${MAX_RETRIES} attempts`);
+  return content.trim();
 };
 
-// JSON extraction — strips any markdown fences if present
 const parseJson = <T>(raw: string): T => {
-  const stripped = raw
+  let cleaned = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  const stripped = cleaned
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "")
     .trim();
-  return JSON.parse(stripped) as T;
+
+  const jsonMatch = stripped.match(/[\{\[][\s\S]*[\}\]]/);
+  const jsonStr = jsonMatch ? jsonMatch[0] : stripped;
+
+  return JSON.parse(jsonStr) as T;
 };
 
 // ─── Context builders ───────────────────────────────────────────────────────
 
-const buildContext = (subject: string, topic: string, gradeLevel: string, rawText: string) =>
-  `Subject: ${subject} | Topic: ${topic} | Grade: ${gradeLevel}\n\nStudent's Notes:\n"""\n${rawText}\n"""`;
+import { qdrantService } from "./qdrantService";
+
+// ─── Context builders ───────────────────────────────────────────────────────
+
+const buildContext = (subject: string, topic: string, gradeLevel: string, rawText: string, contentLanguage: string = "English") => {
+  const safeText =
+    rawText.length > 3500
+      ? `${rawText.slice(0, 3500)}\n[...note content truncated for brevity...]`
+      : rawText;
+  const languageInstruction = contentLanguage === "Sinhala"
+    ? "Write explanations in Sinhala. Keep standard scientific terms in English where that is clearer."
+    : contentLanguage === "Mixed"
+    ? "Write explanations mainly in Sinhala while retaining familiar English scientific terms."
+    : "Write explanations in English.";
+  return `Subject: ${subject} | Topic: ${topic} | Grade: ${gradeLevel}\nResponse language: ${contentLanguage}. ${languageInstruction}\n\nStudent's Notes:\n"""\n${safeText}\n"""`;
+};
 
 /**
- * Looks up the matching curriculum lesson and formats its content as a
- * structured text block that can be injected into an AI prompt.
- * Returns null when the curriculum KB is unavailable or no lesson matches.
+ * Looks up the matching curriculum from the ingested PDF knowledge base (Qdrant)
+ * and the static curriculum KB, formatting its content as a structured text block
+ * that can be injected into an AI prompt.
  */
-const buildCurriculumContext = (
+const buildCurriculumContext = async (
   subject: string,
   topic: string,
-  gradeLevel: string
-): string | null => {
-  if (!isCurriculumLoaded()) return null;
-
-  const grade = parseInt(gradeLevel, 10);
-  const searchResult = findLesson(subject, topic, isNaN(grade) ? undefined : grade);
-
-  if (!searchResult) return null;
-
-  const lesson: CurriculumLesson = searchResult.lesson;
-
+  gradeLevel: string,
+  rawText?: string
+): Promise<string | null> => {
   const lines: string[] = [];
 
-  lines.push(`=== Curriculum Knowledge Base: ${lesson.subject} G${lesson.grade} — ${lesson.lessonName} ===`);
-  lines.push(`Unit: ${lesson.unit}`);
-  if (lesson.textbookReference) {
-    lines.push(`Textbook Reference: ${lesson.textbookReference}`);
-  }
-  lines.push("");
+  // ── 1. Fetch official ingested PDF textbook passages from Qdrant ────────
+  try {
+    const textbookCtx = await qdrantService.getCurriculumTextbookContext(
+      subject,
+      topic,
+      rawText
+    );
 
-  // Learning Outcomes
-  if (lesson.learningOutcomes.length > 0) {
-    lines.push("Learning Outcomes:");
-    lesson.learningOutcomes.forEach((lo, i) => {
-      lines.push(`  ${i + 1}. ${lo.description}`);
-    });
-    lines.push("");
-  }
-
-  // Required Concepts (sorted by weight descending so critical ones come first)
-  if (lesson.concepts.length > 0) {
-    lines.push("Required Concepts (weight 5=critical → 1=supplementary):");
-    const sorted = [...lesson.concepts].sort((a, b) => b.weight - a.weight);
-    sorted.forEach((c) => {
-      const examFlag = c.isFrequentlyTested ? " ⭐ exam favourite" : "";
-      lines.push(`  • [${c.category}] ${c.name} (weight ${c.weight}${examFlag})`);
-    });
-    lines.push("");
-  }
-
-  // Key Definitions
-  if (lesson.definitions.length > 0) {
-    lines.push("Key Definitions:");
-    lesson.definitions.forEach((d) => {
-      lines.push(`  ${d.term}: ${d.definition}`);
-    });
-    lines.push("");
+    if (textbookCtx.isAvailable && textbookCtx.passages.length > 0) {
+      lines.push(`=== Official Ingested Textbook Knowledge Base ===`);
+      if (textbookCtx.textbookReference) {
+        lines.push(`Source Textbook: ${textbookCtx.textbookReference}`);
+      }
+      lines.push("\nRelevant Textbook Passages (Excerpts):");
+      textbookCtx.passages.slice(0, 3).forEach((p, idx) => {
+        const snippet = p.text.length > 800 ? `${p.text.slice(0, 800)}...` : p.text;
+        lines.push(
+          `--- [Passage ${idx + 1} | ${p.filename} (Page ${p.pages.join(", ") || p.page_start || "?"})] ---\n${snippet}`
+        );
+      });
+      lines.push("");
+    }
+  } catch (err) {
+    console.warn("⚠️ Error retrieving textbook passages for material generation:", err);
   }
 
-  // Formulae
-  if (lesson.formulae.length > 0) {
-    lines.push("Important Formulae / Equations:");
-    lesson.formulae.forEach((f) => lines.push(`  • ${f}`));
-    lines.push("");
+  // ── 2. Supplement with static curriculum knowledge if loaded ────────────
+  if (isCurriculumLoaded()) {
+    const grade = parseInt(gradeLevel, 10);
+    const searchResult = findLesson(subject, topic, isNaN(grade) ? undefined : grade);
+
+    if (searchResult) {
+      const lesson: CurriculumLesson = searchResult.lesson;
+      lines.push(`=== Curriculum Syllabus: ${lesson.subject} G${lesson.grade} — ${lesson.lessonName} ===`);
+      lines.push(`Unit: ${lesson.unit}`);
+      if (lesson.textbookReference) {
+        lines.push(`Syllabus Reference: ${lesson.textbookReference}`);
+      }
+      lines.push("");
+
+      // Learning Outcomes
+      if (lesson.learningOutcomes.length > 0) {
+        lines.push("Learning Outcomes:");
+        lesson.learningOutcomes.forEach((lo, i) => {
+          lines.push(`  ${i + 1}. ${lo.description}`);
+        });
+        lines.push("");
+      }
+
+      // Required Concepts
+      if (lesson.concepts.length > 0) {
+        lines.push("Required Concepts (weight 5=critical → 1=supplementary):");
+        const sorted = [...lesson.concepts].sort((a, b) => b.weight - a.weight);
+        sorted.forEach((c) => {
+          const examFlag = c.isFrequentlyTested ? " ⭐ exam favourite" : "";
+          lines.push(`  • [${c.category}] ${c.name} (weight ${c.weight}${examFlag})`);
+        });
+        lines.push("");
+      }
+
+      // Key Definitions
+      if (lesson.definitions.length > 0) {
+        lines.push("Key Definitions:");
+        lesson.definitions.forEach((d) => {
+          lines.push(`  ${d.term}: ${d.definition}`);
+        });
+        lines.push("");
+      }
+
+      // Formulae
+      if (lesson.formulae.length > 0) {
+        lines.push("Important Formulae / Equations:");
+        lesson.formulae.forEach((f) => lines.push(`  • ${f}`));
+        lines.push("");
+      }
+
+      // Expected Diagrams
+      if (lesson.expectedDiagrams.length > 0) {
+        lines.push("Diagrams Students Should Know:");
+        lesson.expectedDiagrams.forEach((d) => lines.push(`  • ${d}`));
+        lines.push("");
+      }
+    }
   }
 
-  // Expected Diagrams
-  if (lesson.expectedDiagrams.length > 0) {
-    lines.push("Diagrams Students Should Know:");
-    lesson.expectedDiagrams.forEach((d) => lines.push(`  • ${d}`));
-    lines.push("");
-  }
-
-  // Exam keywords hint
-  if (lesson.examKeywords.length > 0) {
-    lines.push(`Exam Keywords: ${lesson.examKeywords.join(", ")}`);
-  }
-
-  return lines.join("\n");
+  return lines.length > 0 ? lines.join("\n") : null;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MATERIAL GENERATORS
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ─── 1. Structured Notes ────────────────────────────────────────────────────
+// ─── 1. Structured Notes (Complete Personalized Note with Gap Annotations) ──
 
 export const generateStructuredNotes = async (
   rawText: string,
   subject: string,
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  foundConcepts: string[] = [],
+  missingConcepts: string[] = [],
+  explainableGaps: any[] = [],
+  contentLanguage: string = "English"
 ): Promise<string> => {
-  const curriculumContext = buildCurriculumContext(subject, topic, gradeLevel);
+  const curriculumContext = await buildCurriculumContext(subject, topic, gradeLevel, rawText);
 
-  if (curriculumContext) {
-    // ── Curriculum-enriched path ─────────────────────────────────────────
-    const system = `You are an expert educator for Sri Lanka's school curriculum.
-You have been given TWO sources of information:
-  1. The student's own handwritten notes (extracted via OCR)
-  2. The official curriculum knowledge base for this lesson
+  const gapsSummary = explainableGaps.length > 0
+    ? explainableGaps.map((g, i) =>
+        `${i + 1}. Outcome ID: [${g.outcomeId || `gap-${i + 1}`}] — "${g.outcomeDescription}"\n` +
+        `   Missing concepts: ${(g.missingConcepts || []).map((c: any) => typeof c === "string" ? c : c.name).join(", ")}\n` +
+        `   Study Recommendation: ${g.recommendation || "Review core textbook principles."}`
+      ).join("\n")
+    : missingConcepts.length > 0
+    ? missingConcepts.map((c, i) => `${i + 1}. Missing concept: ${c}`).join("\n")
+    : "No major critical gaps detected.";
 
-Your task: Synthesise BOTH sources into a single, comprehensive, well-structured set of markdown study notes.
-Rules:
-  - Use # for the main topic heading, ## for major sections, ### for sub-sections.
-  - Incorporate ALL required concepts from the curriculum (especially weight 4–5 and ⭐ exam favourites).
-  - Preserve correct facts from the student's notes and silently fix any errors.
-  - Include all key definitions, formulae, and diagram descriptions from the curriculum.
-  - Clearly separate sections so the student can navigate the notes easily.
-  - Do NOT add any preamble or explanation — output ONLY the markdown notes.`;
+  const coveredSummary = foundConcepts.length > 0
+    ? foundConcepts.join(", ")
+    : "Basic introductory concepts found in note.";
 
-    const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const system = `You are a master educator for Sri Lanka's school curriculum (${gradeLevel} ${subject}).
+Your task is to generate a COMPLETE, HIGHLY STRUCTURED, AND AUTHORITATIVE LESSON NOTE for the topic "${topic}".
+
+This note must serve as the student's complete textbook-grade lesson study material, synthesizing both:
+  1. What the student already wrote in their handwritten notes
+  2. The official curriculum knowledge base and textbook specifications, completing all missing areas.
+
+CRITICAL FORMATTING AND HIGHLIGHTING RULES:
+1. Title: Start with \`# ${topic}\` followed by a concise 2-sentence lesson overview.
+2. Section Headings: Organize the entire lesson into logical numbered sections (\`## 1. ...\`, \`## 2. ...\`).
+3. Explicit Highlighting:
+   - For facts/concepts that WERE ALREADY COVERED in the student's handwritten notes:
+     Use this exact callout format:
+     > 📝 **From Your Handwritten Notes:** [Accurate synthesis of what the student noted down, preserving their correct ideas and fixing any minor OCR/factual mistakes]
+   
+   - For concepts/outcomes that WERE MISSING from the student's notes (Learning Gaps):
+     You MUST create dedicated remediation subsections with this exact anchor comment and callout format:
+     ### ⚠️ Remediated Learning Gap: [Outcome Description or Concept Name]
+     <!-- anchor:gap-[outcomeId] -->
+     > ⚠️ **Focused Support Area:** [Provide an in-depth, crystal-clear explanation of the concept the student asked for help with, including complete theoretical explanations, step-by-step mathematical derivations/calculations if applicable, and real-world examples]
+
+   - For Key Definitions:
+     > 💡 **Key Definition:** **[Term]**: [Clear, exam-focused definition from the textbook]
+
+   - For Equations & Formulas:
+     Put formulas in markdown code blocks with clear label and variable definitions (e.g. where $v$ = final velocity, $u$ = initial velocity...).
+
+   - For Textbook Citations:
+     > 📖 **Textbook Reference:** [Unit name / Chapter pages matching curriculum]
+
+4. Completeness: Do not leave out any curriculum requirement. The student must be able to use this note as their sole, complete revision reference.
+5. Tone: Inspiring, highly structured, clean, and academically precise.
+6. Output: Output ONLY the markdown notes. Do NOT include conversational preambles or greeting messages.`;
+
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 
 ---
-
-${curriculumContext}
-
+${curriculumContext || "Official Sri Lankan Curriculum Standards"}
 ---
 
-Using BOTH the student's notes above AND the curriculum knowledge base, generate comprehensive, well-structured markdown study notes for this topic.
-Start with a # heading for the topic. Organise logically by section (matching the learning outcomes where possible). Use bullet points, bold key terms, and include formulae in code blocks where appropriate.`;
+STUDENT'S CONFIRMED SUPPORT AREAS:
+• Concepts covered in notes:
+  ${coveredSummary}
 
-    return await askGroq(system, user);
-  } else {
-    // ── Fallback: student notes only ────────────────────────────────────
-    const system = `You are an expert educator for Sri Lanka's school curriculum.
-Convert student notes into clean, well-structured markdown notes.
-Use # for main heading, ## for subheadings, bullet points for details.
-Expand thin notes with correct, curriculum-aligned content.
-Do NOT add any explanation — output ONLY the markdown notes.`;
+• Concepts the student asked for help with:
+${gapsSummary}
 
-    const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+Generate the complete, gap-annotated structured lesson note following the rules above.`;
 
-Convert these into well-structured markdown study notes.
-Start with a # heading for the topic, then organize logically with sections and bullet points.`;
-
-    return await askGroq(system, user);
-  }
+  return await askGroq(system, user, { maxTokens: 2500 });
 };
 
 // ─── 2. Key Definitions ─────────────────────────────────────────────────────
@@ -235,21 +275,28 @@ export const generateDefinitions = async (
   rawText: string,
   subject: string,
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  missingConcepts: string[] = [],
+  contentLanguage: string = "English"
 ): Promise<IDefinition[]> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
-Extract and define key terms from student notes.
+Extract and define key terms from the lesson for student revision.
 Respond with ONLY a valid JSON array. No markdown, no explanation.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const missingHint = missingConcepts.length > 0
+    ? `\nMake sure to include definitions for these concepts the student asked for help with: ${missingConcepts.join(", ")}.`
+    : "";
 
-Extract ALL important terms and provide clear, exam-focused definitions.
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
+${missingHint}
+
+Extract ALL important terms (at least 6-8 terms) and provide clear, exam-focused definitions.
 Respond with ONLY this JSON format:
 [
   { "term": "Photosynthesis", "definition": "The process by which plants use sunlight, water, and CO2 to produce glucose and oxygen." },
   { "term": "Chlorophyll", "definition": "The green pigment in plant cells that absorbs light energy for photosynthesis." }
 ]
-Include at least 5 definitions. Be precise and Sri Lanka curriculum-aligned.`;
+Be precise and Sri Lanka curriculum-aligned.`;
 
   const raw = await askGroq(system, user);
   const parsed = parseJson<IDefinition[]>(raw);
@@ -263,16 +310,24 @@ export const generateFlashcards = async (
   rawText: string,
   subject: string,
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  missingConcepts: string[] = [],
+  contentLanguage: string = "English"
 ): Promise<IFlashcard[]> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
-Create effective study flashcards from student notes.
+Create effective study flashcards from the lesson.
+Prioritize concepts that students commonly find difficult or were missing in their handwritten notes.
 Respond with ONLY a valid JSON array. No markdown, no explanation.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const missingHint = missingConcepts.length > 0
+    ? `\nPRIORITY: The student asked for help with: ${missingConcepts.join(", ")}. Ensure at least half the flashcards directly practise these concepts.`
+    : "";
 
-Create 10–15 flashcards covering all key concepts including concepts missing from the notes.
-Each flashcard: front = question, back = concise answer.
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
+${missingHint}
+
+Create 10–15 flashcards covering all key concepts of this topic.
+Each flashcard: front = question / prompt, back = concise, accurate answer.
 Respond with ONLY this JSON format:
 [
   { "front": "What is the equation for photosynthesis?", "back": "6CO₂ + 6H₂O + light energy → C₆H₁₂O₆ + 6O₂" },
@@ -291,13 +346,14 @@ export const generateMindMap = async (
   rawText: string,
   subject: string,
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  contentLanguage: string = "English"
 ): Promise<IMindMapNode> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
-Create a hierarchical mind map as a JSON tree structure.
+Create a comprehensive hierarchical mind map covering the complete lesson as a JSON tree structure.
 Respond with ONLY a valid JSON object. No markdown, no explanation.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 
 Create a mind map with the topic as the root node.
 Each node has a "label" (string) and optional "children" (array of nodes).
@@ -336,14 +392,15 @@ export const generateRevisionSummary = async (
   rawText: string,
   subject: string,
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  contentLanguage: string = "English"
 ): Promise<string> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
 Write a concise, exam-focused revision summary in clear markdown.
 Cover all essential concepts a student must know for the exam.
 Do NOT add any explanation — output ONLY the revision summary markdown.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
 
 Write a compact revision summary (max 300 words) that covers:
 1. The most important facts and definitions
@@ -360,60 +417,66 @@ export const generateLearningPoints = async (
   rawText: string,
   subject: string,
   topic: string,
-  gradeLevel: string
+  gradeLevel: string,
+  missingConcepts: string[] = [],
+  contentLanguage: string = "English"
 ): Promise<string> => {
   const system = `You are an expert educator for Sri Lanka's school curriculum.
-Create a clear numbered list of learning points from student notes.
-Include both what the student has covered AND important gaps.
+Create a clear numbered list of learning points from student notes and syllabus.
+Explicitly distinguish points covered in notes vs points that were missing.
 Do NOT add any explanation — output ONLY the numbered markdown list.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const missingHint = missingConcepts.length > 0
+    ? `\nMark points relating to concepts the student asked for help with as '⚠️ Focus area': ${missingConcepts.join(", ")}.`
+    : "";
+
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
+${missingHint}
 
 Generate 10–15 numbered learning points for this topic.
 Format:
 1. **Key point title** — brief explanation
-2. **Another point** — brief explanation
-
-Cover key concepts, include points from curriculum not in the student's notes (mark these with ⚠️ Gap).`;
+2. **Another point** — brief explanation (mark with ⚠️ Gap if it covers missing content)`;
 
   return await askGroq(system, user);
 };
 
 // ─── 7. Audio Script + Generation ──────────────────────────────────────────
 
-/**
- * Generates an audio explanation script via Groq, then converts to MP3 using
- * the ElevenLabs API. Falls back gracefully if API key is not configured.
- */
 export const generateAudio = async (
   rawText: string,
   subject: string,
   topic: string,
   gradeLevel: string,
-  noteId: string
+  noteId: string,
+  missingConcepts: string[] = [],
+  contentLanguage: string = "English"
 ): Promise<string> => {
-  // ── Step 1: Generate spoken script with Groq ──────────────────────────────
   const system = `You are a friendly, engaging teacher creating a podcast-style audio explanation
 for a Sri Lankan secondary school student. Speak naturally and clearly.
 Do NOT add markdown, headings, or bullet points — write as if you are speaking aloud.`;
 
-  const user = `${buildContext(subject, topic, gradeLevel, rawText)}
+  const missingHint = missingConcepts.length > 0
+    ? `Focus on the concepts the student asked for help with: ${missingConcepts.join(", ")}, and give a clear spoken explanation to help them remember.`
+    : "";
+
+  const user = `${buildContext(subject, topic, gradeLevel, rawText, contentLanguage)}
+${missingHint}
 
 Write a 2-minute spoken explanation of this topic for a student.
 - Start with a warm greeting: "Hey! Let's go through [topic] together."
 - Explain the key concepts clearly in simple language
-- Mention any important gaps the student should study
-- End with: "Keep studying and you'll get there!"
+- Address the concepts the student asked for help with clearly
+- End with encouraging advice: "Keep studying and you'll get there!"
 Write naturally as spoken words only — no bullet points or markdown.`;
 
   const script = await askGroq(system, user);
 
-  // ── Step 2: Convert to audio via ElevenLabs ───────────────────────────────
+  // ── Convert to audio via ElevenLabs ───────────────────────────────────────
   const audioDir = path.resolve("generated_audio");
   if (!fs.existsSync(audioDir)) fs.mkdirSync(audioDir, { recursive: true });
 
   if (!config.elevenlabs.apiKey) {
-    // Save the script as a text file fallback
     const scriptPath = path.join(audioDir, `audio-script-${noteId}.txt`);
     fs.writeFileSync(scriptPath, script, "utf-8");
     console.log(`📄 Audio script saved (no ElevenLabs key): ${scriptPath}`);
@@ -439,7 +502,7 @@ Write naturally as spoken words only — no bullet points or markdown.`;
         Accept: "audio/mpeg",
       },
       responseType: "arraybuffer",
-      timeout: 90000, // 90s for audio generation
+      timeout: 90000,
     }
   );
 
@@ -449,10 +512,8 @@ Write naturally as spoken words only — no bullet points or markdown.`;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ORCHESTRATOR — Generate all 7 materials for a note
+// ORCHESTRATOR — Generate personalized materials for a note
 // ═══════════════════════════════════════════════════════════════════════════
-
-// ─── Override type (used by the pipeline stage before DB save) ──────────────
 
 export interface NoteDataOverride {
   rawText: string;
@@ -460,136 +521,223 @@ export interface NoteDataOverride {
   topic: string;
   gradeLevel: string;
   userId: string;
+  foundConcepts?: string[];
+  missingConcepts?: string[];
+  explainableGaps?: any[];
+  contentLanguage?: "Sinhala" | "English" | "Mixed" | "Unknown";
 }
 
+const activeGenerations = new Set<string>();
+
 /**
- * Generates learning material types for a given note.
- * Each material is saved to the LearningMaterial collection.
- * Failures on individual materials are caught and reported — other types continue.
- *
- * @param noteId   - MongoDB ObjectId string
- * @param types    - Optional subset of types to generate (defaults to all 7)
- * @param override - Optional in-memory note data (used by pipeline Stage 9 before note.analysis is persisted)
+ * Generates personalized learning material types for a given note.
+ * Each material is saved to the LearningMaterial collection with gap metadata.
  */
 export const generateMaterials = async (
   noteId: string,
   types?: MaterialType[],
-  override?: NoteDataOverride
+  override?: NoteDataOverride,
+  options?: GenerateMaterialsOptions
 ): Promise<GenerateAllResult> => {
-  // ── Fetch note with analysis (or use pipeline override) ──────────────────
-  let subject: string;
-  let topic: string;
-  let gradeLevel: string;
-  let rawText: string;
-  let userId: string;
-
-  if (override) {
-    // Called from pipeline Stage 9 — note.analysis not yet written to DB
-    ({ subject, topic, gradeLevel, rawText, userId } = override);
-  } else {
-    const note = await Note.findById(noteId);
-    if (!note) throw new Error(`Note not found: ${noteId}`);
-    if (!note.analysis) throw new Error("Note has no analysis. Run OCR + AI analysis first.");
-    if (!note.rawText) throw new Error("Note has no extracted text.");
-    subject = note.analysis.subject;
-    topic = note.analysis.topic;
-    gradeLevel = note.analysis.gradeLevel;
-    rawText = note.rawText;
-    userId = note.userId;
+  if (activeGenerations.has(noteId)) {
+    console.log(`ℹ️ Material generation already in progress for note ${noteId}, skipping duplicate call.`);
+    return { noteId, results: [], succeeded: 0, failed: 0 };
   }
 
-  const allTypes: MaterialType[] = types ?? [
-    "structured_notes",
-    "definitions",
-    "flashcards",
-    "mindmap",
-    "revision_summary",
-    "learning_points",
-    "audio",
-  ];
+  activeGenerations.add(noteId);
 
-  const results: MaterialResult[] = [];
+  try {
+    let subject: string;
+    let topic: string;
+    let gradeLevel: string;
+    let rawText: string;
+    let userId: string;
+    let foundConcepts: string[] = [];
+    let missingConcepts: string[] = [];
+    let explainableGaps: any[] = [];
+    let contentLanguage = "English";
 
-  console.log(`\n📚 Generating ${allTypes.length} material(s) for note: ${noteId}`);
-
-  for (const type of allTypes) {
-    try {
-      console.log(`  ⚙️  Generating: ${type}...`);
-
-      let updateData: Partial<{
-        textContent: string;
-        flashcards: IFlashcard[];
-        definitions: IDefinition[];
-        mindMap: IMindMapNode;
-        audioUrl: string;
-      }> = {};
-
-      switch (type) {
-        case "structured_notes": {
-          const text = await generateStructuredNotes(rawText, subject, topic, gradeLevel);
-          updateData = { textContent: text };
-          break;
-        }
-        case "definitions": {
-          const defs = await generateDefinitions(rawText, subject, topic, gradeLevel);
-          updateData = { definitions: defs };
-          break;
-        }
-        case "flashcards": {
-          const cards = await generateFlashcards(rawText, subject, topic, gradeLevel);
-          updateData = { flashcards: cards };
-          break;
-        }
-        case "mindmap": {
-          const map = await generateMindMap(rawText, subject, topic, gradeLevel);
-          updateData = { mindMap: map };
-          break;
-        }
-        case "revision_summary": {
-          const text = await generateRevisionSummary(rawText, subject, topic, gradeLevel);
-          updateData = { textContent: text };
-          break;
-        }
-        case "learning_points": {
-          const text = await generateLearningPoints(rawText, subject, topic, gradeLevel);
-          updateData = { textContent: text };
-          break;
-        }
-        case "audio": {
-          const url = await generateAudio(rawText, subject, topic, gradeLevel, noteId);
-          updateData = { audioUrl: url };
-          break;
-        }
-      }
-
-      // ── Upsert into MongoDB (unique per noteId + type) ──────────────────────
-      await LearningMaterial.findOneAndUpdate(
-        { noteId, type },
-        {
-          $set: {
-            noteId,
-            userId,
-            type,
-            generatedAt: new Date(),
-            ...updateData,
-          },
-        },
-        { upsert: true, returnDocument: "after" }
-      );
-
-      console.log(`  ✅ ${type} done`);
-      results.push({ type, success: true });
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`  ❌ ${type} failed: ${errorMsg}`);
-      results.push({ type, success: false, error: errorMsg });
+    if (override) {
+      ({ subject, topic, gradeLevel, rawText, userId } = override);
+      foundConcepts = override.foundConcepts || [];
+      missingConcepts = options?.targetConcepts ?? (override.missingConcepts || []);
+      explainableGaps = override.explainableGaps || [];
+      contentLanguage = override.contentLanguage || "English";
+    } else {
+      const note = await Note.findById(noteId);
+      if (!note) throw new Error(`Note not found: ${noteId}`);
+      if (!note.analysis) throw new Error("Note has no analysis. Run OCR + AI analysis first.");
+      if (!note.rawText) throw new Error("Note has no extracted text.");
+      subject = note.analysis.subject;
+      topic = note.analysis.topic;
+      gradeLevel = note.analysis.gradeLevel;
+      rawText = note.rawText;
+      userId = note.userId;
+      foundConcepts = note.analysis.keyConcepts || [];
+      missingConcepts = options?.targetConcepts ?? (note.analysis.missingConcepts || []);
+      explainableGaps = note.analysis.explainableGaps || [];
+      contentLanguage = note.analysis.contentLanguage?.primaryLanguage || "English";
     }
+
+    // When material generation follows a student "needs help" response, pass
+    // only their confirmed support areas into prompts and targeted metadata.
+    if (options?.targetConcepts) {
+      const targets = new Set(options.targetConcepts.map((name) => name.toLowerCase()));
+      explainableGaps = explainableGaps
+        .map((gap) => ({
+          ...gap,
+          missingConcepts: (gap.missingConcepts || []).filter((concept: any) =>
+            targets.has((typeof concept === "string" ? concept : concept.name).toLowerCase())
+          ),
+        }))
+        .filter((gap) => gap.missingConcepts.length > 0);
+    }
+
+    const allTypes: MaterialType[] = types ?? [
+      "structured_notes",
+      "definitions",
+      "flashcards",
+      "mindmap",
+      "revision_summary",
+      "learning_points",
+      "audio",
+    ];
+
+    const results: MaterialResult[] = [];
+
+    console.log(`\n📚 Generating ${allTypes.length} personalized material(s) for note: ${noteId}`);
+
+    for (const type of allTypes) {
+      try {
+        console.log(`  ⚙️  Generating: ${type}...`);
+
+        let updateData: Partial<{
+          textContent: string;
+          flashcards: IFlashcard[];
+          definitions: IDefinition[];
+          mindMap: IMindMapNode;
+          audioUrl: string;
+          targetedGaps: string[];
+          estimatedMinutes: number;
+          purposeDescription: string;
+        }> = {
+          targetedGaps: missingConcepts,
+        };
+
+        switch (type) {
+          case "structured_notes": {
+            const text = await generateStructuredNotes(
+              rawText,
+              subject,
+              topic,
+              gradeLevel,
+              foundConcepts,
+              missingConcepts,
+              explainableGaps,
+              contentLanguage
+            );
+            updateData = {
+              ...updateData,
+              textContent: text,
+              estimatedMinutes: 4,
+              purposeDescription: "Complete synthesized lesson note with your handwriting + official textbook knowledge & highlighted gap remediations",
+            };
+            break;
+          }
+          case "definitions": {
+            const defs = await generateDefinitions(rawText, subject, topic, gradeLevel, missingConcepts, contentLanguage);
+            updateData = {
+              ...updateData,
+              definitions: defs,
+              estimatedMinutes: 2,
+              purposeDescription: "Official textbook definitions for core curriculum terms",
+            };
+            break;
+          }
+          case "flashcards": {
+            const cards = await generateFlashcards(rawText, subject, topic, gradeLevel, missingConcepts, contentLanguage);
+            updateData = {
+              ...updateData,
+              flashcards: cards,
+              estimatedMinutes: 3,
+              purposeDescription: "Active recall practice cards prioritizing your identified learning gaps",
+            };
+            break;
+          }
+          case "mindmap": {
+            const map = await generateMindMap(rawText, subject, topic, gradeLevel, contentLanguage);
+            updateData = {
+              ...updateData,
+              mindMap: map,
+              estimatedMinutes: 2,
+              purposeDescription: "Hierarchical visual concept tree showing the full lesson structure",
+            };
+            break;
+          }
+          case "revision_summary": {
+            const text = await generateRevisionSummary(rawText, subject, topic, gradeLevel, contentLanguage);
+            updateData = {
+              ...updateData,
+              textContent: text,
+              estimatedMinutes: 2,
+              purposeDescription: "Concise exam-focused revision summary",
+            };
+            break;
+          }
+          case "learning_points": {
+            const text = await generateLearningPoints(rawText, subject, topic, gradeLevel, missingConcepts, contentLanguage);
+            updateData = {
+              ...updateData,
+              textContent: text,
+              estimatedMinutes: 2,
+              purposeDescription: "Numbered curriculum checklist highlighting what you covered vs gaps",
+            };
+            break;
+          }
+          case "audio": {
+            const url = await generateAudio(rawText, subject, topic, gradeLevel, noteId, missingConcepts, contentLanguage);
+            updateData = {
+              ...updateData,
+              audioUrl: url,
+              estimatedMinutes: 2,
+              purposeDescription: "Conversational audio lesson addressing your notes and explaining your gaps",
+            };
+            break;
+          }
+        }
+
+        // ── Upsert into MongoDB (unique per noteId + type) ──────────────────────
+        await LearningMaterial.findOneAndUpdate(
+          { noteId, type },
+          {
+            $set: {
+              noteId,
+              userId,
+              type,
+              generatedAt: new Date(),
+              ...updateData,
+            },
+          },
+          { upsert: true, returnDocument: "after" }
+        );
+
+        console.log(`  ✅ ${type} done`);
+        results.push({ type, success: true });
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error(`  ❌ ${type} failed: ${errorMsg}`);
+        results.push({ type, success: false, error: errorMsg });
+      }
+    }
+
+    const succeeded = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+
+    console.log(`\n📚 Materials done — ${succeeded} succeeded, ${failed} failed\n`);
+
+    return { noteId, results, succeeded, failed };
+  } finally {
+    activeGenerations.delete(noteId);
   }
-
-  const succeeded = results.filter(r => r.success).length;
-  const failed = results.filter(r => !r.success).length;
-
-  console.log(`\n📚 Materials done — ${succeeded} succeeded, ${failed} failed\n`);
-
-  return { noteId, results, succeeded, failed };
 };
+

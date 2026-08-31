@@ -14,6 +14,8 @@ import { CurriculumLesson, CurriculumConcept, LearningOutcome } from "../curricu
 export type PipelineStage =
   | "ocr_extraction"
   | "ocr_cleaning"
+  | "note_scope_assessment"
+  | "language_detection"
   | "subject_detection"
   | "lesson_identification"
   | "curriculum_retrieval"
@@ -33,6 +35,12 @@ export interface StageResult {
 }
 
 // ─── OCR Cleaning Output ───────────────────────────────────────────────────
+
+export interface OcrExtractionOutput {
+  totalPages: number;
+  extractedPages: number;
+  failedPages: number;
+}
 
 export interface OcrCleaningOutput {
   /** The cleaned and normalized text */
@@ -63,8 +71,20 @@ export interface SubjectDetectionOutput {
 // ─── Concept Match ─────────────────────────────────────────────────────────
 
 /** Result of matching a single curriculum concept against student notes */
+export type ConceptStatus = "present" | "partial" | "missing";
+
+export interface ConceptProbabilities {
+  present: number;
+  partial: number;
+  missing: number;
+}
+
 export interface ConceptMatch {
   concept: CurriculumConcept;
+  /** Authoritative three-class coverage decision. */
+  status: ConceptStatus;
+  /** Calibratable probability contract for the future learned model. */
+  probabilities: ConceptProbabilities;
   /** Whether the concept was found in the student's notes */
   found: boolean;
   /**
@@ -72,29 +92,77 @@ export interface ConceptMatch {
    * 1.0 = exact keyword found, 0.7–0.9 = semantic match, 0 = not found.
    */
   matchConfidence: number;
+  /** Confidence that the covered/not-covered decision is correct. */
+  decisionConfidence: number;
   /** The method used to detect this concept */
   matchMethod: "keyword" | "semantic" | "not_found";
+  /** Component that produced this decision. */
+  source: "rule" | "semantic_llm" | "fallback";
+  /** True when confidence or partial coverage warrants human review. */
+  needsReview: boolean;
+  /** Populated once a trained classifier is introduced. */
+  modelVersion?: string;
   /** Snippet from student text that triggered the match, if found */
   evidence?: string;
 }
 
+/** What kind of learning artefact the upload represents. */
+export interface NoteScopeOutput {
+  scope:
+    | "complete_lesson_note"
+    | "partial_lesson_note"
+    | "revision_summary"
+    | "exercise_or_worksheet"
+    | "diagram_or_formula_sheet"
+    | "unknown";
+  confidence: number;
+  rationale: string;
+}
+
+export interface LanguageDetectionOutput {
+  primaryLanguage: "Sinhala" | "English" | "Mixed" | "Unknown";
+  confidence: number;
+}
+
+/**
+ * Meaning of a curriculum finding. An absence from one uploaded note is
+ * evidence about note coverage only; it is not evidence that the student
+ * lacks the knowledge. `confirmed_learning_gap` is reserved for a later
+ * diagnostic/quiz integration that can verify understanding.
+ */
+export type LearningFindingStatus =
+  | "covered_in_note"
+  | "partially_covered_in_note"
+  | "not_found_in_note"
+  | "confirmed_learning_gap";
+
 // ─── Coverage Scores ───────────────────────────────────────────────────────
 
 export interface CoverageScores {
-  /** Simple count-based score: foundConcepts / totalConcepts × 100 */
+  /** Simple score where present=1, partial=0.5, and missing=0. */
   simpleCoverage: number;
   /** Weighted score: Σ(found.weight) / Σ(all.weight) × 100 */
   weightedCoverage: number;
+  /** Weighted coverage discounted by each finding's decision confidence. */
+  confidenceAdjustedWeightedCoverage: number;
   /** Total number of concepts in the lesson */
   totalConcepts: number;
-  /** Number of concepts found in student notes */
+  /** Legacy covered count: present + partial concepts. */
   foundConcepts: number;
+  /** Number of concepts judged fully present. */
+  presentConcepts: number;
+  /** Number of concepts judged partially present. */
+  partialConcepts: number;
   /** Number of concepts missed by student */
   missedConcepts: number;
   /** Max possible weighted score */
   maxWeightedScore: number;
   /** Achieved weighted score */
   achievedWeightedScore: number;
+  /** Confidence-adjusted achieved weighted score. */
+  confidenceAdjustedWeightedScore: number;
+  /** Whether this is valid as whole-lesson coverage or only upload coverage. */
+  coverageScope: "lesson_coverage" | "note_coverage";
 }
 
 // ─── Learning Outcome Assessment ───────────────────────────────────────────
@@ -104,6 +172,12 @@ export interface OutcomeAssessment {
   status: "achieved" | "partially_achieved" | "not_achieved";
   /** How many required concepts were found */
   foundConceptCount: number;
+  /** How many required concepts were fully present. */
+  presentConceptCount: number;
+  /** How many required concepts were only partially present. */
+  partialConceptCount: number;
+  /** Present=1, partial=0.5, missing=0 coverage equivalent. */
+  coverageEquivalent: number;
   /** How many required concepts are in the lesson */
   totalConceptCount: number;
   /** Names of missing concepts for this outcome */
@@ -131,9 +205,14 @@ export interface ExplainableGap {
     weight: number;
     severity: "high" | "medium" | "low";
     category: string;
+    status: "partial" | "missing";
   }[];
   /** Actionable study recommendation with textbook reference */
   recommendation: string;
+  /** Distinguishes note coverage from an actual verified knowledge gap. */
+  findingStatus: LearningFindingStatus;
+  /** No diagnostic evidence exists yet, so pipeline findings start unverified. */
+  verificationStatus: "not_required" | "pending" | "verified";
 }
 
 // ─── Exam Readiness ────────────────────────────────────────────────────────
@@ -147,8 +226,6 @@ export interface ExamReadiness {
   frequentlyExaminedMissing: string[];
   /** Revision priority recommendation */
   revisionPriority: "Low" | "Medium" | "High" | "Critical";
-  /** Estimated exam score range */
-  estimatedScoreRange: string;
 }
 
 // ─── Material Priorities ───────────────────────────────────────────────────
@@ -181,11 +258,22 @@ export interface PipelineContext {
   imageUrl: string;
   imageUrls?: string[];
 
+  // ── Optional User Hints (from UI upload) ──────────────────────────────────
+  userSubject?: string;
+  userGrade?: number;
+  userTopic?: string;
+  userLessonId?: string;
+
   // ── Stage 1: OCR Extraction ───────────────────────────────────────────────
   rawOcrText?: string;
 
   // ── Stage 2: OCR Cleaning ─────────────────────────────────────────────────
+  ocrExtraction?: OcrExtractionOutput;
   ocrCleaning?: OcrCleaningOutput;
+
+  // ── Stage 3: Note Scope Assessment ─────────────────────────────────────
+  noteScope?: NoteScopeOutput;
+  contentLanguage?: LanguageDetectionOutput;
 
   // ── Stage 3: Subject Detection ────────────────────────────────────────────
   subjectDetection?: SubjectDetectionOutput;
@@ -195,6 +283,12 @@ export interface PipelineContext {
   matchedLesson?: CurriculumLesson;
   lessonMatchConfidence?: number;
   lessonMatchMethod?: string;
+  textbookPassages?: Array<{
+    text: string;
+    filename: string;
+    pages: number[];
+    score: number;
+  }>;
 
   // ── Stage 6: Concept Matching ─────────────────────────────────────────────
   conceptMatches?: ConceptMatch[];
@@ -217,6 +311,7 @@ export interface PipelineContext {
   qualityWarnings?: string[];
 
   // ── Pipeline Metadata ─────────────────────────────────────────────────────
+  curriculumVersion: string;
   pipelineVersion: string;
   startedAt: Date;
   stageResults: StageResult[];
