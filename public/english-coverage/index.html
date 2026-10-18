@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>English note coverage review</title><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body><main>
+<p class="eyebrow">SMART NOTES · ENGLISH SCIENCE</p><h1>Review concept coverage</h1>
+<p>Check a note against a concept checklist. The trained model suggests a label; you make the final decision.</p>
+<p id="mode" class="notice">Reviewer workspace. Suggestions can miss incorrect explanations; inspect the evidence before confirming.</p>
+<section id="credentials"><h2>Reviewer access</h2><div class="row"><label>Expert ID<input id="expert" autocomplete="username"></label><label>Access key<input id="key" type="password" autocomplete="current-password"></label><button id="connect">Connect</button></div></section>
+<section><h2>Saved reviews</h2><div class="row"><label>Your recent reviews<select id="history"><option value="">Connect to load reviews</option></select></label><button id="refresh-history" disabled>Refresh</button><button id="open-review" disabled>Open review</button></div><p class="muted">Pending reviews can be resumed. Confirmed judgments retain their original text and model snapshot.</p></section>
+<section><h2>1. Prepare the note</h2>
+<div class="row"><label>Note source<select id="source"><option value="">Paste text manually</option></select></label><button id="load-note" disabled>Load assigned note</button></div><p id="source-info" class="muted">Only consented English notes assigned to you appear here. Claim a note in the expert review queue first.</p>
+<label>Target concept<select id="concept" disabled><option value="">Connect to load concepts</option></select></label>
+<details open><summary>Required ideas</summary><ul id="requirements"></ul></details>
+<label>English note text<textarea id="text" maxlength="20000" rows="8" placeholder="Paste the OCR text here. Check it against the original note and correct recognition errors before requesting a suggestion."></textarea></label>
+<label class="check"><input id="scope" type="checkbox">I confirm this concept is in scope and this is all the text I want assessed for it.</label>
+<button id="suggest" disabled>Get model suggestion</button>
+<p class="muted">Check OCR against the original note and correct errors before requesting a suggestion. The text and review are saved when a suggestion is created.</p></section>
+<p id="message" role="status" aria-live="polite"></p>
+<section id="result" hidden><h2>2. Inspect the suggestion</h2><p id="suggestion" class="decision"></p><p id="reason" class="muted"></p><div id="evidence"></div><div id="concerns"></div>
+<h2>3. Confirm or correct</h2><fieldset id="labels"><legend>Your final judgment</legend><label><input type="radio" name="label" value="present"> Complete</label><label><input type="radio" name="label" value="partial"> Partial</label><label><input type="radio" name="label" value="missing"> Missing</label></fieldset>
+<label>Review comment<textarea id="comment" maxlength="2000" rows="3" placeholder="Explain any correction or decision on a withheld suggestion."></textarea></label>
+<label class="check"><input id="confirmed" type="checkbox">I checked the note and checklist and confirm this judgment.</label>
+<div class="row"><button id="save">Save human review</button><button id="download" hidden>Download confirmed review</button></div><p id="saved" role="status"></p>
+</section><footer>English coverage model v3 · Ten scoped science concepts · Confirmation is stored separately from automatic note scores.</footer>
+</main></body></html>

@@ -136,7 +136,7 @@ export const analyzeRawText = async (
       return;
     }
 
-    console.log(`\n🧪 Test analysis on raw text (${text.length} chars)`);
+    console.log(`\n Test analysis on raw text (${text.length} chars)`);
 
     const result = await analyzeNoteContent(text);
 

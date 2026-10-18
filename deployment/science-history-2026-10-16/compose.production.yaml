@@ -1,0 +1,49 @@
+name: notes-science-history
+services:
+  notes-coverage:
+    image: smart-notes-coverage:science-v31-history-v51-release-20261017-presentation
+    pull_policy: never
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ${NOTES_ENV_FILE:-.env.production}
+    environment:
+      NODE_ENV: production
+      PORT: "8004"
+      COVERAGE_BUNDLE_DIR: /app/coverage-runtime
+      COVERAGE_PYTHON: /opt/coverage-python/bin/python
+      ENGLISH_COVERAGE_PYTHON: /opt/coverage-python/bin/python
+      HISTORY_COVERAGE_PYTHON: /opt/coverage-python/bin/python
+      ENGLISH_COVERAGE_SUGGESTIONS_ENABLED: "true"
+      HISTORY_COVERAGE_REVIEW_ENABLED: "true"
+      ICT_COVERAGE_REVIEW_ENABLED: "false"
+      ENGLISH_COVERAGE_REVIEW_ENABLED: "false"
+      ANNOTATION_REVIEW_ENABLED: "false"
+      UPLOAD_DIR: /app/uploads
+      EMBEDDING_CACHE_DIR: /app/.cache/embeddings
+    command: ["sh", "-c", "node /release/check-config.cjs && exec node dist/server.js"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:${NOTES_HOST_PORT:-8005}:8004"
+    volumes:
+      - ./check-config.cjs:/release/check-config.cjs:ro
+      - ./check-dependencies.cjs:/release/check-dependencies.cjs:ro
+      - notes-uploads:/app/uploads
+      - notes-audio:/app/generated_audio
+      - notes-cache:/app/.cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    stop_grace_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  notes-uploads:
+  notes-audio:
+  notes-cache:

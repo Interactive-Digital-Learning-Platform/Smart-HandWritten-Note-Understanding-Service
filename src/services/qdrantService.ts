@@ -67,10 +67,7 @@ export interface CurriculumRetrievalContext {
   matchedLesson?: CurriculumLesson;
 }
 
-/**
- * Service to query the Qdrant Vector Knowledge Base and Neon PostgreSQL database
- * directly with chapter-bounded search and dual-grounded page citations.
- */
+// Searches textbook data in Qdrant and PostgreSQL.
 export class QdrantService {
   private qdrantBaseUrl: string;
   private collectionName: string;
@@ -80,9 +77,7 @@ export class QdrantService {
     this.collectionName = config.qdrant.collection;
   }
 
-  /**
-   * Fetches status and statistics for the official pdf_knowledge_base collection in Qdrant.
-   */
+  // Gets the Qdrant collection status and counts.
   public async getCollectionStats(): Promise<QdrantCollectionInfo> {
     try {
       const response = await axios.get(
@@ -116,10 +111,7 @@ export class QdrantService {
     }
   }
 
-  /**
-   * Performs true dense-vector retrieval against the vectors written by the PDF
-   * Ingestion service, with optional chapter page bounding applied afterwards.
-   */
+  // Searches stored vectors and can limit results to a chapter.
   public async searchKnowledgeBase(
     query: string,
     limit: number = 8,
@@ -129,12 +121,7 @@ export class QdrantService {
     return this.searchByVectorSimilarity(query, limit, bounds);
   }
 
-  /**
-   * Embeds the query using the same Nomic model/prefix convention as ingestion,
-   * then asks Qdrant to rank points by its configured vector distance (cosine).
-   * This deliberately does not fall back to keyword matching: callers must not
-   * mistake an unavailable embedding provider for semantic retrieval.
-   */
+  // Embeds the query and ranks matching Qdrant points. This has no keyword fallback.
   public async searchByVectorSimilarity(
     query: string,
     limit: number = 10,
@@ -169,7 +156,7 @@ export class QdrantService {
       );
       points = response.data?.result?.points || [];
     } catch (queryError) {
-      // Qdrant versions before the universal query API use /points/search.
+      // Older Qdrant versions use this search endpoint.
       try {
         const legacyResponse = await axios.post(
           `${this.qdrantBaseUrl}/collections/${this.collectionName}/points/search`,
@@ -186,8 +173,7 @@ export class QdrantService {
       .filter((point) => this.isWithinBounds(point.payload || {}, bounds))
       .map((point) => this.toSearchChunk(point, "vector"));
 
-    // Re-ingestion can leave duplicate chunks in the collection. Suppress them
-    // before grounding the LLM so repeated evidence cannot dominate context.
+    // Remove duplicate chunks left by repeated ingestion.
     const seen = new Set<string>();
     return rankedChunks
       .filter((chunk) => {
@@ -199,9 +185,7 @@ export class QdrantService {
       .slice(0, limit);
   }
 
-  /**
-   * Lists all ingested PDF textbook documents by querying the PostgreSQL database directly.
-   */
+  // Lists ingested textbooks from PostgreSQL.
   public async getIngestedDocuments(): Promise<IngestedDocumentInfo[]> {
     try {
       const dbDocs = await curriculumDbService.getUniqueCurriculumTextbooks();
@@ -261,10 +245,7 @@ export class QdrantService {
     }
   }
 
-  /**
-   * Retrieves textbook passages and compiles curriculum grounding context for a note,
-   * strictly bounded to the chapter's PDF and Book page ranges.
-   */
+  // Gets textbook context from within the chapter page range.
   public async getCurriculumTextbookContext(
     subject: string,
     topic: string,
@@ -276,7 +257,7 @@ export class QdrantService {
     const g = grade || 10;
     const snippet = textSnippet ? textSnippet.slice(0, 300) : "";
 
-    // 1. Look up authoritative Table of Contents chapter boundaries
+    // Find the chapter page range.
     const chapterBounds = curriculumDbService.getChapterPageBounds(s, g, t);
 
     const searchBounds: SearchPageBounds | undefined = chapterBounds
@@ -339,10 +320,7 @@ export class QdrantService {
     };
   }
 
-  /**
-   * Dynamically constructs a structured CurriculumLesson from ingested PDF textbook passages
-   * and chapter boundaries directly from the database knowledge base.
-   */
+  // Builds a lesson from stored textbook passages.
   public async extractDynamicLessonFromPassages(
     subject: string,
     topic: string,
@@ -452,9 +430,7 @@ Rules:
     }
   }
 
-  /**
-   * Scrolls points from the Qdrant collection to retrieve ingested document passages.
-   */
+  // Reads document passages from Qdrant.
   public async scrollPoints(
     limit: number = 50,
     offset?: string | number
@@ -487,10 +463,7 @@ Rules:
     }
   }
 
-  /**
-   * Searches the Qdrant knowledge base for passages matching keywords / topic text,
-   * strictly filtering within the provided chapter page boundaries.
-   */
+  // Finds keyword matches within the chapter page range.
   public async searchByKeywordPayload(
     keyword: string,
     limit: number = 10,
@@ -506,13 +479,12 @@ Rules:
         const text = (payload.text || "").toLowerCase();
         const filename = (payload.filename || "").toLowerCase();
 
-        // Strict filename and chapter-page boundary, including explicitly
-        // mapped alternate textbook editions.
+        // Accept only the selected textbook and page range.
         if (!this.isWithinBounds(payload, bounds)) {
           return false;
         }
 
-        // 3. Keyword / text match
+        // Check the passage text and filename.
         if (text.includes(lowerKey) || filename.includes(lowerKey)) {
           return true;
         }

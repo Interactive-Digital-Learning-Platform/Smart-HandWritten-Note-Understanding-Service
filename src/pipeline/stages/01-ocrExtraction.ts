@@ -2,6 +2,8 @@ import path from "path";
 import fs from "fs";
 import { PipelineContext } from "../types";
 import { extractTextFromImage } from "../../services/ocrService";
+import { config } from "../../config/config";
+import { ocrIdentity, restoreOcrSummary } from "../ocrProvenance";
 
 /**
  * Resolves the image URL (which may be a relative upload path like
@@ -27,6 +29,9 @@ const resolveImagePath = (imageUrl: string): string => {
 
   // Strip leading slashes/backslashes so path.resolve resolves relative to process.cwd()
   const stripped = cleanPath.replace(/^[/\\]+/, "");
+  if (/^uploads[/\\]/i.test(stripped)) {
+    return path.resolve(config.uploads.uploadDir, path.basename(stripped));
+  }
   return path.resolve(process.cwd(), stripped);
 };
 
@@ -40,17 +45,21 @@ const resolveImagePath = (imageUrl: string): string => {
 export const runOcrExtraction = async (
   ctx: PipelineContext
 ): Promise<void> => {
+  const pages = ctx.imageUrls && ctx.imageUrls.length > 0
+    ? ctx.imageUrls
+    : [ctx.imageUrl];
   if (ctx.rawOcrText && ctx.rawOcrText.trim().length > 0) {
+    ctx.ocrExtraction = restoreOcrSummary(ctx.rawOcrText, pages, ctx.cachedOcr);
+    ctx.qualityWarnings = [...new Set([...(ctx.qualityWarnings ?? []), ...(ctx.ocrExtraction.warnings ?? [])])];
     console.log(
       `  [Stage 1] ⚡ Pre-extracted OCR text provided (${ctx.rawOcrText.length} chars), skipping vision OCR`
     );
     return;
   }
 
-  const pages = ctx.imageUrls && ctx.imageUrls.length > 0
-    ? ctx.imageUrls
-    : [ctx.imageUrl];
-
+  // Fresh image extraction replaces cached quality, including its readability.
+  ctx.cachedOcr = undefined;
+  ctx.ocrExtraction = undefined;
 
   console.log(
     `  [Stage 1] OCR Extraction — note: ${ctx.noteId} (${pages.length} page(s))`
@@ -71,6 +80,7 @@ export const runOcrExtraction = async (
     }
 
     console.log(`  [Stage 1] 📄 OCR Page ${pageNum}/${pages.length} (${path.basename(imagePath)})`);
+    await ctx.reportProgress?.({ stage: "ocr_extraction", currentPage: pageNum });
     let result = await extractTextFromImage(imagePath);
 
     if (!result.success && /rate limited/i.test(result.error ?? "")) {
@@ -84,7 +94,7 @@ export const runOcrExtraction = async (
       result = await extractTextFromImage(imagePath);
     }
 
-    if (result.success && result.text) {
+    if (result.success && result.text?.trim()) {
       pageTexts.push({ pageNumber: pageNum, text: result.text.trim() });
     } else {
       console.warn(`  [Stage 1] ⚠️ Page ${pageNum} OCR failed after retries: ${result.error}`);
@@ -133,6 +143,9 @@ export const runOcrExtraction = async (
     totalPages: pages.length,
     extractedPages: acceptedPages.length,
     failedPages,
+    qualityState: "known",
+    source: "vision",
+    ...ocrIdentity(combinedText, pages),
   };
   if (failedPages > 0) {
     ctx.qualityWarnings = [
@@ -140,6 +153,8 @@ export const runOcrExtraction = async (
       `OCR could not read ${failedPages} of ${pages.length} uploaded page(s); coverage may be incomplete.`,
     ];
   }
+
+  ctx.ocrExtraction.warnings = [...(ctx.qualityWarnings ?? [])];
 
   console.log(
     `  [Stage 1] ✅ OCR complete across ${acceptedPages.length}/${pages.length} pages — ` +

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>English concept coverage review</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f5f7;color:#152333;font:16px/1.6 system-ui,sans-serif}main{max-width:960px;margin:32px auto;padding:0 22px 50px}h1{font-size:28px;line-height:1.2;margin-bottom:12px}h2{font-size:21px;margin-top:0}h3{font-size:16px;margin-bottom:6px}.muted{color:#536273}.top{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}article{background:white;padding:26px;border:1px solid #d7dee6;border-radius:12px;margin:22px 0}.note{white-space:pre-wrap;background:#f5f7fa;border-left:3px solid #526b85;padding:20px;overflow-wrap:anywhere}.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:15px 0}.choice{display:flex;align-items:flex-start;gap:10px;border:1px solid #bbc6d2;border-radius:8px;padding:12px;cursor:pointer}.choice:has(input:checked){background:#e5f0fb;border-color:#205c96}.choice input{margin-top:6px}button{background:white;color:#18334d;border:1px solid #abbaca;border-radius:7px;padding:11px 18px;font:inherit;cursor:pointer}button.primary{background:#174c7c;color:white;border-color:#174c7c}button:disabled{opacity:.45;cursor:default}textarea,input[type=text],select{font:inherit;padding:10px;border:1px solid #abbaca;border-radius:7px;max-width:100%}textarea{width:100%;min-height:85px;resize:vertical}label strong{display:block}.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;align-items:center}progress{width:100%;height:10px;accent-color:#174c7c}#message{min-height:25px;color:#174c7c}details{margin:12px 0}.error{color:#9a2631!important}:focus-visible{outline:3px solid #3675ab;outline-offset:3px}@media(max-width:550px){.choices{grid-template-columns:1fr}article{padding:17px}.note{padding:14px}main{padding:0 14px}h1{font-size:25px}}
+</style>
+</head>
+<body><main>
+<div class="top"><div><p class="muted">Human review · English Science</p><h1>Does this note cover the concept?</h1></div><span id="count" aria-live="polite"></span></div>
+<p>Review the note against the named concept and its draft checklist. Judge the explanation, not just matching words. Model predictions and the example author's labels are hidden.</p>
+<details><summary>How to label</summary><ul>
+<li><strong>Complete:</strong> the required ideas are adequately and correctly explained or demonstrated. Concise notes can be complete.</li>
+<li><strong>Partial:</strong> meaningful relevant explanation is present, but a required idea is absent or there is an unresolved substantive error.</li>
+<li><strong>Missing:</strong> there is no meaningful explanation of this target. A bare heading or a neighbouring topic does not count.</li>
+<li><strong>Unclear / checklist issue:</strong> the target, checklist or example is ambiguous. Explain the issue in the comment.</li></ul>
+<p>Assume the displayed text is the entire submitted note for this concept. These are synthetic examples. Your review supplies human judgments; it does not turn them into real handwritten notes.</p></details>
+<progress id="progress" max="30" value="0" aria-label="Examples reviewed"></progress>
+<div class="top"><label for="jump">Example <select id="jump"></select></label><span id="save" class="muted" aria-live="polite"></span></div>
+<article>
+<h2 id="concept"></h2>
+<details open><summary>Draft coverage checklist</summary><ul id="requirements"></ul></details>
+<h3>Student note</h3><div id="note" class="note"></div>
+<fieldset style="border:0;padding:0;margin-top:20px"><legend><strong>Your judgment</strong></legend><div class="choices">
+<label class="choice"><input type="radio" name="label" value="present"><span><strong>Complete</strong>Required ideas covered correctly</span></label>
+<label class="choice"><input type="radio" name="label" value="partial"><span><strong>Partial</strong>Some coverage or a substantive error</span></label>
+<label class="choice"><input type="radio" name="label" value="missing"><span><strong>Missing</strong>No meaningful target explanation</span></label>
+<label class="choice"><input type="radio" name="label" value="unclear"><span><strong>Unclear / checklist issue</strong>Needs clarification</span></label>
+</div></fieldset>
+<label for="comment">Reason or checklist correction <span class="muted">(optional unless unclear)</span></label><textarea id="comment" placeholder="What is missing, incorrect or ambiguous?"></textarea>
+<div class="actions" style="margin-top:15px"><button id="prev">Previous</button><span id="position" class="muted"></span><button id="next" class="primary">Next</button></div>
+</article>
+<label for="reviewer">Reviewer name or initials <input id="reviewer" type="text" maxlength="100" placeholder="Your initials"></label>
+<p class="muted">Progress is saved in this browser when available. Download a draft to keep a backup. Once finished, save the completed review and return that JSON file in the chat.</p>
+<div class="actions"><button id="draft">Download draft</button><label>Restore draft <input id="restore" type="file" accept=".json,application/json"></label><button id="finish" class="primary">Save completed review</button></div>
+<p id="message" aria-live="polite"></p>
+</main>
+<script>
+(()=>{
+const data=__REVIEW_DATA__;
+const byId=id=>document.getElementById(id), key='coverage-review-'+data.packetSha256;
+let index=0,answers={},reviewer='';
+try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved){answers=saved.answers||{};index=Math.min(Math.max(saved.index||0,0),data.examples.length-1);reviewer=saved.reviewer||''}}catch{}
+const radios=Array.from(document.querySelectorAll('input[name=label]'));
+function answered(){return data.examples.filter(e=>answers[e.id]?.label && (answers[e.id].label!=='unclear'||answers[e.id].comment?.trim())).length}
+function progress(){const n=answered();byId('count').textContent=n+' / '+data.examples.length+' reviewed';byId('progress').value=n;byId('finish').disabled=n!==data.examples.length||!byId('reviewer').value.trim()}
+function save(){try{localStorage.setItem(key,JSON.stringify({answers,index,reviewer:byId('reviewer').value}));byId('save').textContent='Saved in this browser'}catch{byId('save').textContent='Browser saving unavailable; download a draft'}progress()}
+function current(){const e=data.examples[index],selected=radios.find(r=>r.checked);answers[e.id]={id:e.id,conceptId:e.conceptId,label:selected?.value||null,comment:byId('comment').value,reviewedAt:new Date().toISOString()};save()}
+function render(){const e=data.examples[index],a=answers[e.id]||{};byId('concept').textContent=e.concept;byId('note').textContent=e.text;byId('requirements').replaceChildren(...e.requirements.map(t=>{const li=document.createElement('li');li.textContent=t;return li}));radios.forEach(r=>r.checked=r.value===a.label);byId('comment').value=a.comment||'';byId('position').textContent='Example '+(index+1)+' of '+data.examples.length;byId('jump').value=String(index);byId('prev').disabled=index===0;byId('next').disabled=index===data.examples.length-1;progress()}
+function payload(final){return{schemaVersion:1,packetVersion:data.version,packetSha256:data.packetSha256,reviewer:byId('reviewer').value.trim(),submittedAt:new Date().toISOString(),completed:final,modelPredictionsShown:false,answers:data.examples.map(e=>answers[e.id]||{id:e.id,conceptId:e.conceptId,label:null,comment:''})}}
+function download(final){current();if(final&&(answered()!==data.examples.length||!byId('reviewer').value.trim())){byId('message').textContent='Review every example, explain unclear decisions, and enter your name or initials.';return}const blob=new Blob([JSON.stringify(payload(final),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=final?'english-coverage-human-review.json':'english-coverage-review-draft.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);byId('message').textContent=final?'Completed review saved. Return the downloaded JSON file in the chat.':'Draft saved. Use Restore draft to continue later.'}
+data.examples.forEach((e,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=String(i+1)+' · '+e.concept;byId('jump').append(o)});
+byId('reviewer').value=reviewer;
+radios.forEach(r=>r.addEventListener('change',current));byId('comment').addEventListener('input',current);byId('reviewer').addEventListener('input',save);
+byId('prev').onclick=()=>{current();index--;render();save()};byId('next').onclick=()=>{current();index++;render();save()};byId('jump').onchange=()=>{current();index=Number(byId('jump').value);render();save()};
+byId('draft').onclick=()=>download(false);byId('finish').onclick=()=>download(true);
+byId('restore').onchange=async event=>{try{const file=event.target.files[0];if(!file)return;const value=JSON.parse(await file.text());if(value.packetSha256!==data.packetSha256||!Array.isArray(value.answers))throw Error('This draft belongs to a different review packet.');const incoming={};for(const a of value.answers){const e=data.examples.find(x=>x.id===a.id);if(!e||e.conceptId!==a.conceptId||![null,'present','partial','missing','unclear'].includes(a.label)||typeof a.comment!=='string'||incoming[a.id])throw Error('Invalid review data.');incoming[a.id]=a}answers=incoming;byId('reviewer').value=value.reviewer||'';render();save();byId('message').textContent='Draft restored.'}catch(error){byId('message').textContent=error.message;byId('message').className='error'}};
+render();
+})();
+</script></body></html>

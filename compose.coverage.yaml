@@ -1,0 +1,36 @@
+services:
+  notes-coverage:
+    image: smart-notes-coverage:science-v34-history-v51-ict-v31
+    build: .
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "8004"
+      COVERAGE_BUNDLE_DIR: /app/coverage-runtime
+      COVERAGE_PYTHON: /opt/coverage-python/bin/python
+      # Avoid inheriting machine-specific Python overrides from a developer .env.
+      ENGLISH_COVERAGE_PYTHON: /opt/coverage-python/bin/python
+      HISTORY_COVERAGE_PYTHON: /opt/coverage-python/bin/python
+      ICT_COVERAGE_PYTHON: /opt/coverage-python/bin/python
+      UPLOAD_DIR: /app/uploads
+      EMBEDDING_CACHE_DIR: /app/.cache/embeddings
+      ENGLISH_COVERAGE_SUGGESTIONS_ENABLED: "true"
+      HISTORY_COVERAGE_REVIEW_ENABLED: "true"
+      ICT_COVERAGE_REVIEW_ENABLED: "true"
+      # Local Qdrant runs outside this backend container.
+      QDRANT_DB_URL: ${COVERAGE_QDRANT_URL:-http://host.docker.internal:6333}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:${COVERAGE_HOST_PORT:-8005}:8004"
+    volumes:
+      - coverage-uploads:/app/uploads
+      - coverage-audio:/app/generated_audio
+      - coverage-cache:/app/.cache
+volumes:
+  coverage-uploads:
+  coverage-audio:
+  coverage-cache:

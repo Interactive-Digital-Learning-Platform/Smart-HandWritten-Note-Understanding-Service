@@ -2,13 +2,20 @@ import { Request, Response, NextFunction } from "express";
 import path from "path";
 import fs from "fs/promises";
 import { Note } from "../models/Note";
+import {expireProcessingNote} from '../services/processingLease';
 import { LearningMaterial } from "../models/LearningMaterial";
 import { sendSuccess, sendError, AppError } from "../middleware/errorHandler";
 import { processNote as runPipeline } from "../services/processingService";
 import { recordStudentConceptVerification } from "../services/profileService";
-import { generateMaterials } from "../services/materialsService";
+import { queueMaterials } from "../services/materialsService";
 import { QuizDiagnosticRequest } from "../models/QuizDiagnosticRequest";
 import { config } from "../config/config";
+import { studentId } from "../middleware/studentAuth";
+import { parseResearchConsent } from "../annotations/liveReview";
+import {
+  queueNoteForExpertReview,
+  withdrawNoteFromExpertReview,
+} from "../services/annotationCollectionService";
 
 /** Deletes a storage file only by its basename inside an approved directory. */
 const deleteStoredFile = async (directory: string, storedUrl?: string): Promise<void> => {
@@ -74,7 +81,11 @@ export const uploadNote = async (
       return;
     }
 
-    const { userId, title, subject, grade, topic, lessonName, lessonId } = req.body;
+    const {
+      title, subject, grade, topic, lessonName, lessonId,
+      researchConsent, researchConsentVersion,
+    } = req.body;
+    const userId = studentId(res);
 
     const imageUrls = uploadedFiles.map(
       (file) => `/uploads/${path.basename(file.path)}`
@@ -97,6 +108,11 @@ export const uploadNote = async (
       userGrade: !isNaN(parsedGrade as number) ? parsedGrade : undefined,
       userTopic,
       userLessonId: lessonId || undefined,
+      researchConsent: parseResearchConsent(
+        researchConsent,
+        researchConsentVersion,
+        config.annotationReview.consentVersion
+      ),
     });
 
     sendSuccess(
@@ -111,6 +127,7 @@ export const uploadNote = async (
         userSubject: note.userSubject,
         userGrade: note.userGrade,
         userTopic: note.userTopic,
+        researchConsent: note.researchConsent,
         createdAt: note.createdAt,
       },
       `Note uploaded successfully (${pageCount} page(s)). Ready for processing.`,
@@ -132,15 +149,16 @@ export const getNotes = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { userId, status } = req.query;
+    const { status } = req.query;
+    const userId = studentId(res);
+    if (req.query.userId !== undefined && req.query.userId !== userId) throw new AppError("You can only list your own notes", 403);
 
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 10));
     const skip = (page - 1) * limit;
 
     // Build filter
-    const filter: Record<string, unknown> = {};
-    if (userId) filter.userId = userId;
+    const filter: Record<string, unknown> = { userId };
     if (status) filter.status = status;
 
     const [notes, total] = await Promise.all([
@@ -152,6 +170,7 @@ export const getNotes = async (
       Note.countDocuments(filter),
     ]);
 
+    await Promise.all(notes.filter(note=>note.status==='processing').map(note=>expireProcessingNote(note)));
     sendSuccess(res, {
       notes,
       pagination: {
@@ -183,6 +202,7 @@ export const getNoteById = async (
       throw new AppError("Note not found", 404);
     }
 
+    if(note.status==='processing')await expireProcessingNote(note);
     sendSuccess(res, note);
   } catch (error) {
     next(error);
@@ -253,12 +273,13 @@ export const verifyConceptFinding = async (
 
       // Material generation is asynchronous, matching the rest of the note
       // workflow. It uses only concepts the student confirmed need support.
-      generateMaterials(
+      const materialJobs = await queueMaterials(
         id,
         ["structured_notes", "flashcards", "learning_points"],
         undefined,
         { targetConcepts: confirmedConcepts }
-      ).catch((err) => {
+      );
+      materialJobs.completion.catch((err) => {
         console.error(`Targeted material generation failed for note ${id}:`, err);
       });
 
@@ -330,6 +351,8 @@ export const deleteNote = async (
       throw new AppError("Note not found", 404);
     }
 
+    await withdrawNoteFromExpertReview(String(note._id));
+
     // Remove derived audio before its material metadata is deleted.
     const materials = await LearningMaterial.find({ noteId: req.params.id }).select("audioUrl");
     await Promise.all(
@@ -369,12 +392,13 @@ export const processNote = async (
   try {
     const { id } = req.params;
 
-    const note = await Note.findById(id).select("status title");
+    const note = await Note.findById(id);
 
     if (!note) {
       throw new AppError("Note not found", 404);
     }
 
+    if(note.status==='processing')await expireProcessingNote(note);
     if (note.status === "processing") {
       sendError(
         res,
@@ -421,6 +445,7 @@ export const updateNoteContextAndProcess = async (
     const note = await Note.findById(id);
 
     if (!note) throw new AppError("Note not found", 404);
+    if (note.status === "processing") await expireProcessingNote(note);
     if (note.status === "processing") {
       sendError(res, "Note is already being processed.", 409);
       return;
@@ -442,10 +467,17 @@ export const updateNoteContextAndProcess = async (
       update.userGrade = undefined;
     }
 
+    const values = Object.fromEntries(Object.entries(update).filter(([, value]) => value !== undefined));
+    const removed = Object.fromEntries(Object.entries(update).filter(([, value]) => value === undefined).map(([key]) => [key, 1]));
+    const changed = await Note.updateOne({_id: id, status: {$ne: 'processing'}, updatedAt: note.updatedAt},
+      {$set: values, ...(Object.keys(removed).length ? {$unset: removed} : {})});
+    if (!changed.matchedCount) {
+      sendError(res, "This note changed or another analysis started. Refresh and try again.", 409);
+      return;
+    }
     Object.assign(note, update);
     // Materials were generated for the previous curriculum mapping.
     await LearningMaterial.deleteMany({ noteId: id });
-    await note.save();
 
     runPipeline(id as string, true).catch((err) => {
       console.error(`Background re-analysis error for note ${id}:`, err);
@@ -490,7 +522,10 @@ export const uploadAndProcess = async (
 
     // These hints are optional: they give the pipeline student-provided context
     // without preventing automatic identification when a student does not know it.
-    const { userId, title, subject, grade, topic, lessonName, lessonId } = req.body;
+    const {
+      title, subject, grade, topic, lessonName, lessonId,
+      researchConsent, researchConsentVersion,
+    } = req.body;
 
     const imageUrls = uploadedFiles.map(
       (file) => `/uploads/${path.basename(file.path)}`
@@ -501,7 +536,7 @@ export const uploadAndProcess = async (
     const userTopic = topic || lessonName || undefined;
 
     const note = await Note.create({
-      userId,
+      userId: studentId(res),
       title: title || (userTopic ? `${userTopic} Note` : "Untitled Note"),
       imageUrl: primaryImageUrl,
       imageUrls,
@@ -512,6 +547,11 @@ export const uploadAndProcess = async (
       userGrade: !isNaN(parsedGrade as number) ? parsedGrade : undefined,
       userTopic,
       userLessonId: lessonId || undefined,
+      researchConsent: parseResearchConsent(
+        researchConsent,
+        researchConsentVersion,
+        config.annotationReview.consentVersion
+      ),
     });
 
     const noteId = (note._id as unknown as string).toString();
@@ -534,12 +574,61 @@ export const uploadAndProcess = async (
         userGrade: note.userGrade,
         userTopic: note.userTopic,
         userLessonId: note.userLessonId,
+        researchConsent: note.researchConsent,
         pollUrl: `/api/notes/${noteId}`,
         createdAt: note.createdAt,
       },
       `Note uploaded (${pageCount} page(s)) and processing started. Poll pollUrl to track progress.`,
       202
     );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** Grant or withdraw optional research-data use for an existing note. */
+export const updateResearchConsent = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params as { id: string };
+    const { userId, status, version } = req.body as {
+      userId?: string;
+      status?: "granted" | "withdrawn";
+      version?: string;
+    };
+    if (!userId || (status !== "granted" && status !== "withdrawn")) {
+      sendError(res, "userId and status (granted or withdrawn) are required", 400);
+      return;
+    }
+    const note = await Note.findById(id);
+    if (!note) throw new AppError("Note not found", 404);
+    if (note.userId !== userId) throw new AppError("Note owner mismatch", 403);
+
+    if (status === "granted") {
+      note.researchConsent = parseResearchConsent(
+        true,
+        version,
+        config.annotationReview.consentVersion
+      );
+      await note.save();
+      if (note.status === "analyzed") {
+        await queueNoteForExpertReview(note);
+      }
+    } else {
+      note.researchConsent = {
+        status: "withdrawn",
+        version: note.researchConsent?.version,
+        grantedAt: note.researchConsent?.grantedAt,
+        withdrawnAt: new Date(),
+      };
+      await note.save();
+      await withdrawNoteFromExpertReview(id);
+    }
+
+    sendSuccess(res, { noteId: id, researchConsent: note.researchConsent });
   } catch (error) {
     next(error);
   }

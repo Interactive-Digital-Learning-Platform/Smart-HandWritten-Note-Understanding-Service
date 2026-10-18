@@ -2,7 +2,7 @@ import { config } from "../config/config";
 import { groqPool } from "./groqPool";
 import { IAnalysis, ILearningGap } from "../models/Note";
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// Response types.
 
 export interface AnalysisResult {
   success: boolean;
@@ -10,7 +10,7 @@ export interface AnalysisResult {
   error?: string;
 }
 
-// Raw shape returned by Groq before we validate it
+// Groq response before validation.
 interface RawAnalysis {
   subject?: unknown;
   topic?: unknown;
@@ -22,7 +22,7 @@ interface RawAnalysis {
   overallCompleteness?: unknown;
 }
 
-// ─── System prompt ──────────────────────────────────────────────────────────
+// Instructions sent to Groq.
 
 const SYSTEM_PROMPT = `You are an expert educational analyst specializing in Sri Lanka's 
 secondary school curriculum (O/L and A/L levels). You deeply understand subjects like 
@@ -35,7 +35,7 @@ or explained poorly compared to what the Sri Lankan curriculum expects them to k
 
 You always respond with ONLY a valid JSON object, no markdown fences, no explanation text.`;
 
-// ─── User prompt builder ────────────────────────────────────────────────────
+// Builds the prompt from the note text.
 
 const buildAnalysisPrompt = (rawText: string): string => `
 Analyze the following student notes extracted via OCR from a handwritten page.
@@ -80,12 +80,7 @@ relative to full curriculum coverage of this topic.
 If the OCR text is very short or unclear, still give your best analysis based on 
 what you can detect.`;
 
-// ─── JSON extraction helper ─────────────────────────────────────────────────
-
-/**
- * Extracts and parses a JSON object from a Groq response string.
- * Handles cases where the model wraps JSON in markdown code fences.
- */
+// Reads JSON even when it is inside a code block.
 const extractJson = (content: string): RawAnalysis => {
   let cleaned = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
   const stripped = cleaned
@@ -99,11 +94,7 @@ const extractJson = (content: string): RawAnalysis => {
   return JSON.parse(jsonStr) as RawAnalysis;
 };
 
-// ─── Validator ──────────────────────────────────────────────────────────────
-
-/**
- * Validates and normalises the raw Groq response into a typed IAnalysis object.
- */
+// Checks and cleans the Groq response.
 const validateAnalysis = (raw: RawAnalysis): IAnalysis => {
   const safeString = (v: unknown, fallback: string) =>
     typeof v === "string" && v.trim() ? v.trim() : fallback;
@@ -144,14 +135,7 @@ const validateAnalysis = (raw: RawAnalysis): IAnalysis => {
   };
 };
 
-// ─── Main analysis function ─────────────────────────────────────────────────
-
-/**
- * Sends OCR-extracted text to Groq and returns a structured learning analysis.
- *
- * @param rawText - The OCR-extracted text from the student's handwritten notes
- * @returns AnalysisResult with validated IAnalysis or an error message
- */
+// Sends the OCR text to Groq and returns the note analysis.
 export const analyzeNoteContent = async (
   rawText: string
 ): Promise<AnalysisResult> => {

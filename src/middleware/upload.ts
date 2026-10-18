@@ -40,7 +40,7 @@ const fileFilter = (
     "image/heif",
   ];
   const mime = file.mimetype?.toLowerCase();
-  if (allowedMimeTypes.includes(mime) || mime?.startsWith("image/")) {
+  if (allowedMimeTypes.includes(mime)) {
     cb(null, true);
   } else {
     cb(
@@ -58,5 +58,8 @@ export const upload = multer({
   fileFilter,
   limits: {
     fileSize: config.uploads.maxFileSizeMB * 1024 * 1024,
+    files:20,
+    fields:20,
+    parts:40,
   },
 });

@@ -1,9 +1,12 @@
 import { Note, INote, IAnalysis } from "../models/Note";
 import { runPipeline } from "../pipeline";
 import { PipelineContext } from "../pipeline/types";
+import { cachedOcrInput } from "../pipeline/ocrProvenance";
+import {claimProcessing,expireProcessingNote,processingLeaseFilter,PROCESSING_LEASE_MS} from './processingLease';
 import { updateProfileFromAnalysis } from "./profileService";
+import { queueNoteForExpertReview } from "./annotationCollectionService";
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// Processing options.
 
 export interface ProcessingResult {
   success: boolean;
@@ -26,17 +29,8 @@ export interface ProcessingOptions {
   };
 }
 
-// ─── Context → IAnalysis Mapper ─────────────────────────────────────────────
-
-/**
- * Converts the final PipelineContext into the IAnalysis shape
- * stored in the Note MongoDB document.
- *
- * Maps new pipeline fields to the expanded IAnalysis interface
- * AND maintains backward-compatible legacy fields for existing
- * mobile app consumers.
- */
-const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
+// Converts pipeline results to the format stored with a note.
+export const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
   const subject = ctx.matchedLesson?.subject
     ?? ctx.subjectDetection?.subject
     ?? "Unknown";
@@ -49,7 +43,7 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     ? `Grade ${ctx.subjectDetection.grade}`
     : "Unknown";
 
-  // ── Found / missing concept names ───────────────────────────────────────
+  // Concepts found or missing in the note.
   const keyConcepts = (ctx.conceptMatches ?? [])
     .filter((m) => m.status === "present")
     .map((m) => m.concept.name);
@@ -80,16 +74,14 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     studentVerification: "unverified" as const,
   }));
 
-  // ── Legacy learningGaps (backward compatibility only) ───────────────────
-  // These represent concepts not covered in this upload, not verified
-  // knowledge deficits. New clients should use explainableGaps.findingStatus.
+  // Kept for older clients. These are missing from the note, not proven learning gaps.
   const learningGaps = (ctx.explainableGaps ?? []).map((g) => ({
     concept: `Needs further coverage in this note: ${g.missingConcepts.map((c) => c.name).join(", ") || g.learningOutcome.description}`,
     severity: (g.missingConcepts[0]?.severity ?? "medium") as "low" | "medium" | "high",
     suggestion: g.recommendation,
   }));
 
-  // ── New explainable gaps ─────────────────────────────────────────────────
+  // Gaps with supporting details.
   const explainableGaps = (ctx.explainableGaps ?? []).map((g) => ({
     outcomeId: g.learningOutcome.id,
     outcomeDescription: g.learningOutcome.description,
@@ -101,7 +93,7 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
     verificationStatus: g.verificationStatus,
   }));
 
-  // ── Overall completeness: prefer weighted coverage ───────────────────────
+  // Use weighted coverage when available.
   const overallCompleteness =
     ctx.coverageScores?.weightedCoverage ??
     ctx.coverageScores?.simpleCoverage ??
@@ -113,44 +105,45 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
   const parsedUnitNum = unitMatch ? parseInt(unitMatch[1], 10) : undefined;
 
   return {
-    // Core identification
+    // Note details.
     subject,
     topic,
     gradeLevel,
     unitNumber: parsedUnitNum,
     lessonNumber: parsedUnitNum,
 
-    // Curriculum KB match & Ingested Textbook
+    // Curriculum and textbook match.
     lessonId: ctx.matchedLessonId,
     lessonMatchConfidence: ctx.lessonMatchConfidence,
     lessonMatchMethod: ctx.lessonMatchMethod,
     textbookReference: ctx.matchedLesson?.textbookReference,
     textbookPassages: ctx.textbookPassages,
 
-    // OCR quality
+    // OCR quality.
     ocrConfidence: ctx.ocrCleaning?.confidenceScore,
     ocrLowQualityWarning: ctx.ocrCleaning?.lowQualityWarning,
     ocrPageSummary: ctx.ocrExtraction,
     noteScope: ctx.noteScope,
     contentLanguage: ctx.contentLanguage,
 
-    // Coverage
+    // Coverage.
     keyConcepts,
     partialConcepts,
     missingConcepts: missingConceptNames,
     conceptFindings,
+    englishCoverageCheck: ctx.englishCoverageCheck,
     coverageScores: ctx.coverageScores,
     overallCompleteness,
 
-    // Gaps
+    // Gaps.
     learningGaps,
     explainableGaps,
 
-    // Strengths & exam readiness
+    // Strengths and exam readiness.
     strengthAreas: ctx.strengthAreas ?? [],
     examReadiness: ctx.examReadiness,
 
-    // Pipeline metadata
+    // Processing details.
     curriculumVersion: ctx.curriculumVersion,
     pipelineVersion: ctx.pipelineVersion,
     qualityWarnings: ctx.qualityWarnings ?? [],
@@ -158,19 +151,7 @@ const contextToAnalysis = (ctx: PipelineContext): IAnalysis => {
   };
 };
 
-// ─── Main Pipeline ──────────────────────────────────────────────────────────
-
-/**
- * Full processing pipeline for a handwritten note.
- *
- * Delegates all processing to the new 10-stage Hybrid Pipeline.
- * After the pipeline completes, maps the PipelineContext back to the
- * IAnalysis shape and saves it to MongoDB.
- *
- * Status transitions: uploaded → processing → analyzed | failed
- *
- * @param noteId - MongoDB ObjectId string of the note to process
- */
+// Processes a note and saves the result. Status: uploaded, processing, then analyzed or failed.
 export const processNote = async (
   noteId: string,
   force: boolean = false,
@@ -179,15 +160,18 @@ export const processNote = async (
   let note: INote | null = null;
   let previousAnalysis: INote["analysis"] | undefined;
   let isForcedReanalysis = false;
+  let token:string|null=null;
+  let heartbeat:ReturnType<typeof setInterval>|undefined;
 
   try {
-    // ── Fetch & validate ────────────────────────────────────────────────────
+    // Load and check the note.
     note = await Note.findById(noteId);
 
     if (!note) {
       return { success: false, noteId, error: "Note not found" };
     }
 
+    if (note.status === "processing") await expireProcessingNote(note);
     if (note.status === "processing") {
       return {
         success: false,
@@ -205,13 +189,17 @@ export const processNote = async (
       };
     }
 
-    // ── Mark as processing ──────────────────────────────────────────────────
+    // Mark the note as processing.
     previousAnalysis = note.analysis;
     isForcedReanalysis = force && note.status === "analyzed";
-    note.status = "processing";
-    await note.save();
+    token=await claimProcessing(note);
+    if(!token)return {success:false,noteId,error:'This note changed or another analysis already started. Refresh and try again.'};
+    const activeFilter=()=>processingLeaseFilter(noteId,token!);
+    heartbeat=setInterval(()=>{
+      void Note.updateOne(activeFilter(),{$set:{processingLeaseExpiresAt:new Date(Date.now()+PROCESSING_LEASE_MS)}}).catch(()=>{});
+    },15000);heartbeat.unref();
 
-    // ── Run the Hybrid Pipeline ─────────────────────────────────────────────
+    // Run the analysis pipeline.
     const imageUrls = note.imageUrls && note.imageUrls.length > 0
       ? note.imageUrls
       : [note.imageUrl];
@@ -222,7 +210,7 @@ export const processNote = async (
         userId: note.userId,
         imageUrl: note.imageUrl,
         imageUrls,
-        rawOcrText: options.refreshOcr ? undefined : note.rawText || undefined,
+        ...cachedOcrInput(note, options.refreshOcr),
         userSubject: note.userSubject ?? options.analysisHints?.subject,
         userGrade: note.userGrade ?? options.analysisHints?.grade,
         userTopic: note.userTopic ?? options.analysisHints?.topic,
@@ -230,24 +218,44 @@ export const processNote = async (
       },
       {
         asyncMaterialGeneration: true,
+        beforeAnalysisPublish:async()=>{if(!await Note.exists(activeFilter()))throw Error('This analysis attempt expired or was replaced');},
+        onProgress: async progress => {
+          await Note.updateOne(activeFilter(),
+            { $set: { processingProgress: progress } });
+        },
         skipMaterialGeneration: options.skipMaterialGeneration,
         onAnalysisReady: async (ctx) => {
           if (!note) return;
 
-          // ── Persist OCR text ──────────────────────────────────────────────
+          // Save the OCR text.
           const rawText = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
+          note.rawOcrText = ctx.rawOcrText ?? rawText;
           note.rawText = rawText;
 
-          // ── Persist analysis & mark as analyzed immediately ───────────────
+          // Save the analysis and finish the note.
           const analysis = contextToAnalysis(ctx);
+          const saved=await Note.updateOne(activeFilter(),{$set:{rawOcrText:note.rawOcrText,rawText,analysis,status:'analyzed'},
+            $unset:{processingProgress:1,errorMessage:1,processingRunId:1,processingLeaseExpiresAt:1}});
+          if(!saved.modifiedCount)throw Error('This analysis attempt expired or was replaced');
           note.analysis = analysis;
           note.status = "analyzed";
+          note.processingProgress = undefined;
           note.errorMessage = undefined;
-          await note.save();
+          note.processingRunId=undefined;note.processingLeaseExpiresAt=undefined;
 
-          // ── Update Student Profile (non-fatal) ─────────────────────────────
+          // Research collection is explicitly opt-in and must never make the
+          // student-facing note analysis fail.
+          if (note.researchConsent?.status === "granted") {
+            try {
+              await queueNoteForExpertReview(note);
+            } catch (error) {
+              console.error(`Could not queue note ${noteId} for expert review:`, error);
+            }
+          }
+
+          // Update the profile without failing the note.
           if (options.updateStudentProfile !== false) {
-            await updateProfileFromAnalysis(ctx, previousAnalysis);
+            try{await updateProfileFromAnalysis(ctx, previousAnalysis);}catch{console.warn('Could not update the Notes learning profile; saved analysis is available.');}
           }
 
           console.log(
@@ -283,18 +291,20 @@ export const processNote = async (
 
     console.error(`\n❌ Processing failed for note ${noteId}: ${message}\n`);
 
-    if (note) {
+    if (note && token) {
+      note.processingProgress = undefined;
       if (isForcedReanalysis && previousAnalysis) {
         note.analysis = previousAnalysis;
         note.status = "analyzed";
-        note.errorMessage = `Reanalysis failed; previous analysis preserved: ${message}`;
+        note.errorMessage = 'Analysis was interrupted. Your earlier results were kept. Try analyzing again.';
       } else {
         note.status = "failed";
-        note.errorMessage = message;
+        note.errorMessage = 'We could not finish this analysis. Please try again.';
       }
-      await note.save();
+      await Note.updateOne({_id:noteId,status:'processing',processingRunId:token},
+        {$set:{status:note.status,errorMessage:note.errorMessage},$unset:{processingProgress:1,processingRunId:1,processingLeaseExpiresAt:1}});
     }
 
     return { success: false, noteId, error: message };
-  }
+  } finally {if(heartbeat)clearInterval(heartbeat);}
 };

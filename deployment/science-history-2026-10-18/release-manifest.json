@@ -1,0 +1,45 @@
+{
+  "archiveSha256": "6f7f50a916c970c69e968729fe644c20df3cb22075a7b9a21f1090124915f13a",
+  "oldReleasePreserved": true,
+  "notesOnlyChanges": true,
+  "independentNewAccuracyClaimAllowed": false,
+  "validation": {
+    "priorHumanDevelopmentCases": 90,
+    "mobileVersionTests": 8,
+    "releaseConfigTests": 4,
+    "portableImagePredictions": 15,
+    "knownNodeOcrIpcIssueResolvedByDirectModule": true,
+    "noReviewedScoreRegression": true,
+    "isolatedOcrTests": 10,
+    "scienceServicePipelineTests": 14,
+    "healthStatus": 200,
+    "liveExistingNoteCheckModel": "v3.2",
+    "mobileTypeScript": true,
+    "otherBackendTests": 107,
+    "archiveLoadVerified": true
+  },
+  "subjects": {
+    "science": {
+      "additionalAiLabelledExamples": 75,
+      "syntheticInputs": true,
+      "version": "3.2",
+      "modelSha256": "4ca8524b08f4c500ee9140bf37dfce52eb5af2935a2c8fc66d35869c98b7af7c",
+      "continuesFrom": "bc1916bc34adaecd699426987cf4c78fcde84c88052d49b070991c92159a84ec",
+      "modelType": "existing_relation_coverage_logistic_regression",
+      "newHumanLabels": 0
+    },
+    "history": {
+      "weightsChanged": false,
+      "version": "5.1",
+      "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+    }
+  },
+  "imageTag": "smart-notes-coverage:science-v32-history-v51-release-20261018",
+  "separateDeployedModel": false,
+  "release": "notes-science-v32-history-v51-2026-10-18",
+  "sourceArchitectureChanged": false,
+  "imageId": "sha256:7f20900f23bb1cac014dd6b23deb3d5452ae5b737fefd9feec941afb7db5c25c",
+  "archive": "smart-notes-science-history-v32.tar",
+  "imageBytes": 694563055,
+  "studentFilesAndCredentialsIncluded": false
+}

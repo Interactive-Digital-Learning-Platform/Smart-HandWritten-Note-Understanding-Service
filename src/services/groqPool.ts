@@ -69,9 +69,7 @@ class GroqPoolManager {
     };
   }
 
-  /**
-   * Get the next healthy client from the pool (round-robin with cooldown awareness)
-   */
+  // Gets the next available client.
   public getNextClient(): { client: Groq; keyIndex: number; maskedKey: string } {
     if (this.clients.length === 0) {
       throw new Error("No Groq API keys configured. Set GROQ_API_KEY, GROQ_API_KEY_2, or GROQ_API_KEYS in .env");
@@ -80,7 +78,7 @@ class GroqPoolManager {
     const now = Date.now();
     const count = this.clients.length;
 
-    // 1. Try to find an un-cooldown key starting from currentIndex
+    // First, look for a key that is not cooling down.
     for (let i = 0; i < count; i++) {
       const idx = (this.currentIndex + i) % count;
       const cooldown = this.keyCooldowns.get(idx) || 0;
@@ -92,7 +90,7 @@ class GroqPoolManager {
       }
     }
 
-    // 2. If all keys are in cooldown, pick the one with earliest cooldown expiry
+    // If all keys are cooling down, use the one ready soonest.
     let earliestIdx = 0;
     let earliestCooldown = Infinity;
     for (let i = 0; i < count; i++) {
@@ -109,18 +107,14 @@ class GroqPoolManager {
     return { client: entry.client, keyIndex: earliestIdx, maskedKey: masked };
   }
 
-  /**
-   * Mark a key as temporarily on cooldown
-   */
+  // Pauses a key for a short time.
   public markCooldown(keyIndex: number, cooldownMs: number = 25000) {
     this.keyCooldowns.set(keyIndex, Date.now() + cooldownMs);
     const masked = `key_${keyIndex + 1}`;
     console.warn(`⏳ [GroqPool] Marked key #${keyIndex + 1} (${masked}) on cooldown for ${cooldownMs / 1000}s`);
   }
 
-  /**
-   * Execute chat completion across the pool with auto-rotation, rate-limit failover, & model fallback
-   */
+  // Tries available keys and fallback models until the request succeeds.
   public async createChatCompletion(
     params: Parameters<Groq["chat"]["completions"]["create"]>[0],
     options?: { maxRetriesPerKey?: number; timeoutMs?: number; fallbackModels?: string[] }
@@ -134,18 +128,16 @@ class GroqPoolManager {
       "openai/gpt-oss-120b",
       "qwen/qwen3.8-27b",
       "openai/gpt-oss-20b",
-      "qwen/qwen3.6-27b",
     ];
 
-    // Priority model chain
+    // Models are tried in this order.
     const modelsToTry = [requestedModel, ...fallbackModels.filter((m) => m !== requestedModel)];
     const totalKeyAttempts = Math.max(this.clients.length * 2, 4);
 
-    // Calculate prompt character size to estimate tokens (1 token ≈ 3.6 chars)
+    // Estimate tokens from the prompt length.
     const promptChars = JSON.stringify(params.messages).length;
     const estimatedPromptTokens = Math.ceil(promptChars / 3.6);
-    // Groq free tier limit is 8,000 TPM total (prompt + max_tokens).
-    // Ensure estimatedPromptTokens + safeMaxTokens <= 7,000 (leaves 1,000 token safety margin)
+    // Leave room below Groq's 8,000 TPM limit.
     const requestedMaxTokens = params.max_tokens || 2500;
     const safeMaxTokens = Math.max(
       600,
@@ -218,10 +210,10 @@ class GroqPoolManager {
                   isTpmExceeded ? "TPM limit (413)" : "Rate limit (429)"
                 }. Immediately failing over to next account key in pool...`
               );
-              // Immediately retry with next key without sleeping
+              // Try the next key now.
               continue;
             } else {
-              // Only 1 key available
+              // There is no other key to try.
               if (isTpmExceeded && mIdx < modelsToTry.length - 1) {
                 console.warn(
                   `⚠️ [GroqPool] Model ${currentModel} exceeded TPM limit on single key. Switching to high-capacity model: ${modelsToTry[mIdx + 1]}...`
@@ -237,7 +229,7 @@ class GroqPoolManager {
             await new Promise((r) => setTimeout(r, 1200));
           } else {
             console.error(`❌ [GroqPool] Error on key #${keyIndex + 1} with model ${currentModel}: ${msg}`);
-            // If it's a model-specific not found or invalid param error, try next model
+            // Try another model when this one is unavailable.
             if (msg.includes("model_not_found") || msg.includes("decommissioned")) {
               break;
             }

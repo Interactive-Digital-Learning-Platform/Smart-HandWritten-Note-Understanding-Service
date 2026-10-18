@@ -1,0 +1,16 @@
+{
+  "modelSha256": "594164b4e2217dd6e39a394badbd8c6f5e186776242049e51e2ca7c5ddb4b6d3",
+  "rubricsSha256": "2466ff25e2b3dca7536f923cd8767828f4f1cf263db94f717dcf7631ceea0803",
+  "challengeSha256": "70bf4f08a93eb95222fafc6e0353bf91fcff0cd99330bdcb9ea7aa8b015b9bf5",
+  "freshReviewScored": false,
+  "inferenceSourceHashes": {
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\src\\smart_note_training\\english_coverage.py": "bb042a83caee169ecd8bcaa00b90be9ce6fab8d853856263e867c0c651c86138",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\src\\smart_note_training\\english_coverage_v2.py": "65ccbc05b346616c41978d003b2ef73fe0ac7742ff2813c3accc502b32e085b9",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\src\\smart_note_training\\metrics.py": "4a2c14db6cad96c2dc2d5cd6bdeb9e937b09100adc6b7bf9a2b1e64fcb4e556d",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\src\\smart_note_training\\__init__.py": "748015dacb16bb97507aff608556747afe8137de762d7d383419ca76045e2579",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\train_english_coverage_v2.py": "3a8dd0dd53c0a3e14e0680ec035d6523ee137004257c3a20582f871a90ab6db7",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\evaluate_english_review.py": "76e131f4c44be9d003d89f171c7abf300858d3df7e9167bc66dc3986c11a17e0",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\evaluate_english_review_v2.py": "72d791247407cea48f202fad2bc6cdc9fce31b47d28eebc8fe5a260f5c4707a9"
+  },
+  "packetFileSha256": "fea42495c7bbbf377ae4c19090307e4cc70f077bca8c71e299bf2c5e7bba45cb"
+}

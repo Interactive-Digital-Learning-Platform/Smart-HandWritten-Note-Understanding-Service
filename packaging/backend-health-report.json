@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "service": "Smart HandWritten Note Understanding Service",
+  "status": "running",
+  "version": "1.0.0",
+  "timestamp": "2026-10-15T08:43:33.613Z",
+  "environment": "production",
+  "englishCoverageSuggestionsEnabled": true
+}

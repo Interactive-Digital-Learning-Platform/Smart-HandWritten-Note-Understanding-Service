@@ -1,0 +1,14 @@
+{
+  "tag": "smart-notes-coverage:science-v31-history-v51",
+  "imageId": "sha256:7bf3f967fbddd14ecb2262604b7c71aad134dccd01c4d5073dd07d854fda29c1",
+  "reportedBytes": 694363653,
+  "os": "linux",
+  "architecture": "amd64",
+  "verifiedAtUtc": "2026-10-15T08:44:18.2482875Z",
+  "offlineNetwork": "none",
+  "offlineRootFilesystem": "read-only",
+  "offlineHostMounts": false,
+  "fullBackendPort": "127.0.0.1:8005",
+  "syntheticExamplesOnly": true,
+  "independentAccuracyEvaluation": false
+}

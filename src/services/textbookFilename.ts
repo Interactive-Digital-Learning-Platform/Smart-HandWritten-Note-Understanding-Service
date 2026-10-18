@@ -1,24 +1,22 @@
 const filenameAliases: Record<string, string[]> = {
+  "ict g-11 e.pdf": ["ict grade 11.pdf"],
   "grade-10-history-text-book-64017cf286c01.pdf": [
     "histoy grade 10.pdf",
   ],
   "grade-11-science-part-1.pdf": ["science grade 11 part 1.pdf"],
   "grade-11-science-part-2.pdf": ["science grade 11 part 2.pdf"],
-  // Preserve the canonical registry name while accepting the filename already
-  // stored by the ingestion service (including its historical typo).
+  // Accept the misspelled filename already stored by ingestion.
   "grade-11-history-text-book.pdf": ["histoy grade 11.pdf"],
 };
 
 export interface TextbookStorageSource {
   filename: string;
-  /** Added to the canonical PDF page bounds for this stored file. */
+  /** Page difference from the main PDF. */
   pageOffset: number;
 }
 
 const fallbackStorageSources: Record<string, TextbookStorageSource[]> = {
-  // The standalone Part 2 ingestion is missing pages 77-151. The already
-  // ingested combined Grade 11 book contains byte-equivalent Part 2 chunks at
-  // a verified +220 PDF-page offset.
+  // Use the combined book when Part 2 pages are missing.
   "grade-11-science-part-2.pdf": [
     {
       filename: "grade-11-science-text-book-6200f72533f2f.pdf",

@@ -80,7 +80,7 @@ export const runQualityVerification = (ctx: PipelineContext): void => {
 
   // ── Summary ───────────────────────────────────────────────────────────
   ctx.qualityChecked = true;
-  ctx.qualityWarnings = warnings;
+  ctx.qualityWarnings = [...new Set(warnings)];
 
   if (warnings.length === 0) {
     console.log(`  [Stage 10] ✅ All quality checks passed`);

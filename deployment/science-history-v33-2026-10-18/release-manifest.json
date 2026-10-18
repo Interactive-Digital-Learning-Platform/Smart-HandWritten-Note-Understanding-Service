@@ -1,0 +1,52 @@
+{
+  "release": "notes-science-v33-history-v51-2026-10-18",
+  "imageTag": "smart-notes-coverage:science-v33-history-v51-release-20261018",
+  "imageId": "sha256:1a86749258a82dbd465c7109ff16f6283e6ff72e4142a07f9d38176b676e58ea",
+  "imageBytes": 694565900,
+  "archive": "smart-notes-science-history-v33.tar",
+  "archiveSha256": "0bdf91af8544746109476d7c4c1bab7134bdbaa79fcae07af2fd0dc4f7c61f8e",
+  "archiveLoadVerified": true,
+  "notesOnlyChanges": true,
+  "previousReleasePreserved": true,
+  "independentAccuracyClaimAllowed": false,
+  "science": {
+    "version": "3.3",
+    "sha256": "357e2a67f768bbda261aaf430887e3d1b875a4b91d639453f5fb79dc77e8923f",
+    "type": "existing_relation_coverage_logistic_regression",
+    "weightsRefitted": false,
+    "evidenceChecksCorrected": true
+  },
+  "history": {
+    "version": "5.1",
+    "sha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8",
+    "weightsChanged": false
+  },
+  "validation": {
+    "pythonEvidenceAndBundleTests": 39,
+    "notesApiPipelineBridgeTests": 19,
+    "mobileModelStatusTests": 8,
+    "mobileTypeScript": true,
+    "backendTypeScript": true,
+    "releaseConfigTests": 4,
+    "offlineScienceHistoryDockerCases": 15,
+    "runningDockerExamples": 71,
+    "healthStatus": 200,
+    "unauthenticatedScienceStatus": 401,
+    "namedVolumesPreserved": true
+  },
+  "developmentComparison": {
+    "meaning": "Agreement against unchanged AI labels on exposed synthetic transcripts, not independent accuracy",
+    "previous": {
+      "correct": 59,
+      "n": 71
+    },
+    "current": {
+      "correct": 66,
+      "n": 71,
+      "withheldCountedNotCorrect": 1
+    },
+    "aiPartialRecallDecreased": true,
+    "aiCompletePrecisionDecreased": true
+  },
+  "studentFilesCredentialsAndTrainingDataIncluded": false
+}

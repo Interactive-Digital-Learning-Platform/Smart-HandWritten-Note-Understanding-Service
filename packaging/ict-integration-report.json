@@ -1,0 +1,54 @@
+{
+  "checkedAtUtc": "2026-10-15T14:23:47.670803+00:00",
+  "syntheticExamples": true,
+  "independentAccuracyEvaluation": false,
+  "image": "smart-notes-coverage:science-v31-history-v51-ict-v31",
+  "imageId": "sha256:fd693f273144f97fb8a546fbc534b08a40b68ef2a9598ca2373f41c4cde08756",
+  "models": {
+    "science": {
+      "model": "models/english-coverage-v3.1.json",
+      "sha256": "bc1916bc34adaecd699426987cf4c78fcde84c88052d49b070991c92159a84ec"
+    },
+    "history": {
+      "model": "models/history-coverage-v5.1.json",
+      "sha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+    },
+    "ict": {
+      "model": "models/ict-coverage-v3.1.json",
+      "sha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b"
+    }
+  },
+  "bundleFiles": 30,
+  "checks": {
+    "backendApiAndWorkerTests": 9,
+    "mobileContractTests": {
+      "ict": 10,
+      "history": 7,
+      "science": 4
+    },
+    "bundleIntegrityTests": 4,
+    "localICTExamples": 6,
+    "portableWindowsICTExamples": 6,
+    "gatewayICTExamples": 6,
+    "gatewayTextbookReferences": 10,
+    "dockerOfflineExamples": {
+      "science": 3,
+      "history": 12,
+      "ict": 6
+    },
+    "dockerHttpICTExamples": 6,
+    "dockerHttpTextbookReferences": 10,
+    "browserDemoCases": 6,
+    "browserGradePicker": true,
+    "browserReferenceLoading": true,
+    "browserEditClearsStaleResult": true,
+    "backendBuildPassed": true,
+    "mobileTypecheckPassed": true
+  },
+  "maxDockerICTNumericDifference": 1.1920928955078125e-07,
+  "maxDockerScienceHistoryNumericDifference": 2.980232238769531e-07,
+  "automaticICTGrading": false,
+  "nativeDeviceTested": false,
+  "newImageOCRFlowTested": false,
+  "realHandwritingAccuracyTested": false
+}

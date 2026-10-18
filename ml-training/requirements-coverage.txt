@@ -1,0 +1,4 @@
+# Small CPU inference runtime used by the verified English coverage model.
+numpy==2.4.6
+scipy==1.17.1
+scikit-learn==1.9.1

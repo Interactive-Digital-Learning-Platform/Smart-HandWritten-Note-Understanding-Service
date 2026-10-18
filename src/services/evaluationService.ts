@@ -1,53 +1,32 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// Evaluation Metrics Module — Improvement 10
-// ═══════════════════════════════════════════════════════════════════════════
-//
-// Provides quantitative evaluation metrics to measure how well the system
-// is performing. Metrics are computed from:
-//   - TeacherValidation records (teacher agreement rates, correction patterns)
-//   - StudentProfile data (learning improvement trajectories)
-//   - Note analysis results (coverage accuracy, gap relevance)
-//
-// These metrics allow the research group to evaluate the framework against
-// standard educational AI benchmarks.
-//
-// Metrics computed:
-//   1. Subject Detection Accuracy       — % teacher-approved subject identifications
-//   2. Lesson Match Accuracy            — % teacher-approved lesson matches
-//   3. Coverage Score Agreement         — % teacher-approved coverage scores
-//   4. Gap Relevance Rate               — % gaps teacher found educationally relevant
-//   5. Analysis Quality Distribution    — distribution of 1–5 star ratings
-//   6. Improvement Rate                 — % of students showing improving trend
-//   7. Persistent Gap Detection Rate    — % persistent gaps caught by system
-// ═══════════════════════════════════════════════════════════════════════════
+// Calculates evaluation metrics from teacher feedback and student profiles.
 
 import { TeacherValidation } from "../models/TeacherValidation";
 import { StudentProfile } from "../models/StudentProfile";
 
-// ─── Types ─────────────────────────────────────────────────────────────────
+// Evaluation result.
 
 export interface EvaluationMetrics {
-  /** Date range of the evaluation */
+  /** Report date range. */
   period: { from: Date; to: Date };
 
-  /** Number of teacher validations included in this report */
+  /** Number of teacher reviews. */
   totalValidations: number;
 
-  /** Teacher accuracy agreements */
+  /** Teacher agreement rates. */
   accuracy: {
-    /** % of validations where teacher approved subject detection */
+    /** Approved subject matches. */
     subjectDetectionAccuracy: number | null;
-    /** % of validations where teacher approved lesson match */
+    /** Approved lesson matches. */
     lessonMatchAccuracy: number | null;
-    /** % of validations where teacher agreed coverage score was accurate */
+    /** Approved coverage scores. */
     coverageScoreAgreementRate: number | null;
-    /** % of validations where teacher found gaps educationally relevant */
+    /** Gaps marked as relevant. */
     gapRelevanceRate: number | null;
-    /** Overall system approval rate (teacher clicked "approve") */
+    /** Overall approval rate. */
     overallApprovalRate: number | null;
   };
 
-  /** Granular concept-level teacher verification metrics */
+  /** Concept review totals. */
   conceptLevelMetrics: {
     totalConceptReviews: number;
     conceptAgreementRate: number | null;
@@ -56,7 +35,7 @@ export interface EvaluationMetrics {
     partialMismatchCount: number;
   };
 
-  /** Explainability & Trust Evaluation (5-point Likert Scale) */
+  /** Explainability survey scores. */
   explainabilityScores: {
     averageExplanationClarity: number | null;
     averageTextbookEvidenceTrust: number | null;
@@ -64,7 +43,7 @@ export interface EvaluationMetrics {
     averagePerceivedAccuracy: number | null;
   };
 
-  /** Analysis quality distribution (1–5 star ratings) */
+  /** Analysis ratings from 1 to 5. */
   qualityDistribution: {
     rating1: number;
     rating2: number;
@@ -74,43 +53,35 @@ export interface EvaluationMetrics {
     averageRating: number | null;
   };
 
-  /** Common correction patterns (what teachers most often correct) */
+  /** Fields teachers corrected most often. */
   commonCorrectionFields: Array<{
     field: string;
     count: number;
     percentage: number;
   }>;
 
-  /** Number of gaps teachers had to add that the system missed */
+  /** Gaps added by teachers. */
   teacherAddedGapsTotal: number;
 
-  /** Student learning progress */
+  /** Student progress. */
   learningProgress: {
-    /** Total students with a profile */
+    /** Students with a profile. */
     totalStudents: number;
-    /** % of students showing "improving" trend in at least one subject */
+    /** Students improving in at least one subject. */
     improvingStudentRate: number | null;
-    /** Average number of persistent gaps per student */
+    /** Average persistent gaps per student. */
     averagePersistentGaps: number | null;
   };
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// Rounds a percentage value.
 
 const safePercentage = (numerator: number, denominator: number): number | null => {
   if (denominator === 0) return null;
   return Math.round((numerator / denominator) * 100 * 10) / 10; // 1 decimal place
 };
 
-// ─── Main Evaluation Function ──────────────────────────────────────────────
-
-/**
- * Computes evaluation metrics from teacher validations and student profiles
- * within the specified date range.
- *
- * @param fromDate - Start of evaluation period (default: 30 days ago)
- * @param toDate   - End of evaluation period (default: now)
- */
+// Calculates metrics for the selected date range.
 export const computeEvaluationMetrics = async (
   fromDate?: Date,
   toDate?: Date
@@ -118,14 +89,14 @@ export const computeEvaluationMetrics = async (
   const to = toDate ?? new Date();
   const from = fromDate ?? new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // ── Fetch teacher validations in range ────────────────────────────────
+  // Get teacher reviews in the date range.
   const validations = await TeacherValidation.find({
     createdAt: { $gte: from, $lte: to },
   }).lean();
 
   const total = validations.length;
 
-  // ── Accuracy metrics ──────────────────────────────────────────────────
+  // Calculate agreement rates.
   const withSubjectFeedback = validations.filter((v) => v.subjectCorrect !== undefined);
   const withLessonFeedback = validations.filter((v) => v.lessonCorrect !== undefined);
   const withCoverageFeedback = validations.filter((v) => v.coverageScoreAccurate !== undefined);
@@ -154,7 +125,7 @@ export const computeEvaluationMetrics = async (
 
   const overallApprovalRate = safePercentage(approved.length, total);
 
-  // ── Granular concept-level reviews ───────────────────────────────────
+  // Count concept reviews.
   let totalConceptReviews = 0;
   let agreedConceptReviews = 0;
   let falsePositiveCount = 0;
@@ -188,7 +159,7 @@ export const computeEvaluationMetrics = async (
 
   const conceptAgreementRate = safePercentage(agreedConceptReviews, totalConceptReviews);
 
-  // ── Explainability survey metrics ─────────────────────────────────────
+  // Calculate survey scores.
   const withSurvey = validations.filter((v) => v.explainabilitySurvey);
   const avgSurvey = (field: "explanationClarity" | "textbookEvidenceTrust" | "remediationUsefulness" | "overallPerceivedAccuracy"): number | null => {
     const validScores = withSurvey
@@ -205,7 +176,7 @@ export const computeEvaluationMetrics = async (
     averagePerceivedAccuracy: avgSurvey("overallPerceivedAccuracy"),
   };
 
-  // ── Quality distribution ──────────────────────────────────────────────
+  // Count analysis ratings.
   const withRating = validations.filter((v) => v.analysisQualityRating !== undefined);
   const ratings = {
     rating1: withRating.filter((v) => v.analysisQualityRating === 1).length,
@@ -219,7 +190,7 @@ export const computeEvaluationMetrics = async (
     ? Math.round((sumRatings / withRating.length) * 10) / 10
     : null;
 
-  // ── Common correction fields ──────────────────────────────────────────
+  // Count corrected fields.
   const correctionCounts = new Map<string, number>();
   let totalCorrections = 0;
 
@@ -238,13 +209,13 @@ export const computeEvaluationMetrics = async (
     }))
     .sort((a, b) => b.count - a.count);
 
-  // ── Teacher-added gaps ────────────────────────────────────────────────
+  // Count gaps added by teachers.
   const teacherAddedGapsTotal = validations.reduce(
     (sum, v) => sum + (v.teacherAddedGaps?.length ?? 0),
     0
   );
 
-  // ── Student learning progress ─────────────────────────────────────────
+  // Calculate student progress.
   const allProfiles = await StudentProfile.find({}).lean();
   const totalStudents = allProfiles.length;
 

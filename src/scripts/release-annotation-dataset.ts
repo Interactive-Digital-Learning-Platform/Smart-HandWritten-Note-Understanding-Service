@@ -70,6 +70,7 @@ const main = async (): Promise<void> => {
     .map(([quality]) => quality);
   const query: Record<string, unknown> = {
     labelQuality: { $in: acceptedQualities },
+    trainingEligible: { $ne: false },
   };
   if (subject) query.subject = subject;
   if (grade) query.grade = grade;
@@ -94,6 +95,9 @@ const main = async (): Promise<void> => {
     datasetVersion,
     recordId: annotation.recordId,
     noteGroupId: `note-${hash(annotation.noteId).slice(0, 24)}`,
+    evaluationGroupId: annotation.evaluationGroupId
+      ? `student-${hash(annotation.evaluationGroupId).slice(0, 24)}`
+      : `note-${hash(annotation.noteId).slice(0, 24)}`,
     curriculumVersion: annotation.curriculumVersion,
     pipelineVersion: annotation.pipelineVersion,
     subject: annotation.subject,
@@ -140,7 +144,7 @@ const main = async (): Promise<void> => {
         classCounts,
         curriculumVersions,
         splitRule:
-          "Split by noteGroupId so concepts from the same note never cross train, validation, or test sets.",
+          "Split by evaluationGroupId so notes from the same student/author never cross train, validation, or test sets.",
         privacy: {
           userAndReviewerIdentifiersExcluded: true,
           originalNoteIdReplacedWithHashedGroupId: true,

@@ -4,12 +4,25 @@ node_modules/
 # Build output
 dist/
 .cache/
+.uv-cache/
+ml-training/.venv/
+ml-training/.pytest_cache/
+ml-training/outputs/
+ml-training/checkpoints/
+ml-training/encoders/
+# The inference-only runtime/coverage bundle is versioned for Docker builds.
 
 # Environment
-.env
+.env*
+!.env.example
+!**/.env.example
+!**/.env.production.example
+.env.release-check-*
+*.tar
 
 # Uploads (user files — don't commit to git)
 uploads/
+generated_audio/
 
 # Privacy-sensitive annotation exports
 data/annotations/
@@ -28,3 +41,15 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+
+# Local diagnostics and disposable language caches
+tmp/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local assistant handover; implementation documentation stays in docs/.
+/CODEX_HANDOFF.md

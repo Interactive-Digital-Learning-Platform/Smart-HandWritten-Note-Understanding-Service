@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { requireNoteOwner } from "../middleware/studentOwnership";
+import { aiRateLimit } from "../middleware/aiRateLimit";
 import {
   analyzeNote,
   getAnalysis,
@@ -6,6 +8,7 @@ import {
 } from "../controllers/analysisController";
 
 const router = Router();
+router.param("noteId", (req, res, next) => requireNoteOwner("noteId")(req, res, next));
 
 /**
  * POST /api/analyze/test
@@ -13,7 +16,7 @@ const router = Router();
  * Body: { "text": "student notes text..." }
  * Must be defined BEFORE /:noteId to avoid route collision.
  */
-router.post("/test", analyzeRawText);
+router.post("/test", aiRateLimit(5, 10 * 60 * 1000), analyzeRawText);
 
 /**
  * GET /api/analyze/:noteId
@@ -25,6 +28,6 @@ router.get("/:noteId", getAnalysis);
  * POST /api/analyze/:noteId
  * Backward-compatible alias for the full curriculum-grounded note pipeline.
  */
-router.post("/:noteId", analyzeNote);
+router.post("/:noteId", aiRateLimit(5, 10 * 60 * 1000), analyzeNote);
 
 export default router;

@@ -1,0 +1,13 @@
+# Preserve bytes of the frozen coverage artifact and inference implementation.
+/models/english-coverage-v3.json -text
+/ml-training/english_coverage_v3_cli.py -text
+/ml-training/src/smart_note_training/english_coverage.py -text
+/ml-training/src/smart_note_training/english_coverage_v3.py -text
+# Frozen model/source hashes must survive a Windows/Linux checkout unchanged.
+/models/*.json -text
+/ml-training/**/*.py -text
+/ml-training/*.py -text
+# Every bundled byte is covered by manifest hashes; preserve it across OSes.
+/runtime/coverage/** -text
+# Download this pretrained encoder with Git LFS before building the image.
+/runtime/coverage/encoders/minilm-l6-v2/model.safetensors filter=lfs diff=lfs merge=lfs -text

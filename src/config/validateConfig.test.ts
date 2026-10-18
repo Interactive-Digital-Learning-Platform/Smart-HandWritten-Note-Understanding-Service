@@ -46,3 +46,22 @@ test("curriculum database URL must use a PostgreSQL scheme", () => {
     /must be a PostgreSQL connection URL/
   );
 });
+
+test("enabled expert annotation requires strong isolated credentials", () => {
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        NODE_ENV: "development",
+        ANNOTATION_REVIEW_ENABLED: "true",
+      }),
+    /EXPERT_ANNOTATION_KEYS.*ANNOTATION_PSEUDONYM_SECRET/s
+  );
+  assert.doesNotThrow(() =>
+    validateRuntimeEnvironment({
+      NODE_ENV: "development",
+      ANNOTATION_REVIEW_ENABLED: "true",
+      EXPERT_ANNOTATION_KEYS: "science-expert=0123456789abcdef",
+      ANNOTATION_PSEUDONYM_SECRET: "0123456789abcdef0123456789abcdef",
+    })
+  );
+});

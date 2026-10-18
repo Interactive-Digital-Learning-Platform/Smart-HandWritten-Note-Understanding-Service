@@ -1,0 +1,17 @@
+{
+  "modelSha256": "d40a0ddae2d4b356dea986308a600bcd4817424f601877265e2ac21c8b3ccfac",
+  "rubricsSha256": "054e3ff71766c88d3ef97a17b31cb90f0887d28c403fed55bf7dcb5a0aff87ab",
+  "challengeSha256": "a244e9b8c3c99e48999c8f64b5c32d038b39a898b3d25590208502df3c3019d2",
+  "freshReviewScored": false,
+  "inferenceSourceHashes": {
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\src\\smart_note_training\\english_coverage.py": "bb042a83caee169ecd8bcaa00b90be9ce6fab8d853856263e867c0c651c86138",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\src\\smart_note_training\\english_coverage_v3.py": "c0b32b21f4c7a51328f7146b9c69227f472f7e2664a43c6efba767222f1cc020",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\src\\smart_note_training\\metrics.py": "4a2c14db6cad96c2dc2d5cd6bdeb9e937b09100adc6b7bf9a2b1e64fcb4e556d",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\src\\smart_note_training\\__init__.py": "748015dacb16bb97507aff608556747afe8137de762d7d383419ca76045e2579",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\train_english_coverage_v3.py": "a760044b582f9ca934b456eea8fcd09b1e95bf833f775dfb27edb375985979bc",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\train_english_coverage_v2.py": "3a8dd0dd53c0a3e14e0680ec035d6523ee137004257c3a20582f871a90ab6db7",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\evaluate_english_review.py": "76e131f4c44be9d003d89f171c7abf300858d3df7e9167bc66dc3986c11a17e0",
+    "C:\\Users\\DLK\\Desktop\\RP_PROJECT_3\\Smart-HandWritten-Note-Understanding-Service\\ml-training\\evaluate_english_review_v3.py": "c2aa87d296478593390662cc1c768790dc369f2171d3315e673c5f8731fb2e5b"
+  },
+  "packetFileSha256": "5357176b4427033ec92e3efd4b220fa818b79883ac689a782dceee72fdc50df6"
+}

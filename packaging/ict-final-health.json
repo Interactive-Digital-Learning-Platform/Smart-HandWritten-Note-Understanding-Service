@@ -1,0 +1,6 @@
+{
+  "hostBackendHttpStatus": 200,
+  "containerBackendHttpStatus": 200,
+  "orphanedOldModelProcessesStopped": 0,
+  "checkedAtUtc": "2026-10-15T14:24:47.6225558Z"
+}

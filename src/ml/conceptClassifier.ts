@@ -11,6 +11,8 @@ export const CONCEPT_FEATURE_TEMPLATE_VERSION = "1.0.0";
 export interface ConceptTrainingRow {
   recordId: string;
   noteGroupId: string;
+  evaluationGroupId?: string;
+  preassignedSplit?: "train" | "validation" | "test";
   subject: string;
   grade: number;
   lessonId: string;
@@ -57,21 +59,27 @@ export interface ConceptClassifierArtifact {
   trainedAt: string;
   embeddingModel: string;
   embeddingDimension: number;
+  embeddingMaxTokens: number;
   featureTemplateVersion: string;
   labels: ConceptStatus[];
   parameters: LinearClassifierParameters;
   training: {
     rows: number;
     noteGroups: number;
+    sourceNotes?: number;
     epochs: number;
     learningRate: number;
     l2: number;
     classWeights: Record<ConceptStatus, number>;
   };
   evaluation: {
-    protocol: "leave_one_note_group_out";
+    protocol: "leave_one_note_group_out" | "leave_one_evaluation_group_out";
     metrics: ClassificationMetrics;
     majorityBaseline: ClassificationMetrics;
+    fixedSplits?: Record<
+      "validation" | "test",
+      { metrics: ClassificationMetrics; majorityBaseline: ClassificationMetrics }
+    >;
   };
   deployment: {
     enabledByDefault: false;

@@ -1,0 +1,7 @@
+{
+  "modelSha256": "8b666274de509f79be2aa4153b8fdba95a6ed4bf85b7bf40e73bc333eb108260",
+  "packetFileSha256": "77d677154e1a0c3c1fe757475375c3b2cff73bd5a7f595f29aa1dd1a44f62935",
+  "challengeSha256": "91e79e5fbc10bc8965aed9452f7bd81abb1efbea57631a42f8cb4b7124adfaf1",
+  "rubricSha256": "adb3f3aceea2fcbe1cd523e11f0df3d4ecee23981de9cc468072fa1143cd1259",
+  "purpose": "Freeze model and input packet before owner review. Author labels and model predictions are not in the human packet. No scoring or refitting on this packet before completed owner review."
+}

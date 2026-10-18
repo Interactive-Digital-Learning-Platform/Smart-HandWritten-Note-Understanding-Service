@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student note model training review</title>
+<style>body{font:16px system-ui;max-width:1000px;margin:30px auto;padding:0 18px;background:#f8fafc;color:#182333}button,select{font:inherit;padding:9px;margin:6px}button{cursor:pointer}article{background:white;border:1px solid #dde2e8;border-radius:16px;margin:20px 0;padding:22px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f6f8;padding:16px}label{display:block;margin:15px 0}header{position:sticky;top:0;background:#f8fafc;padding:8px;border-bottom:1px solid #ddd}small{color:#526176}</style>
+<header><h1>Review note model training examples</h1><p>Check the supplied text and the exact requirements below. Complete means all requirements are covered. AI labels are proposals. Confirm only rows you personally checked.</p><button id="export">Download reviewed labels</button><input id="import" type="file" accept="application/json"><label><input id="holdout-only" type="checkbox"> Show reserved evaluation examples only</label><label>Filter by selected label <select id="label-filter"><option value="all">All labels</option><option value="present">Complete</option><option value="partial">Partial</option><option value="missing">Missing</option></select></label><span id="count"></span></header>
+<p>For held-out evaluation, choose <b>Hold out this entire note</b> on a reviewed row. All rows from that note, identical texts and any declared source family will be excluded from fitting. For synthetic packets, import split-template.json first to reserve the planned textbook chapters. Keep several different notes for evaluation. Uploaders may be testing other students' notes, so this alone does not establish independence by student author.</p><main id="rows"></main>
+<script>
+const batch=/*__BATCH__*/;
+const reviews=new Map();const root=document.getElementById('rows');
+function el(tag,text,parent){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(parent)parent.append(n);return n;}
+function update(){document.getElementById('count').textContent=`${[...reviews.values()].filter(r=>r.confirmed).length} / ${batch.rows.length} confirmed`;for(const card of root.children){const r=reviews.get(card.dataset.id),filter=document.getElementById('label-filter').value;card.hidden=document.getElementById('holdout-only').checked&&r.split!=='holdout'||filter!=='all'&&r.humanLabel!==filter;}}
+for(const r of batch.rows){
+ const state={recordId:r.recordId,humanLabel:r.teacherLabel,confirmed:false,split:batch.defaultSplits?.[r.recordId]||'train'};reviews.set(r.recordId,state);
+ const card=el('article',undefined,root);el('h2',r.conceptName,card);el('small',`${r.subject} · ${r.conceptId} · ${r.noteGroupId}`,card);
+ if(r.synthetic){el('p',`Synthetic example · ${r.variant} · supplied transcript, not OCR · ${r.sourceFamilyId}`,card);}
+ if(r.source?.intentionalMistakes?.length){const details=el('details',undefined,card);el('summary','Source error ledger (may refer to other pages)',details);el('pre',JSON.stringify(r.source.intentionalMistakes,null,2),details);}
+ el('p',`AI proposal: ${r.teacherLabel==='present'?'complete':r.teacherLabel}. This has not been confirmed for this batch.`,card);
+ const list=el('ul',undefined,card);r.requirements.forEach(p=>el('li',p,list));const noteText=el('details',undefined,card);el('summary','Read the full text before confirming',noteText);el('pre',r.text,noteText);
+ el('p','AI quote: '+(r.teacherEvidence||'No supporting quote'),card);
+ const select=el('select',undefined,card);select.setAttribute('aria-label','Reviewed label for '+r.recordId);
+ for(const [value,label] of [['present','Complete'],['partial','Partial'],['missing','Missing']]){const o=el('option',label,select);o.value=value;}select.value=state.humanLabel;
+ const split=el('select',undefined,card);split.setAttribute('aria-label','Training split for '+r.recordId);
+ for(const [value,label] of [['train','Use for training'],['holdout','Hold out this entire note']]){const o=el('option',label,split);o.value=value;}
+ split.value=state.split;
+ const label=el('label',undefined,card),check=el('input',undefined,label);check.type='checkbox';label.append(document.createTextNode(r.synthetic?' I checked this supplied transcript, the expected concept and every requirement, and confirm my selected label.':' I checked the OCR, expected concept and every requirement, and confirm my selected label.'));
+ select.onchange=()=>{state.humanLabel=select.value;state.confirmed=false;check.checked=false;update();};split.onchange=()=>{state.split=split.value;update();};check.onchange=()=>{state.confirmed=check.checked;update();};
+ card.dataset.id=r.recordId;
+}
+document.getElementById('holdout-only').onchange=update;
+document.getElementById('label-filter').onchange=update;
+document.getElementById('export').onclick=()=>{const payload={schemaVersion:'notes-human-review-v1',datasetSha256:batch.datasetSha256,reviewedAt:new Date().toISOString(),rows:[...reviews.values()]};const a=document.createElement('a');const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));a.href=url;a.download='student-note-reviewed-labels.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+document.getElementById('import').onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(data.schemaVersion!=='notes-human-review-v1'||data.datasetSha256!==batch.datasetSha256)throw Error();for(const row of data.rows){const state=reviews.get(row.recordId);if(!state||!['present','partial','missing'].includes(row.humanLabel)||!['train','holdout'].includes(row.split))throw Error();Object.assign(state,{humanLabel:row.humanLabel,confirmed:row.confirmed===true,split:row.split});const card=[...root.children].find(c=>c.dataset.id===row.recordId);card.querySelectorAll('select')[0].value=state.humanLabel;card.querySelectorAll('select')[1].value=state.split;card.querySelector('input').checked=state.confirmed;}update();}catch{alert('This review file does not match this batch.');}};
+if(batch.defaultSplits){document.getElementById('holdout-only').checked=true;document.getElementById('label-filter').value='present';}update();
+</script></html>

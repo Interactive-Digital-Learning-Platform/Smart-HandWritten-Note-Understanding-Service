@@ -26,6 +26,7 @@ interface EmbeddingCache {
   datasetSha256: string;
   embeddingModel: string;
   embeddingDimension: number;
+  embeddingMaxTokens: number;
   featureTemplateVersion: string;
   recordIds: string[];
   vectors: number[][];
@@ -85,6 +86,7 @@ const readDataset = (
       (row) =>
         !row.recordId ||
         !row.noteGroupId ||
+        (row.evaluationGroupId !== undefined && !row.evaluationGroupId) ||
         !row.noteTextSnapshot ||
         !row.concept?.id ||
         !CONCEPT_CLASSIFIER_LABELS.includes(row.targetLabel)
@@ -106,6 +108,7 @@ const readValidEmbeddingCache = (
     cache.datasetSha256 === datasetSha256 &&
     cache.embeddingModel === config.embedding.model &&
     cache.embeddingDimension === config.embedding.expectedDimension &&
+    cache.embeddingMaxTokens === config.embedding.maxTokens &&
     cache.featureTemplateVersion === CONCEPT_FEATURE_TEMPLATE_VERSION &&
     cache.recordIds.length === rows.length &&
     cache.recordIds.every((id, index) => id === rows[index].recordId) &&
@@ -144,6 +147,7 @@ const embedRows = async (
     datasetSha256,
     embeddingModel: config.embedding.model,
     embeddingDimension: config.embedding.expectedDimension,
+    embeddingMaxTokens: config.embedding.maxTokens,
     featureTemplateVersion: CONCEPT_FEATURE_TEMPLATE_VERSION,
     recordIds: rows.map((row) => row.recordId),
     vectors,
@@ -181,19 +185,23 @@ const main = async (): Promise<void> => {
     .replace(/[^a-zA-Z0-9._-]+/g, "-")}.features.json`;
   const features = await embedRows(rows, cachePath, manifest.sha256, batchSize);
   const labels = rows.map((row) => row.targetLabel);
-  const noteGroups = [...new Set(rows.map((row) => row.noteGroupId))].sort();
-  if (noteGroups.length < 5) {
-    throw new Error("At least five independent note groups are required for grouped evaluation");
+  const evaluationGroupFor = (row: ConceptTrainingRow): string =>
+    row.evaluationGroupId || row.noteGroupId;
+  const evaluationGroups = [...new Set(rows.map(evaluationGroupFor))].sort();
+  if (evaluationGroups.length < 5) {
+    throw new Error(
+      "At least five independent evaluation groups are required for grouped evaluation"
+    );
   }
 
   const outOfFoldPredictions: ConceptStatus[] = Array(rows.length).fill("missing");
   const majorityPredictions: ConceptStatus[] = Array(rows.length).fill("missing");
-  for (const heldOutGroup of noteGroups) {
+  for (const heldOutGroup of evaluationGroups) {
     const trainingIndexes = rows
-      .map((row, index) => (row.noteGroupId !== heldOutGroup ? index : -1))
+      .map((row, index) => (evaluationGroupFor(row) !== heldOutGroup ? index : -1))
       .filter((index) => index >= 0);
     const testingIndexes = rows
-      .map((row, index) => (row.noteGroupId === heldOutGroup ? index : -1))
+      .map((row, index) => (evaluationGroupFor(row) === heldOutGroup ? index : -1))
       .filter((index) => index >= 0);
     const foldLabels = trainingIndexes.map((index) => labels[index]);
     const trained = trainLinearClassifier(
@@ -217,12 +225,60 @@ const main = async (): Promise<void> => {
       majorityPredictions[index] = foldMajority;
     }
     console.log(
-      `Evaluated held-out note group ${noteGroups.indexOf(heldOutGroup) + 1}/${noteGroups.length}`
+      `Evaluated held-out evaluation group ${
+        evaluationGroups.indexOf(heldOutGroup) + 1
+      }/${evaluationGroups.length}`
     );
   }
 
   const evaluationMetrics = evaluateClassifications(labels, outOfFoldPredictions);
   const majorityBaseline = evaluateClassifications(labels, majorityPredictions);
+  let fixedSplits: ConceptClassifierArtifact["evaluation"]["fixedSplits"];
+  const hasFixedSplits = rows.every((row) => row.preassignedSplit !== undefined);
+  if (hasFixedSplits) {
+    const trainingIndexes = rows
+      .map((row, index) => (row.preassignedSplit === "train" ? index : -1))
+      .filter((index) => index >= 0);
+    const fixedTrainingLabels = trainingIndexes.map((index) => labels[index]);
+    const trained = trainLinearClassifier(
+      trainingIndexes.map((index) => features[index]),
+      fixedTrainingLabels,
+      { epochs, learningRate, l2 }
+    );
+    const counts = Object.fromEntries(
+      CONCEPT_CLASSIFIER_LABELS.map((label) => [
+        label,
+        fixedTrainingLabels.filter((candidate) => candidate === label).length,
+      ])
+    ) as Record<ConceptStatus, number>;
+    const trainingMajority = CONCEPT_CLASSIFIER_LABELS.reduce((best, label) =>
+      counts[label] > counts[best] ? label : best
+    );
+    fixedSplits = Object.fromEntries(
+      (["validation", "test"] as const).map((split) => {
+        const indexes = rows
+          .map((row, index) => (row.preassignedSplit === split ? index : -1))
+          .filter((index) => index >= 0);
+        if (indexes.length === 0) {
+          throw new Error(`Preassigned ${split} split is empty`);
+        }
+        const actual = indexes.map((index) => labels[index]);
+        const predicted = indexes.map((index) =>
+          decideConceptStatus(predictProbabilities(features[index], trained.parameters))
+        );
+        return [
+          split,
+          {
+            metrics: evaluateClassifications(actual, predicted),
+            majorityBaseline: evaluateClassifications(
+              actual,
+              actual.map(() => trainingMajority)
+            ),
+          },
+        ];
+      })
+    ) as NonNullable<ConceptClassifierArtifact["evaluation"]["fixedSplits"]>;
+  }
   const finalModel = trainLinearClassifier(features, labels, {
     epochs,
     learningRate,
@@ -237,26 +293,29 @@ const main = async (): Promise<void> => {
     trainedAt: new Date().toISOString(),
     embeddingModel: config.embedding.model,
     embeddingDimension: config.embedding.expectedDimension,
+    embeddingMaxTokens: config.embedding.maxTokens,
     featureTemplateVersion: CONCEPT_FEATURE_TEMPLATE_VERSION,
     labels: [...CONCEPT_CLASSIFIER_LABELS],
     parameters: finalModel.parameters,
     training: {
       rows: rows.length,
-      noteGroups: noteGroups.length,
+      noteGroups: evaluationGroups.length,
+      sourceNotes: new Set(rows.map((row) => row.noteGroupId)).size,
       epochs,
       learningRate,
       l2,
       classWeights: finalModel.classWeights,
     },
     evaluation: {
-      protocol: "leave_one_note_group_out",
+      protocol: "leave_one_evaluation_group_out",
       metrics: evaluationMetrics,
       majorityBaseline,
+      ...(fixedSplits ? { fixedSplits } : {}),
     },
     deployment: {
       enabledByDefault: false,
       reason:
-        "Experimental baseline: only 10 independent notes, single-review labels, and limited subject/language coverage.",
+        "Experimental baseline: synthetic AI-reviewed labels without independent human certification; disabled pending real-note validation.",
     },
   };
 
@@ -268,9 +327,11 @@ const main = async (): Promise<void> => {
         modelVersion,
         datasetVersion: manifest.datasetVersion,
         rows: rows.length,
-        noteGroups: noteGroups.length,
+        evaluationGroups: evaluationGroups.length,
+        sourceNotes: new Set(rows.map((row) => row.noteGroupId)).size,
         evaluation: evaluationMetrics,
         majorityBaseline,
+        fixedSplits,
         enabledByDefault: false,
         output: outputPath,
       },
