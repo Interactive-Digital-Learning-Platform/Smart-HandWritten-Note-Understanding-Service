@@ -1,0 +1,57 @@
+{
+  "release": "notes-science-v34-history-v51-2026-10-18",
+  "imageTag": "smart-notes-coverage:science-v34-history-v51-release-20261018",
+  "imageId": "sha256:83912e1cd9ea3cf84c90a482133e454371235dc6c2d9241a19803824e288d5c3",
+  "imageBytes": 694567105,
+  "archive": "smart-notes-science-history-v34.tar",
+  "archiveSha256": "c56a6a84f968bc1b078ac97e21555fc9ac4728ef417907ec04edc95db6fb9c1a",
+  "archiveLoadVerified": true,
+  "notesOnlyChanges": true,
+  "previousReleasesPreserved": true,
+  "independentAccuracyClaimAllowed": false,
+  "science": {
+    "version": "3.4",
+    "modelSha256": "af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63",
+    "weightsRefitted": false,
+    "existingClassifier": true
+  },
+  "history": {
+    "version": "5.1",
+    "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8",
+    "weightsChanged": false
+  },
+  "validation": {
+    "pythonTests": 55,
+    "notesApiAndPipelineTests": 19,
+    "mobileStatusTests": 8,
+    "releaseConfigTests": 4,
+    "backendAndMobileTypeScript": true,
+    "offlineDockerCases": 15,
+    "runningDockerExamples": 71,
+    "focusedLiveServiceCases": 7,
+    "healthStatus": 200,
+    "unauthenticatedScienceStatus": 401,
+    "appHttpStatus": 200,
+    "namedVolumesPreserved": true
+  },
+  "labelReview": {
+    "reviewer": "AI assistant, not a human or teacher",
+    "reviewedExamples": 5,
+    "originalAiLabelsCorrectedInOverlay": 4,
+    "originalDatasetUnchanged": true,
+    "assistantReviewSha256": "47ce82acb097556533c005ad62ac5d7b963b609762b484a2049a8852e75a2dde"
+  },
+  "developmentComparison": {
+    "originalAiAgreementBefore": 66,
+    "originalAiAgreementAfter": 67,
+    "suppliedExamples": 71,
+    "assistantAdjudicatedAgreementBefore": 70,
+    "assistantAdjudicatedAgreementAfter": 71,
+    "olderHumanDevelopmentAgreementBefore": 86,
+    "olderHumanDevelopmentAgreementAfter": 90,
+    "olderHumanDevelopmentExamples": 90,
+    "olderFalseCompleteBefore": 2,
+    "olderFalseCompleteAfter": 0
+  },
+  "studentFilesCredentialsTrainingDataAndLabelAuditIncludedInImage": false
+}

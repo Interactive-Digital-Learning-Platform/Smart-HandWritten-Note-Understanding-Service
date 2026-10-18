@@ -1,0 +1,995 @@
+{
+  "synthetic": true,
+  "independentAccuracyEvaluation": false,
+  "purpose": "Cross-platform prediction regression, not an accuracy estimate",
+  "numericTolerance": {
+    "absolute": 0.000001,
+    "relative": 0.00001
+  },
+  "scienceSha256": "af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63",
+  "historySha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8",
+  "cases": [
+    {
+      "id": "science-1",
+      "subject": "science",
+      "input": {
+        "noteText": "Sexual reproduction involves fusion of male and female gametes during fertilisation. Asexual reproduction uses one parent without gamete fusion and usually produces genetically identical offspring.",
+        "conceptId": "sci-g10-col-001",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "present",
+        "completeSuggestionWithheld": false,
+        "unsupportedRequiredPoints": [],
+        "policyReason": null,
+        "rawModelStatus": "present",
+        "displaySuggestion": "complete",
+        "scores": {
+          "present": 0.9816266842821754,
+          "partial": 0.01823515720708466,
+          "missing": 0.0001381585107398235
+        },
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "reason": "Experimental coverage suggestion; lexical evidence is not proof of correctness.",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "sexual",
+              "requirement": "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+              "lexicalCoverage": 1,
+              "candidateEvidence": "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+              "start": 0,
+              "end": 84,
+              "negatedOrRejectedMatch": true,
+              "semanticCorrectnessVerified": false
+            },
+            {
+              "pointId": "asexual",
+              "requirement": "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring.",
+              "lexicalCoverage": 1,
+              "candidateEvidence": "Asexual reproduction uses one parent without gamete fusion and usually produces genetically identical offspring.",
+              "start": 85,
+              "end": 197,
+              "negatedOrRejectedMatch": false,
+              "semanticCorrectnessVerified": false
+            }
+          ],
+          "concerns": []
+        },
+        "modelVersion": "english-coverage-v3.4-review-fix-2026-10-18"
+      }
+    },
+    {
+      "id": "science-2",
+      "subject": "science",
+      "input": {
+        "noteText": "Asexual reproduction involves a single parent without fusion of gametes. The offspring are genetically identical.",
+        "conceptId": "sci-g10-col-001",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "partial",
+        "completeSuggestionWithheld": false,
+        "unsupportedRequiredPoints": [
+          "sexual"
+        ],
+        "policyReason": null,
+        "rawModelStatus": "partial",
+        "displaySuggestion": "partial",
+        "scores": {
+          "present": 0.14787100063378644,
+          "partial": 0.8425576609569172,
+          "missing": 0.009571338409296365
+        },
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "reason": "Experimental coverage suggestion; lexical evidence is not proof of correctness.",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "sexual",
+              "requirement": "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+              "lexicalCoverage": 0,
+              "candidateEvidence": null,
+              "start": null,
+              "end": null,
+              "negatedOrRejectedMatch": true,
+              "semanticCorrectnessVerified": false
+            },
+            {
+              "pointId": "asexual",
+              "requirement": "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring.",
+              "lexicalCoverage": 1,
+              "candidateEvidence": "Asexual reproduction involves a single parent without fusion of gametes.",
+              "start": 0,
+              "end": 72,
+              "negatedOrRejectedMatch": false,
+              "semanticCorrectnessVerified": false
+            }
+          ],
+          "concerns": []
+        },
+        "modelVersion": "english-coverage-v3.4-review-fix-2026-10-18"
+      }
+    },
+    {
+      "id": "science-3",
+      "subject": "science",
+      "input": {
+        "noteText": "Friction opposes the relative motion of surfaces. Lubrication reduces friction, while rough surfaces can increase it.",
+        "conceptId": "sci-g10-col-001",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "missing",
+        "completeSuggestionWithheld": false,
+        "unsupportedRequiredPoints": [
+          "sexual",
+          "asexual"
+        ],
+        "policyReason": null,
+        "rawModelStatus": "missing",
+        "displaySuggestion": "missing",
+        "scores": {
+          "present": 0.007603539011861563,
+          "partial": 0.031100917172102713,
+          "missing": 0.9612955438160358
+        },
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "reason": "Experimental coverage suggestion; lexical evidence is not proof of correctness.",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "sexual",
+              "requirement": "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+              "lexicalCoverage": 0,
+              "candidateEvidence": null,
+              "start": null,
+              "end": null,
+              "negatedOrRejectedMatch": false,
+              "semanticCorrectnessVerified": false
+            },
+            {
+              "pointId": "asexual",
+              "requirement": "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring.",
+              "lexicalCoverage": 0,
+              "candidateEvidence": null,
+              "start": null,
+              "end": null,
+              "negatedOrRejectedMatch": false,
+              "semanticCorrectnessVerified": false
+            }
+          ],
+          "concerns": []
+        },
+        "modelVersion": "english-coverage-v3.4-review-fix-2026-10-18"
+      }
+    },
+    {
+      "id": "sources-complete",
+      "subject": "history",
+      "input": {
+        "text": "Historical sources provide evidence about past human activity. Literary sources are written materials, including books and documents. Archaeological sources are physical remains, such as coins, old buildings and inscriptions.",
+        "conceptId": "hist-g10-l01-c01",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "present",
+        "rawModelStatus": "present",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.9639064719166354,
+          "partial": 0.03106852368467355,
+          "missing": 0.005025004398691046
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "evidence",
+              "requirement": "Sources provide evidence of past human activity.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.7179,
+              "candidateEvidence": "Historical sources provide evidence about past human activity.",
+              "start": 0,
+              "end": 62,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9358288049697876,
+              "semanticCandidateEvidence": "Historical sources provide evidence about past human activity.",
+              "semanticStart": 0,
+              "semanticEnd": 62
+            },
+            {
+              "pointId": "literary",
+              "requirement": "Literary sources include books and written documents.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.4617,
+              "candidateEvidence": "Literary sources are written materials, including books and documents.",
+              "start": 63,
+              "end": 133,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.947833240032196,
+              "semanticCandidateEvidence": "Literary sources are written materials, including books and documents.",
+              "semanticStart": 63,
+              "semanticEnd": 133
+            },
+            {
+              "pointId": "archaeological",
+              "requirement": "Archaeological sources include physical remains such as coins buildings and inscriptions.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.7045,
+              "candidateEvidence": "Archaeological sources are physical remains, such as coins, old buildings and inscriptions.",
+              "start": 134,
+              "end": 225,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9553961157798767,
+              "semanticCandidateEvidence": "Archaeological sources are physical remains, such as coins, old buildings and inscriptions.",
+              "semanticStart": 134,
+              "semanticEnd": 225
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "sources-partial",
+      "subject": "history",
+      "input": {
+        "text": "Literary sources include written books and documents that provide evidence about past human activity.",
+        "conceptId": "hist-g10-l01-c01",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "partial",
+        "rawModelStatus": "partial",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.0539654602458528,
+          "partial": 0.9429522857395615,
+          "missing": 0.003082254014585766
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "evidence",
+              "requirement": "Sources provide evidence of past human activity.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.4553,
+              "candidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
+              "start": 0,
+              "end": 101,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.8388832807540894,
+              "semanticCandidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
+              "semanticStart": 0,
+              "semanticEnd": 101
+            },
+            {
+              "pointId": "literary",
+              "requirement": "Literary sources include books and written documents.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.4441,
+              "candidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
+              "start": 0,
+              "end": 101,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.7049182057380676,
+              "semanticCandidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
+              "semanticStart": 0,
+              "semanticEnd": 101
+            },
+            {
+              "pointId": "archaeological",
+              "requirement": "Archaeological sources include physical remains such as coins buildings and inscriptions.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0.1188,
+              "candidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
+              "start": 0,
+              "end": 101,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.525790274143219,
+              "semanticCandidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
+              "semanticStart": 0,
+              "semanticEnd": 101
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "sources-missing",
+      "subject": "history",
+      "input": {
+        "text": "The port of Trincomalee was important for naval security around India.",
+        "conceptId": "hist-g10-l01-c01",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "missing",
+        "rawModelStatus": "missing",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.000006104563138521315,
+          "partial": 0.00002635304074015508,
+          "missing": 0.9999675423961213
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "evidence",
+              "requirement": "Sources provide evidence of past human activity.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0.011,
+              "candidateEvidence": "The port of Trincomalee was important for naval security around India.",
+              "start": 0,
+              "end": 70,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": -0.0045294445008039474,
+              "semanticCandidateEvidence": "The port of Trincomalee was important for naval security around India.",
+              "semanticStart": 0,
+              "semanticEnd": 70
+            },
+            {
+              "pointId": "literary",
+              "requirement": "Literary sources include books and written documents.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "The port of Trincomalee was important for naval security around India.",
+              "start": 0,
+              "end": 70,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": -0.034889593720436096,
+              "semanticCandidateEvidence": "The port of Trincomalee was important for naval security around India.",
+              "semanticStart": 0,
+              "semanticEnd": 70
+            },
+            {
+              "pointId": "archaeological",
+              "requirement": "Archaeological sources include physical remains such as coins buildings and inscriptions.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "The port of Trincomalee was important for naval security around India.",
+              "start": 0,
+              "end": 70,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.05772186443209648,
+              "semanticCandidateEvidence": "The port of Trincomalee was important for naval security around India.",
+              "semanticStart": 0,
+              "semanticEnd": 70
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "british-complete",
+      "subject": "history",
+      "input": {
+        "text": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes. Trincomalee harbour was strategically important for naval security around India.",
+        "conceptId": "hist-g11-l02-c01",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "present",
+        "rawModelStatus": "present",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.9733581174285699,
+          "partial": 0.024077675743200765,
+          "missing": 0.002564206828229399
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "facet-1",
+              "requirement": "Britain valued Sri Lanka for its position on Indian Ocean sea routes.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.8542,
+              "candidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
+              "start": 0,
+              "end": 76,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9751272201538086,
+              "semanticCandidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
+              "semanticStart": 0,
+              "semanticEnd": 76
+            },
+            {
+              "pointId": "facet-2",
+              "requirement": "Trincomalee harbour was important for naval security around India.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.8427,
+              "candidateEvidence": "Trincomalee harbour was strategically important for naval security around India.",
+              "start": 77,
+              "end": 157,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9830870032310486,
+              "semanticCandidateEvidence": "Trincomalee harbour was strategically important for naval security around India.",
+              "semanticStart": 77,
+              "semanticEnd": 157
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "british-partial",
+      "subject": "history",
+      "input": {
+        "text": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
+        "conceptId": "hist-g11-l02-c01",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "partial",
+        "rawModelStatus": "partial",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.00048462074049151696,
+          "partial": 0.9993989108167369,
+          "missing": 0.00011646844277158689
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "facet-1",
+              "requirement": "Britain valued Sri Lanka for its position on Indian Ocean sea routes.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.8542,
+              "candidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
+              "start": 0,
+              "end": 76,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9751269817352295,
+              "semanticCandidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
+              "semanticStart": 0,
+              "semanticEnd": 76
+            },
+            {
+              "pointId": "facet-2",
+              "requirement": "Trincomalee harbour was important for naval security around India.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
+              "start": 0,
+              "end": 76,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.41178250312805176,
+              "semanticCandidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
+              "semanticStart": 0,
+              "semanticEnd": 76
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "british-missing",
+      "subject": "history",
+      "input": {
+        "text": "Literary sources include books and written documents. Archaeological sources include coins and buildings.",
+        "conceptId": "hist-g11-l02-c01",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "missing",
+        "rawModelStatus": "missing",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.00008175624801081542,
+          "partial": 0.00013195040779787347,
+          "missing": 0.9997862933441912
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "facet-1",
+              "requirement": "Britain valued Sri Lanka for its position on Indian Ocean sea routes.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "Literary sources include books and written documents.",
+              "start": 0,
+              "end": 53,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.10570153594017029,
+              "semanticCandidateEvidence": "Literary sources include books and written documents.",
+              "semanticStart": 0,
+              "semanticEnd": 53
+            },
+            {
+              "pointId": "facet-2",
+              "requirement": "Trincomalee harbour was important for naval security around India.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "Literary sources include books and written documents. Archaeological sources include coins and buildings.",
+              "start": 0,
+              "end": 105,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.148000106215477,
+              "semanticCandidateEvidence": "Archaeological sources include coins and buildings.",
+              "semanticStart": 54,
+              "semanticEnd": 105
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "kandy-complete",
+      "subject": "history",
+      "input": {
+        "text": "The Kandyan kingdom came under British rule in 1815. This ended the independent Kandyan monarchy and expanded British control over the whole island.",
+        "conceptId": "hist-g11-l02-c04",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "present",
+        "rawModelStatus": "present",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.9809784093955615,
+          "partial": 0.015885590776148904,
+          "missing": 0.003135999828289564
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "facet-1",
+              "requirement": "The Kandyan kingdom came under British rule in 1815.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 1,
+              "candidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
+              "start": 0,
+              "end": 52,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9999999403953552,
+              "semanticCandidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
+              "semanticStart": 0,
+              "semanticEnd": 52
+            },
+            {
+              "pointId": "facet-2",
+              "requirement": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 1,
+              "candidateEvidence": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
+              "start": 53,
+              "end": 148,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 1,
+              "semanticCandidateEvidence": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
+              "semanticStart": 53,
+              "semanticEnd": 148
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "kandy-partial",
+      "subject": "history",
+      "input": {
+        "text": "The Kandyan kingdom came under British rule in 1815.",
+        "conceptId": "hist-g11-l02-c04",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "partial",
+        "rawModelStatus": "partial",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.05609115641669248,
+          "partial": 0.9438539642677535,
+          "missing": 0.00005487931555409106
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "facet-1",
+              "requirement": "The Kandyan kingdom came under British rule in 1815.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 1,
+              "candidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
+              "start": 0,
+              "end": 52,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9999999403953552,
+              "semanticCandidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
+              "semanticStart": 0,
+              "semanticEnd": 52
+            },
+            {
+              "pointId": "facet-2",
+              "requirement": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
+              "lexicalCoverage": 0.25,
+              "wordSimilarity": 0.0664,
+              "candidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
+              "start": 0,
+              "end": 52,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.7078564167022705,
+              "semanticCandidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
+              "semanticStart": 0,
+              "semanticEnd": 52
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "kandy-missing",
+      "subject": "history",
+      "input": {
+        "text": "Britain valued Sri Lanka for its location on Indian Ocean sea routes. Trincomalee was useful for naval security near India.",
+        "conceptId": "hist-g11-l02-c04",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "missing",
+        "rawModelStatus": "missing",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.0031118307117452607,
+          "partial": 0.00108938259118004,
+          "missing": 0.9957987866970748
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "facet-1",
+              "requirement": "The Kandyan kingdom came under British rule in 1815.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
+              "start": 0,
+              "end": 69,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.3415200114250183,
+              "semanticCandidateEvidence": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
+              "semanticStart": 0,
+              "semanticEnd": 69
+            },
+            {
+              "pointId": "facet-2",
+              "requirement": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
+              "start": 0,
+              "end": 69,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.3573033809661865,
+              "semanticCandidateEvidence": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
+              "semanticStart": 0,
+              "semanticEnd": 69
+            }
+          ],
+          "concerns": [
+            {
+              "start": 0,
+              "end": 69,
+              "quote": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
+              "pointId": "facet-1",
+              "kind": "required_year_missing_from_semantic_evidence",
+              "requiredYears": [
+                "1815"
+              ],
+              "missingYears": [
+                "1815"
+              ],
+              "reason": "The semantic passage does not state a required year. Check the note and criterion before accepting Complete."
+            }
+          ]
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "sources-complete-ocr-noise",
+      "subject": "history",
+      "input": {
+        "text": "Historical sourccs provide evidence about past human activity. Literary sourccs are written materials, including books and docurnents. Archaeological sourccs are physical remains, such as coins, old buildings and inscriptions.",
+        "conceptId": "hist-g10-l01-c01",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "present",
+        "rawModelStatus": "present",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.6783483900670514,
+          "partial": 0.2498363167688006,
+          "missing": 0.07181529316414806
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "evidence",
+              "requirement": "Sources provide evidence of past human activity.",
+              "lexicalCoverage": 0.5,
+              "wordSimilarity": 0.6528,
+              "candidateEvidence": "Historical sourccs provide evidence about past human activity.",
+              "start": 0,
+              "end": 62,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.8784719705581665,
+              "semanticCandidateEvidence": "Historical sourccs provide evidence about past human activity.",
+              "semanticStart": 0,
+              "semanticEnd": 62
+            },
+            {
+              "pointId": "literary",
+              "requirement": "Literary sources include books and written documents.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.3325,
+              "candidateEvidence": "Literary sourccs are written materials, including books and docurnents.",
+              "start": 63,
+              "end": 134,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.7270941734313965,
+              "semanticCandidateEvidence": "Literary sourccs are written materials, including books and docurnents.",
+              "semanticStart": 63,
+              "semanticEnd": 134
+            },
+            {
+              "pointId": "archaeological",
+              "requirement": "Archaeological sources include physical remains such as coins buildings and inscriptions.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.672,
+              "candidateEvidence": "Archaeological sourccs are physical remains, such as coins, old buildings and inscriptions.",
+              "start": 135,
+              "end": 226,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.7967872619628906,
+              "semanticCandidateEvidence": "Archaeological sourccs are physical remains, such as coins, old buildings and inscriptions.",
+              "semanticStart": 135,
+              "semanticEnd": 226
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "british-complete-ocr-noise",
+      "subject": "history",
+      "input": {
+        "text": "Britain valued Sri Lanka because of its position on lndian Ocean sea routes. Trincomalce harbour was strategically important for naval security around India.",
+        "conceptId": "hist-g11-l02-c01",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "present",
+        "rawModelStatus": "present",
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.9667201505462752,
+          "partial": 0.028456819171150886,
+          "missing": 0.004823030282573694
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "facet-1",
+              "requirement": "Britain valued Sri Lanka for its position on Indian Ocean sea routes.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.7609,
+              "candidateEvidence": "Britain valued Sri Lanka because of its position on lndian Ocean sea routes.",
+              "start": 0,
+              "end": 76,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9422149062156677,
+              "semanticCandidateEvidence": "Britain valued Sri Lanka because of its position on lndian Ocean sea routes.",
+              "semanticStart": 0,
+              "semanticEnd": 76
+            },
+            {
+              "pointId": "facet-2",
+              "requirement": "Trincomalee harbour was important for naval security around India.",
+              "lexicalCoverage": 0.8,
+              "wordSimilarity": 0.7718,
+              "candidateEvidence": "Trincomalce harbour was strategically important for naval security around India.",
+              "start": 77,
+              "end": 157,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9543285369873047,
+              "semanticCandidateEvidence": "Trincomalce harbour was strategically important for naval security around India.",
+              "semanticStart": 77,
+              "semanticEnd": 157
+            }
+          ],
+          "concerns": []
+        },
+        "suggestionWithheld": false,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    },
+    {
+      "id": "kandy-complete-ocr-noise",
+      "subject": "history",
+      "input": {
+        "text": "The Kandyan kingdom came under Britlsh rule in 18l5. This ended the independent Kandyan monarchy and expanded Britlsh control over the whole island.",
+        "conceptId": "hist-g11-l02-c04",
+        "language": "English",
+        "scopeConfirmed": true
+      },
+      "prediction": {
+        "status": null,
+        "suggestedStatus": null,
+        "rawModelStatus": "present",
+        "completeSuggestionWithheld": true,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.614361780780916,
+          "partial": 0.3271418868552252,
+          "missing": 0.058496332363858865
+        },
+        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "facet-1",
+              "requirement": "The Kandyan kingdom came under British rule in 1815.",
+              "lexicalCoverage": 0.6667,
+              "wordSimilarity": 0.8182,
+              "candidateEvidence": "The Kandyan kingdom came under Britlsh rule in 18l5.",
+              "start": 0,
+              "end": 52,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.7787150144577026,
+              "semanticCandidateEvidence": "The Kandyan kingdom came under Britlsh rule in 18l5.",
+              "semanticStart": 0,
+              "semanticEnd": 52
+            },
+            {
+              "pointId": "facet-2",
+              "requirement": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
+              "lexicalCoverage": 0.875,
+              "wordSimilarity": 0.9391,
+              "candidateEvidence": "This ended the independent Kandyan monarchy and expanded Britlsh control over the whole island.",
+              "start": 53,
+              "end": 148,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.9646783471107483,
+              "semanticCandidateEvidence": "This ended the independent Kandyan monarchy and expanded Britlsh control over the whole island.",
+              "semanticStart": 53,
+              "semanticEnd": 148
+            }
+          ],
+          "concerns": [
+            {
+              "start": 0,
+              "end": 52,
+              "quote": "The Kandyan kingdom came under Britlsh rule in 18l5.",
+              "pointId": "facet-1",
+              "kind": "required_year_missing_from_semantic_evidence",
+              "requiredYears": [
+                "1815"
+              ],
+              "missingYears": [
+                "1815"
+              ],
+              "reason": "The semantic passage does not state a required year. Check the note and criterion before accepting Complete."
+            }
+          ]
+        },
+        "suggestionWithheld": true,
+        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "previewOnly": true,
+        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+      }
+    }
+  ]
+}

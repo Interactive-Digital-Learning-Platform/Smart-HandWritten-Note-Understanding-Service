@@ -1,0 +1,59 @@
+{
+  "version": "english-science-coverage-v1",
+  "language": "English",
+  "provenance": "AI-authored candidate rubrics from curriculum concept definitions and TRAIN examples only. Not independently teacher-certified. Frozen before this experiment's validation predictions.",
+  "meaning": "Complete means adequate coverage of this scoped concept. Phrase matches are candidate evidence, not proof of semantic correctness. Missing refers only to the submitted, in-scope material.",
+  "concepts": [
+    {"id":"sci-g10-cbl-007","name":"Benedict Test for Reducing Sugars","points":[
+      {"id":"reagent","text":"Add Benedict solution to the food sample to test for reducing sugar.","groups":[["benedict"],["add","mix","drops","solution","reagent"]]},
+      {"id":"heat","text":"Heat the sample with Benedict reagent in a hot water bath.","groups":[["heat","heating","heated","hot","warm"],["water bath","bath","benedict"]]},
+      {"id":"result","text":"A green yellow orange or brick red precipitate indicates reducing sugar.","groups":[["green","yellow","orange","brick red","red precipitate","red ppt"],["sugar","glucose","positive","precipitate","ppt"]]}
+    ]},
+    {"id":"sci-g10-cur-006","name":"Ohm's Law","points":[
+      {"id":"relationship","text":"Current is directly proportional to voltage; voltage divided by current is constant.","groups":[["voltage","potential difference","v"],["current","i"],["proportional","double","constant","same ratio","v / i","v/i"]]},
+      {"id":"condition","text":"The relationship holds at constant temperature and unchanged physical conditions.","groups":[["temperature","physical conditions"],["constant","same","unchanged","fixed"]]},
+      {"id":"equation","text":"V = IR or R = V/I relates voltage, current and resistance.","groups":[["v = ir","v=ir","r = v / i","r = v/i","r=v/i","voltage divided by current"]]}
+    ]},
+    {"id":"sci-g10-som-005","name":"Isotopes","points":[
+      {"id":"same-protons","text":"Isotopes are atoms of the same element with the same atomic number or proton count.","groups":[["same","equal","both"],["protons","proton","atomic number","element"]]},
+      {"id":"different-neutrons","text":"Isotopes have different neutron numbers and therefore different mass numbers.","groups":[["different","extra","more","fewer","changes","unequal"],["neutrons","neutron"],["mass","heavier","isotopes","isotope"]]}
+    ]},
+    {"id":"sci-g10-col-001","name":"Sexual and Asexual Reproduction","points":[
+      {"id":"sexual","text":"Sexual reproduction involves fusion of male and female gametes during fertilisation.","groups":[["gametes","gamete"],["fusion","fuse","fertilisation","fertilization"]]},
+      {"id":"asexual","text":"Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring.","groups":[["asexual","budding","cutting","vegetative"],["one parent","single parent","no fusion","without fusion","without fertilisation","without fertilization","genetically alike","identical"]]}
+    ]},
+    {"id":"sci-g10-cim-002","name":"Combination, Decomposition and Displacement Reactions","points":[
+      {"id":"combination","text":"Combination joins two or more reactants to form one product.","groups":[["combination","combine","joining"],["one product","single product","one compound","mgo"]]},
+      {"id":"decomposition","text":"Decomposition breaks one compound into simpler products.","groups":[["decomposition","breaks down","breaks into"],["compound","simpler","caco3","one reactant"]]},
+      {"id":"single-displacement","text":"Single displacement replaces an element in a compound with another element.","groups":[["single displacement","replaces","takes copper","displaces"],["element","compound","zinc","copper","zn"]]},
+      {"id":"double-displacement","text":"Double displacement exchanges ions or partners between two compounds.","groups":[["double displacement","exchange","exchanges"],["partners","ions","compounds","bacl2","baso4"]]}
+    ]},
+    {"id":"sci-g11-bph-004","name":"Mechanics of Breathing","points":[
+      {"id":"inspiration-movement","text":"In inspiration the diaphragm contracts and flattens and ribs move up and out.","groups":[["diaphragm","intercostal","ribs"],["contracts","contract","flattens","up","out"],["inhale","inhalation","inspiration","breathe in","breathing in","air goes in"]]},
+      {"id":"inspiration-pressure","text":"Increasing chest volume lowers pressure and air enters the lungs.","groups":[["volume","room","cavity"],["bigger","increases","increasing","more","expands"],["lower","drops","decreases","below"]]},
+      {"id":"expiration-movement","text":"During expiration muscles relax, the diaphragm becomes dome shaped and ribs move down and in.","groups":[["diaphragm","intercostal","muscles","ribs"],["relax","relaxes","dome","down"],["exhale","expiration","exhalation","breathe out","breathing out","air goes out"]]},
+      {"id":"expiration-pressure","text":"Decreasing chest volume increases pressure and air leaves the lungs.","groups":[["volume","cavity"],["smaller","decreases","decreasing","reduces"],["rises","increases","above","higher"]]}
+    ]},
+    {"id":"sci-g11-ele-002","name":"Extrinsic Semiconductors","points":[
+      {"id":"doping","text":"Doping adds a small controlled amount of impurity to a pure semiconductor to increase conductivity.","groups":[["doping","impurity","impurities"],["add","adding","added","controlled","small"],["silicon","semiconductor","conductivity","carriers"]]},
+      {"id":"n-type","text":"Pentavalent donors such as phosphorus produce n-type material with electrons as majority carriers.","groups":[["n type","donor","phosphorus","pentavalent"],["electron","electrons"],["majority","extra","five"]]},
+      {"id":"p-type","text":"Trivalent acceptors such as boron produce p-type material with holes as majority carriers.","groups":[["p type","acceptor","boron","trivalent"],["hole","holes"],["majority","three","vacancy","missing electron"]]}
+    ]},
+    {"id":"sci-g11-hea-003","name":"Heat Exchange Calculations","points":[
+      {"id":"formula","text":"Q = mc times temperature change gives energy transferred without a change of state.","groups":[["q = mc","q=mc","heat = mass","mass times specific heat"],["change","difference","delta","final","initial"]]},
+      {"id":"difference","text":"Use final minus initial temperature rather than the final temperature alone.","groups":[["temperature","change"],["difference","minus","final","initial","drop","rise"]]},
+      {"id":"units","text":"Use kilograms with specific heat per kilogram and express energy in joules.","groups":[["kg","kilogram","kilograms"],["joules","j","joule"],["mass","convert","grams","specific heat","c"]]},
+      {"id":"exchange","text":"In an insulated system heat lost by the hotter body equals heat gained by the cooler body.","groups":[["heat","hotter","hot"],["lost","loses"],["gained","gains","gained by"]]}
+    ]},
+    {"id":"sci-g11-mix-009","name":"Paper Chromatography","points":[
+      {"id":"setup","text":"Place a sample spot on a baseline above the solvent level.","groups":[["spot","sample","baseline"],["above"],["solvent","liquid","level"]]},
+      {"id":"phases","text":"The stationary paper and moving solvent form stationary and mobile phases.","groups":[["paper"],["solvent"],["stationary","mobile","moves","moving","goes up"]]},
+      {"id":"separation","text":"Components migrate different distances due to different attraction to the paper and solvent.","groups":[["dyes","dye","pigments","components","colours","colors"],["different","differ","separate","separated","slower","slowly"],["attraction","attracted","solubility","solvent","distances"]]}
+    ]},
+    {"id":"sci-g11-pea-001","name":"Electrical Power of Appliances","points":[
+      {"id":"rate","text":"Electrical power is energy transferred per second, measured in watts or joules per second.","groups":[["energy","joules","joule"],["per second","each second","every second","rate","j/s"]]},
+      {"id":"formula","text":"P = VI multiplies voltage across the appliance by current through it.","groups":[["p = vi","p=vi","volts times amps","voltage times current","voltage multiplied by current"]]},
+      {"id":"units","text":"Power is measured in watts and one kilowatt is one thousand watts.","groups":[["watt","watts","kw","kilowatt","w"],["power","p","vi","lamp","heater","appliance"]]}
+    ]}
+  ]
+}

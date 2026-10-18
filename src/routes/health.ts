@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { config } from "../config/config";
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.get("/", (_req: Request, res: Response) => {
     version: "1.0.0",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || "development",
+    englishCoverageSuggestionsEnabled: config.englishCoverage.suggestionsEnabled,
   });
 });
 

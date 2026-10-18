@@ -13,7 +13,7 @@ const buckets = new Map<string, RateEntry>();
 export const aiRateLimit = (maxRequests: number, windowMs: number) =>
   (req: Request, res: Response, next: NextFunction): void => {
     const now = Date.now();
-    const key = `${req.ip}:${req.baseUrl}:${req.route?.path ?? req.path}`;
+    const key = `${res.locals.studentId ?? req.ip}:${req.baseUrl}:${req.route?.path ?? req.path}`;
     const current = buckets.get(key);
     const entry = !current || now - current.windowStartedAt >= windowMs
       ? { count: 0, windowStartedAt: now }

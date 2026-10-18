@@ -64,6 +64,11 @@ test("unrelated textbooks remain outside a filename boundary", () => {
   );
 });
 
+test("Grade 11 ICT registry matches its uploaded textbook without matching Grade 10", () => {
+  assert.equal(matchesTextbookFilename("ICT grade 11.pdf", "ICT G-11 E.pdf"), true);
+  assert.equal(matchesTextbookFilename("ICT grade 10.pdf", "ICT G-11 E.pdf"), false);
+});
+
 test("Science Part 2 has a page-adjusted combined-textbook fallback", () => {
   assert.deepEqual(getTextbookStorageSources("grade-11-science-part-2.pdf"), [
     { filename: "grade-11-science-part-2.pdf", pageOffset: 0 },

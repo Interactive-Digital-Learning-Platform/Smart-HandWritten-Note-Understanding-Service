@@ -1,0 +1,441 @@
+{
+  "synthetic": true,
+  "independentAccuracyEvaluation": false,
+  "modelSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b",
+  "samples": [
+    {
+      "id": "cpu-complete",
+      "title": "Complete CPU note",
+      "conceptId": "ict-g10-u02-cpu",
+      "grade": 10,
+      "text": "The CPU contains an ALU for calculations and comparisons, a control unit that directs operations, and registers that temporarily hold working data and results.",
+      "expectedStatus": "present",
+      "sourceRecordId": "ict-g10-u02-cpu-review-1",
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "present",
+        "rawModelStatus": "present",
+        "suggestionWithheld": false,
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.5336505811291398,
+          "partial": 0.38878024021138846,
+          "missing": 0.07756917865947165
+        },
+        "modelVersion": "ict-coverage-v3.1-2026-10-15",
+        "reviewPolicyVersion": "ict-review-policy-v3.1",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "p1",
+              "requirement": "The arithmetic and logic unit performs arithmetic calculations and logical operations.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.1962,
+              "candidateEvidence": "The CPU contains an ALU for calculations and comparisons, a control unit that directs operations, and registers that temporarily hold working data and results.",
+              "start": 0,
+              "end": 159,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.5643005967140198,
+              "semanticCandidateEvidence": "The CPU contains an ALU for calculations and comparisons, a control unit that directs operations, and registers that temporarily hold working data and results.",
+              "semanticStart": 0,
+              "semanticEnd": 159
+            },
+            {
+              "pointId": "p2",
+              "requirement": "The control unit directs or coordinates computer operations.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.2366,
+              "candidateEvidence": "The CPU contains an ALU for calculations and comparisons, a control unit that directs operations, and registers that temporarily hold working data and results.",
+              "start": 0,
+              "end": 159,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.556000828742981,
+              "semanticCandidateEvidence": "The CPU contains an ALU for calculations and comparisons, a control unit that directs operations, and registers that temporarily hold working data and results.",
+              "semanticStart": 0,
+              "semanticEnd": 159
+            },
+            {
+              "pointId": "p3",
+              "requirement": "Registers temporarily hold data or intermediate results used during processing.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.2162,
+              "candidateEvidence": "The CPU contains an ALU for calculations and comparisons, a control unit that directs operations, and registers that temporarily hold working data and results.",
+              "start": 0,
+              "end": 159,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.5681346654891968,
+              "semanticCandidateEvidence": "The CPU contains an ALU for calculations and comparisons, a control unit that directs operations, and registers that temporarily hold working data and results.",
+              "semanticStart": 0,
+              "semanticEnd": 159
+            }
+          ],
+          "concerns": []
+        },
+        "offsetUnit": "unicode_code_points",
+        "experimental": true,
+        "modelSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b",
+        "previewOnly": true
+      }
+    },
+    {
+      "id": "cpu-partial",
+      "title": "Partial CPU note",
+      "conceptId": "ict-g10-u02-cpu",
+      "grade": 10,
+      "text": "The arithmetic and logic unit carries out calculations and logical comparisons in the CPU.",
+      "expectedStatus": "partial",
+      "sourceRecordId": "ict-g10-u02-cpu-review-2",
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "partial",
+        "rawModelStatus": "partial",
+        "suggestionWithheld": false,
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.03265653366632948,
+          "partial": 0.9196171344628022,
+          "missing": 0.04772633187086837
+        },
+        "modelVersion": "ict-coverage-v3.1-2026-10-15",
+        "reviewPolicyVersion": "ict-review-policy-v3.1",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "p1",
+              "requirement": "The arithmetic and logic unit performs arithmetic calculations and logical operations.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.6838,
+              "candidateEvidence": "The arithmetic and logic unit carries out calculations and logical comparisons in the CPU.",
+              "start": 0,
+              "end": 90,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.8348243236541748,
+              "semanticCandidateEvidence": "The arithmetic and logic unit carries out calculations and logical comparisons in the CPU.",
+              "semanticStart": 0,
+              "semanticEnd": 90
+            },
+            {
+              "pointId": "p2",
+              "requirement": "The control unit directs or coordinates computer operations.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0.0696,
+              "candidateEvidence": "The arithmetic and logic unit carries out calculations and logical comparisons in the CPU.",
+              "start": 0,
+              "end": 90,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.4762827157974243,
+              "semanticCandidateEvidence": "The arithmetic and logic unit carries out calculations and logical comparisons in the CPU.",
+              "semanticStart": 0,
+              "semanticEnd": 90
+            },
+            {
+              "pointId": "p3",
+              "requirement": "Registers temporarily hold data or intermediate results used during processing.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "The arithmetic and logic unit carries out calculations and logical comparisons in the CPU.",
+              "start": 0,
+              "end": 90,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.43497705459594727,
+              "semanticCandidateEvidence": "The arithmetic and logic unit carries out calculations and logical comparisons in the CPU.",
+              "semanticStart": 0,
+              "semanticEnd": 90
+            }
+          ],
+          "concerns": []
+        },
+        "offsetUnit": "unicode_code_points",
+        "experimental": true,
+        "modelSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b",
+        "previewOnly": true
+      }
+    },
+    {
+      "id": "cpu-missing",
+      "title": "Unrelated note",
+      "conceptId": "ict-g10-u02-cpu",
+      "grade": 10,
+      "text": "A plotter draws detailed plans on paper, while speakers produce sound output.",
+      "expectedStatus": "missing",
+      "sourceRecordId": "ict-g10-u02-cpu-review-3",
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "missing",
+        "rawModelStatus": "missing",
+        "suggestionWithheld": false,
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.023612416989805124,
+          "partial": 0.09980223579728234,
+          "missing": 0.8765853472129126
+        },
+        "modelVersion": "ict-coverage-v3.1-2026-10-15",
+        "reviewPolicyVersion": "ict-review-policy-v3.1",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "p1",
+              "requirement": "The arithmetic and logic unit performs arithmetic calculations and logical operations.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "A plotter draws detailed plans on paper, while speakers produce sound output.",
+              "start": 0,
+              "end": 77,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.11131151020526886,
+              "semanticCandidateEvidence": "A plotter draws detailed plans on paper, while speakers produce sound output.",
+              "semanticStart": 0,
+              "semanticEnd": 77
+            },
+            {
+              "pointId": "p2",
+              "requirement": "The control unit directs or coordinates computer operations.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "A plotter draws detailed plans on paper, while speakers produce sound output.",
+              "start": 0,
+              "end": 77,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.22165462374687195,
+              "semanticCandidateEvidence": "A plotter draws detailed plans on paper, while speakers produce sound output.",
+              "semanticStart": 0,
+              "semanticEnd": 77
+            },
+            {
+              "pointId": "p3",
+              "requirement": "Registers temporarily hold data or intermediate results used during processing.",
+              "lexicalCoverage": 0,
+              "wordSimilarity": 0,
+              "candidateEvidence": "A plotter draws detailed plans on paper, while speakers produce sound output.",
+              "start": 0,
+              "end": 77,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.12024093419313431,
+              "semanticCandidateEvidence": "A plotter draws detailed plans on paper, while speakers produce sound output.",
+              "semanticStart": 0,
+              "semanticEnd": 77
+            }
+          ],
+          "concerns": []
+        },
+        "offsetUnit": "unicode_code_points",
+        "experimental": true,
+        "modelSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b",
+        "previewOnly": true
+      }
+    },
+    {
+      "id": "ram-conflict",
+      "title": "Conflicting RAM/ROM note",
+      "conceptId": "ict-g10-u02-ram-rom",
+      "grade": 10,
+      "text": "RAM permanently retains the boot instructions without electricity. ROM is the temporary workspace that is erased whenever power is removed.",
+      "expectedStatus": null,
+      "sourceRecordId": "ict-g10-u02-ram-rom-review-3",
+      "prediction": {
+        "status": null,
+        "suggestedStatus": null,
+        "rawModelStatus": "partial",
+        "suggestionWithheld": true,
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.21310792183777574,
+          "partial": 0.43304578626288637,
+          "missing": 0.3538462918993379
+        },
+        "modelVersion": "ict-coverage-v3.1-2026-10-15",
+        "reviewPolicyVersion": "ict-review-policy-v3.1",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "p1",
+              "requirement": "RAM temporarily holds working data and loses its contents when power is removed.",
+              "lexicalCoverage": 0.6667,
+              "wordSimilarity": 0.1869,
+              "candidateEvidence": "RAM permanently retains the boot instructions without electricity. ROM is the temporary workspace that is erased whenever power is removed.",
+              "start": 0,
+              "end": 139,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.7137464880943298,
+              "semanticCandidateEvidence": "RAM permanently retains the boot instructions without electricity.",
+              "semanticStart": 0,
+              "semanticEnd": 66
+            },
+            {
+              "pointId": "p2",
+              "requirement": "ROM retains its contents without power and stores startup instructions.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.1999,
+              "candidateEvidence": "RAM permanently retains the boot instructions without electricity. ROM is the temporary workspace that is erased whenever power is removed.",
+              "start": 0,
+              "end": 139,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.8275253176689148,
+              "semanticCandidateEvidence": "RAM permanently retains the boot instructions without electricity. ROM is the temporary workspace that is erased whenever power is removed.",
+              "semanticStart": 0,
+              "semanticEnd": 139
+            }
+          ],
+          "concerns": [
+            {
+              "start": 0,
+              "end": 65,
+              "quote": "RAM permanently retains the boot instructions without electricity",
+              "kind": "possible_ict_role_conflict"
+            },
+            {
+              "start": 67,
+              "end": 87,
+              "quote": "ROM is the temporary",
+              "kind": "possible_ict_role_conflict"
+            }
+          ]
+        },
+        "offsetUnit": "unicode_code_points",
+        "experimental": true,
+        "modelSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b",
+        "previewOnly": true
+      }
+    },
+    {
+      "id": "dns-complete",
+      "title": "Complete DNS note",
+      "conceptId": "ict-g11-u03-dns",
+      "grade": 11,
+      "text": "DNS translates a domain name, such as school.example, into the corresponding IP address. The computer can then use that address to connect to the requested server.",
+      "expectedStatus": "present",
+      "sourceRecordId": "ict-g11-u03-dns-review-1",
+      "prediction": {
+        "status": null,
+        "suggestedStatus": "present",
+        "rawModelStatus": "present",
+        "suggestionWithheld": false,
+        "completeSuggestionWithheld": false,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.8334173767884502,
+          "partial": 0.11007545044374265,
+          "missing": 0.05650717276780719
+        },
+        "modelVersion": "ict-coverage-v3.1-2026-10-15",
+        "reviewPolicyVersion": "ict-review-policy-v3.1",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "p1",
+              "requirement": "DNS resolves a human-readable domain name to an IP address.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.3246,
+              "candidateEvidence": "DNS translates a domain name, such as school.example, into the corresponding IP address.",
+              "start": 0,
+              "end": 88,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.749150812625885,
+              "semanticCandidateEvidence": "DNS translates a domain name, such as school.example, into the corresponding IP address.",
+              "semanticStart": 0,
+              "semanticEnd": 88
+            },
+            {
+              "pointId": "p2",
+              "requirement": "The resulting address is used to locate or connect to the requested server.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.4844,
+              "candidateEvidence": "The computer can then use that address to connect to the requested server.",
+              "start": 89,
+              "end": 163,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.7257922887802124,
+              "semanticCandidateEvidence": "The computer can then use that address to connect to the requested server.",
+              "semanticStart": 89,
+              "semanticEnd": 163
+            }
+          ],
+          "concerns": []
+        },
+        "offsetUnit": "unicode_code_points",
+        "experimental": true,
+        "modelSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b",
+        "previewOnly": true
+      }
+    },
+    {
+      "id": "bcc-conflict",
+      "title": "Conflicting email note",
+      "conceptId": "ict-g11-u03-cc-bcc",
+      "grade": 11,
+      "text": "Cc sends copies to additional recipients. Bcc also sends copies, but every To and Cc recipient can see the Bcc address list.",
+      "expectedStatus": null,
+      "sourceRecordId": "ict-g11-u03-cc-bcc-review-3",
+      "prediction": {
+        "status": null,
+        "suggestedStatus": null,
+        "rawModelStatus": "present",
+        "suggestionWithheld": true,
+        "completeSuggestionWithheld": true,
+        "reviewRequired": true,
+        "scoresCalibrated": false,
+        "scores": {
+          "present": 0.5814591330221051,
+          "partial": 0.28934930643008233,
+          "missing": 0.12919156054781264
+        },
+        "modelVersion": "ict-coverage-v3.1-2026-10-15",
+        "reviewPolicyVersion": "ict-review-policy-v3.1",
+        "evidence": {
+          "points": [
+            {
+              "pointId": "p1",
+              "requirement": "Cc sends additional copies of an email to named recipients.",
+              "lexicalCoverage": 1,
+              "wordSimilarity": 0.3915,
+              "candidateEvidence": "Cc sends copies to additional recipients.",
+              "start": 0,
+              "end": 41,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.8980954885482788,
+              "semanticCandidateEvidence": "Cc sends copies to additional recipients.",
+              "semanticStart": 0,
+              "semanticEnd": 41
+            },
+            {
+              "pointId": "p2",
+              "requirement": "Bcc also sends copies, while hiding Bcc recipient addresses from recipients in To and Cc.",
+              "lexicalCoverage": 0.75,
+              "wordSimilarity": 0.4486,
+              "candidateEvidence": "Cc sends copies to additional recipients. Bcc also sends copies, but every To and Cc recipient can see the Bcc address list.",
+              "start": 0,
+              "end": 124,
+              "semanticCorrectnessVerified": false,
+              "semanticSimilarity": 0.920371413230896,
+              "semanticCandidateEvidence": "Bcc also sends copies, but every To and Cc recipient can see the Bcc address list.",
+              "semanticStart": 42,
+              "semanticEnd": 124
+            }
+          ],
+          "concerns": [
+            {
+              "start": 75,
+              "end": 118,
+              "quote": "To and Cc recipient can see the Bcc address",
+              "kind": "possible_ict_role_conflict"
+            }
+          ]
+        },
+        "offsetUnit": "unicode_code_points",
+        "experimental": true,
+        "modelSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b",
+        "previewOnly": true
+      }
+    }
+  ]
+}

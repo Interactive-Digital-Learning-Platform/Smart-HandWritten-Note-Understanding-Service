@@ -16,10 +16,20 @@ import materialsRouter from "./routes/materials";
 import analysisRouter from "./routes/analysis";
 import curriculumRouter from "./routes/curriculum";
 import profileRouter from "./routes/profile";
+import expertAnnotationsRouter from "./routes/expertAnnotations";
+import englishCoverageRouter from "./routes/englishCoverage";
+import {createHistoryCoverageRouter} from './routes/historyCoverage';
+import {createScienceCoverageRouter} from './routes/scienceCoverage';
+import {HistoryCoverageReviewService} from './services/historyCoverageReviewService';
+import {createICTCoverageRouter} from './routes/ictCoverage';
+import {ICTCoverageReviewService} from './services/ictCoverageReviewService';
+import { createStudentAuth, studentAuthConfig } from './middleware/studentAuth';
+import { createPrivateAssets } from './routes/privateAssets';
 
 // ─── App setup ──────────────────────────────────────────────────────────────
 
 const app = express();
+const studentAuth = createStudentAuth(studentAuthConfig());
 
 // ─── Security & parsing middleware ─────────────────────────────────────────
 
@@ -33,7 +43,7 @@ app.use(
   cors({
     origin: "*", // tighten this in production
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Expert-Id"],
   })
 );
 
@@ -44,22 +54,44 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use(
   "/uploads",
-  express.static(path.resolve(config.uploads.uploadDir))
+  studentAuth, createPrivateAssets("uploads", config.uploads.uploadDir)
 );
 
 app.use(
   "/generated_audio",
-  express.static(path.resolve("generated_audio"))
+  studentAuth, createPrivateAssets("generated_audio", path.resolve("generated_audio"))
+);
+
+app.use(
+  "/expert-annotation",
+  express.static(path.resolve("public", "expert-annotation"), {
+    index: "index.html",
+    fallthrough: false,
+  })
 );
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
+app.use("/english-coverage", express.static(path.resolve("public", "english-coverage"), { index:"index.html", fallthrough:false }));
+app.use("/api/english-coverage", englishCoverageRouter);
+app.use('/api/science-coverage',studentAuth,createScienceCoverageRouter());
+const historyCoverage = new HistoryCoverageReviewService();
+app.use('/api/history-coverage', studentAuth, createHistoryCoverageRouter({
+  enabled: process.env.HISTORY_COVERAGE_REVIEW_ENABLED?.trim().toLowerCase() === 'true', service: historyCoverage,
+}));
+process.once('exit', () => historyCoverage.dispose());
+const ictCoverage = new ICTCoverageReviewService();
+app.use('/api/ict-coverage', studentAuth, createICTCoverageRouter({
+  enabled: process.env.ICT_COVERAGE_REVIEW_ENABLED?.trim().toLowerCase() === 'true', service: ictCoverage,
+}));
+process.once('exit', () => ictCoverage.dispose());
 
 app.use("/api/health", healthRouter);
-app.use("/api/notes", notesRouter);
-app.use("/api/materials", materialsRouter);
-app.use("/api/analyze", analysisRouter);
-app.use("/api/curriculum", curriculumRouter);
-app.use("/api/profile", profileRouter);
+app.use("/api/notes", studentAuth, notesRouter);
+app.use("/api/materials", studentAuth, materialsRouter);
+app.use("/api/analyze", studentAuth, analysisRouter);
+app.use("/api/curriculum", studentAuth, curriculumRouter);
+app.use("/api/profile", studentAuth, profileRouter);
+app.use("/api/expert-annotations", expertAnnotationsRouter);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────
 
@@ -103,6 +135,11 @@ const startServer = async (): Promise<void> => {
       console.log(`🌍 Environment: ${config.nodeEnv}`);
       console.log(`❤️  Health: http://localhost:${config.port}/api/health`);
       console.log(`📚 Curriculum: http://localhost:${config.port}/api/curriculum/stats`);
+      if (config.annotationReview.enabled) {
+        console.log(
+          `Expert review: http://localhost:${config.port}/expert-annotation/`
+        );
+      }
       console.log("========================================\n");
     });
   } catch (error) {

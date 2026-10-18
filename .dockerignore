@@ -1,0 +1,23 @@
+# Explicit build allowlist: no credentials, uploads, annotations or training data.
+**
+!Dockerfile
+!package.json
+!package-lock.json
+!tsconfig.json
+!src/
+!src/**
+!public/
+!public/english-coverage/
+!public/english-coverage/**
+!public/expert-annotation/
+!public/expert-annotation/**
+!ml-training/
+!ml-training/requirements-history-semantic.txt
+!runtime/
+!runtime/coverage/
+!runtime/coverage/**
+!packaging/
+!packaging/coverage-verification.json
+!packaging/ict-verification.json
+**/__pycache__/**
+**/*.pyc

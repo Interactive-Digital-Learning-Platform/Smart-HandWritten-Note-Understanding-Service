@@ -1,0 +1,339 @@
+{
+  "version": "english-coverage-human-review-v1",
+  "examples": [
+    {
+      "id": "challenge-020",
+      "conceptId": "sci-g11-ele-002",
+      "concept": "Extrinsic Semiconductors",
+      "text": "Doping means adding a controlled small amount of impurity to pure silicon. Phosphorus atoms have five outer electrons. Four form bonds and the extra electron can conduct. This is an n-type semiconductor, where electrons are the majority carriers and the impurity is a donor.",
+      "requirements": [
+        "Doping adds a small controlled amount of impurity to a pure semiconductor to increase conductivity.",
+        "Pentavalent donors such as phosphorus produce n-type material with electrons as majority carriers.",
+        "Trivalent acceptors such as boron produce p-type material with holes as majority carriers."
+      ]
+    },
+    {
+      "id": "challenge-015",
+      "conceptId": "sci-g10-cim-002",
+      "concept": "Combination, Decomposition and Displacement Reactions",
+      "text": "Reading a chemical equation\nThe arrow separates reactants from products. State symbols show whether a substance is solid, liquid, gas or aqueous. A catalyst can be written over the arrow. Coefficients count formula units; changing a subscript changes the substance itself. Balancing preserves the count of each element.",
+      "requirements": [
+        "Combination joins two or more reactants to form one product.",
+        "Decomposition breaks one compound into simpler products.",
+        "Single displacement replaces an element in a compound with another element.",
+        "Double displacement exchanges ions or partners between two compounds."
+      ]
+    },
+    {
+      "id": "challenge-011",
+      "conceptId": "sci-g10-col-001",
+      "concept": "Sexual and Asexual Reproduction",
+      "text": "Asexual reproduction occurs without fertilisation. One parent makes offspring, usually genetically alike to it. Hydra budding is an example: a small outgrowth develops and eventually separates. Vegetative propagation in plants also produces offspring without fusion of gametes.",
+      "requirements": [
+        "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+        "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring."
+      ]
+    },
+    {
+      "id": "challenge-027",
+      "conceptId": "sci-g11-mix-009",
+      "concept": "Paper Chromatography",
+      "text": "A funnel lined with filter paper removes chalk powder from water. The liquid passes through as filtrate and the insoluble chalk remains as residue. This method does not remove dissolved salt. The pores allow the solution through while holding back the larger solid particles.",
+      "requirements": [
+        "Place a sample spot on a baseline above the solvent level.",
+        "The stationary paper and moving solvent form stationary and mobile phases.",
+        "Components migrate different distances due to different attraction to the paper and solvent."
+      ]
+    },
+    {
+      "id": "challenge-023",
+      "conceptId": "sci-g11-hea-003",
+      "concept": "Heat Exchange Calculations",
+      "text": "The metal has mass 500 g and specific heat 900 J per kilogram per degree. Its temperature rises from 20 C to 30 C, so the change is 10 C. Q = mc times the temperature change = 500 x 900 x 10 = 4500000 joules. There is no need to convert the grams to kilograms. In an insulated mixture heat lost equals heat gained.",
+      "requirements": [
+        "Q = mc times temperature change gives energy transferred without a change of state.",
+        "Use final minus initial temperature rather than the final temperature alone.",
+        "Use kilograms with specific heat per kilogram and express energy in joules.",
+        "In an insulated system heat lost by the hotter body equals heat gained by the cooler body."
+      ]
+    },
+    {
+      "id": "challenge-007",
+      "conceptId": "sci-g10-som-005",
+      "concept": "Isotopes",
+      "text": "Two neon atoms can have ten protons each but ten or twelve neutrons. They are isotopes: the same element and atomic number, with different neutron numbers and mass numbers. Neon-20 and neon-22 remain neon because their proton count is unchanged.",
+      "requirements": [
+        "Isotopes are atoms of the same element with the same atomic number or proton count.",
+        "Isotopes have different neutron numbers and therefore different mass numbers."
+      ]
+    },
+    {
+      "id": "challenge-006",
+      "conceptId": "sci-g10-cur-006",
+      "concept": "Ohm's Law",
+      "text": "Measuring charge flow\nCurrent is charge passing a point per unit time. Twelve coulombs in three seconds gives four amperes. An ammeter is inserted in series so charge passes through it. The voltmeter is connected across the component. These instructions describe how to connect the meters.",
+      "requirements": [
+        "Current is directly proportional to voltage; voltage divided by current is constant.",
+        "The relationship holds at constant temperature and unchanged physical conditions.",
+        "V = IR or R = V/I relates voltage, current and resistance."
+      ]
+    },
+    {
+      "id": "challenge-013",
+      "conceptId": "sci-g10-cim-002",
+      "concept": "Combination, Decomposition and Displacement Reactions",
+      "text": "Reaction families\nCombination joins reactants into a single product, such as hydrogen and oxygen forming water. Decomposition breaks a compound into simpler substances, such as calcium carbonate producing calcium oxide and carbon dioxide. In single displacement, zinc replaces copper from copper sulphate. Double displacement exchanges ions between two compounds; mixing silver nitrate and sodium chloride produces silver chloride and sodium nitrate.",
+      "requirements": [
+        "Combination joins two or more reactants to form one product.",
+        "Decomposition breaks one compound into simpler products.",
+        "Single displacement replaces an element in a compound with another element.",
+        "Double displacement exchanges ions or partners between two compounds."
+      ]
+    },
+    {
+      "id": "challenge-012",
+      "conceptId": "sci-g10-col-001",
+      "concept": "Sexual and Asexual Reproduction",
+      "text": "Fruits and seeds spread by wind, water or animals. A winged seed can travel away from the parent plant. A floating fruit may be moved by a river. Dispersal reduces competition for space and resources between seedlings growing in the same place.",
+      "requirements": [
+        "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+        "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring."
+      ]
+    },
+    {
+      "id": "challenge-016",
+      "conceptId": "sci-g11-bph-004",
+      "concept": "Mechanics of Breathing",
+      "text": "Breathing in\nDuring inspiration, the diaphragm contracts and flattens while intercostal muscles lift the ribs up and out. Chest volume increases, lung pressure becomes lower than atmospheric pressure, and air enters.\nBreathing out\nDuring quiet expiration, these muscles relax. The ribs move down and in and the diaphragm becomes dome shaped. Chest volume decreases, pressure rises above atmospheric pressure and air leaves.",
+      "requirements": [
+        "In inspiration the diaphragm contracts and flattens and ribs move up and out.",
+        "Increasing chest volume lowers pressure and air enters the lungs.",
+        "During expiration muscles relax, the diaphragm becomes dome shaped and ribs move down and in.",
+        "Decreasing chest volume increases pressure and air leaves the lungs."
+      ]
+    },
+    {
+      "id": "challenge-010",
+      "conceptId": "sci-g10-col-001",
+      "concept": "Sexual and Asexual Reproduction",
+      "text": "--- Page 1 ---\nSexual reproduction involves fusion of male and female gametes in fertilisation. A zygote forms and develops into an offspring with a combination of inherited information.\n--- Page 2 ---\nAsexual reproduction produces offspring from one parent without gamete fusion. A bacterium dividing into two is an example. The offspring are generally genetically identical apart from mutations.",
+      "requirements": [
+        "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+        "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring."
+      ]
+    },
+    {
+      "id": "challenge-026",
+      "conceptId": "sci-g11-mix-009",
+      "concept": "Paper Chromatography",
+      "text": "Paper chromatography uses paper as the stationary phase and solvent as the mobile phase. Dyes travel different distances because of different attraction to paper and solvent. The correct setup is to submerge the ink spot below the solvent level so the sample dissolves into the beaker before separation. Keep the starting spot underwater throughout.",
+      "requirements": [
+        "Place a sample spot on a baseline above the solvent level.",
+        "The stationary paper and moving solvent form stationary and mobile phases.",
+        "Components migrate different distances due to different attraction to the paper and solvent."
+      ]
+    },
+    {
+      "id": "challenge-030",
+      "conceptId": "sci-g11-pea-001",
+      "concept": "Electrical Power of Appliances",
+      "text": "A machine receives 200 joules and produces 150 joules of useful mechanical energy. Its efficiency is useful output divided by input times 100, which gives 75 percent. The remaining 50 joules are transferred to the surroundings, mainly as heat and sound. Energy is conserved.",
+      "requirements": [
+        "Electrical power is energy transferred per second, measured in watts or joules per second.",
+        "P = VI multiplies voltage across the appliance by current through it.",
+        "Power is measured in watts and one kilowatt is one thousand watts."
+      ]
+    },
+    {
+      "id": "challenge-022",
+      "conceptId": "sci-g11-hea-003",
+      "concept": "Heat Exchange Calculations",
+      "text": "Heating 0.5 kg of water from 18 C to 28 C gives a temperature change of 10 C. Using c = 4200 J per kilogram per degree, Q = mc times the change = 0.5 x 4200 x 10 = 21000 joules. The water stays liquid. In an insulated mixture, heat lost by the hotter body equals heat gained by the cooler body at their common final temperature.",
+      "requirements": [
+        "Q = mc times temperature change gives energy transferred without a change of state.",
+        "Use final minus initial temperature rather than the final temperature alone.",
+        "Use kilograms with specific heat per kilogram and express energy in joules.",
+        "In an insulated system heat lost by the hotter body equals heat gained by the cooler body."
+      ]
+    },
+    {
+      "id": "challenge-017",
+      "conceptId": "sci-g11-bph-004",
+      "concept": "Mechanics of Breathing",
+      "text": "Inhaling\nWhen the diaphragm contracts it moves down and flattens. Contracting intercostal muscles lift the ribs. The chest cavity becomes larger; the pressure inside falls below that outside. Air therefore flows into the lungs. The next diagram in the book describes the other half of the breathing cycle.",
+      "requirements": [
+        "In inspiration the diaphragm contracts and flattens and ribs move up and out.",
+        "Increasing chest volume lowers pressure and air enters the lungs.",
+        "During expiration muscles relax, the diaphragm becomes dome shaped and ribs move down and in.",
+        "Decreasing chest volume increases pressure and air leaves the lungs."
+      ]
+    },
+    {
+      "id": "challenge-028",
+      "conceptId": "sci-g11-pea-001",
+      "concept": "Electrical Power of Appliances",
+      "text": "A small motor runs at 9 volts and takes 2 amperes. Its electrical input power is P = VI = 9 x 2 = 18 W. A watt is one joule per second, so the motor receives 18 joules of electrical energy each second. Power is the rate of energy transfer, whereas total energy also depends on how long the motor runs.",
+      "requirements": [
+        "Electrical power is energy transferred per second, measured in watts or joules per second.",
+        "P = VI multiplies voltage across the appliance by current through it.",
+        "Power is measured in watts and one kilowatt is one thousand watts."
+      ]
+    },
+    {
+      "id": "challenge-002",
+      "conceptId": "sci-g10-cbl-007",
+      "concept": "Benedict Test for Reducing Sugars",
+      "text": "Reducing sugar test\nBenedict reagent starts blue. Add it to the food solution in a tube. A green, yellow, orange or red precipitate indicates reducing sugar, depending on concentration. These notes record the reagent and the positive colours only.",
+      "requirements": [
+        "Add Benedict solution to the food sample to test for reducing sugar.",
+        "Heat the sample with Benedict reagent in a hot water bath.",
+        "A green yellow orange or brick red precipitate indicates reducing sugar."
+      ]
+    },
+    {
+      "id": "challenge-014",
+      "conceptId": "sci-g10-cim-002",
+      "concept": "Combination, Decomposition and Displacement Reactions",
+      "text": "Reaction families\nA combination reaction has more than one reactant but one product. Burning magnesium in oxygen to form magnesium oxide is an example. A decomposition reaction goes the other way in pattern: one compound breaks into simpler products. Heating limestone gives calcium oxide and carbon dioxide.",
+      "requirements": [
+        "Combination joins two or more reactants to form one product.",
+        "Decomposition breaks one compound into simpler products.",
+        "Single displacement replaces an element in a compound with another element.",
+        "Double displacement exchanges ions or partners between two compounds."
+      ]
+    },
+    {
+      "id": "challenge-019",
+      "conceptId": "sci-g11-ele-002",
+      "concept": "Extrinsic Semiconductors",
+      "text": "Controlled doping increases the conductivity of silicon by adding a very small impurity concentration. A pentavalent donor such as phosphorus supplies an extra electron, making electrons the majority carriers in n-type material. A trivalent acceptor such as boron leaves holes, the majority carriers in p-type material. Each crystal remains electrically neutral overall.",
+      "requirements": [
+        "Doping adds a small controlled amount of impurity to a pure semiconductor to increase conductivity.",
+        "Pentavalent donors such as phosphorus produce n-type material with electrons as majority carriers.",
+        "Trivalent acceptors such as boron produce p-type material with holes as majority carriers."
+      ]
+    },
+    {
+      "id": "challenge-003",
+      "conceptId": "sci-g10-cbl-007",
+      "concept": "Benedict Test for Reducing Sugars",
+      "text": "Practical revision\nBenedict test\nFor the starch experiment, place iodine solution on a piece of bread. A blue-black colour indicates starch. The iodine remains brown on a sample without starch. This is the procedure recorded on this page.",
+      "requirements": [
+        "Add Benedict solution to the food sample to test for reducing sugar.",
+        "Heat the sample with Benedict reagent in a hot water bath.",
+        "A green yellow orange or brick red precipitate indicates reducing sugar."
+      ]
+    },
+    {
+      "id": "challenge-018",
+      "conceptId": "sci-g11-bph-004",
+      "concept": "Mechanics of Breathing",
+      "text": "Alveolar gas exchange\nOxygen diffuses across the thin walls of the alveoli into surrounding blood capillaries. Carbon dioxide diffuses in the opposite direction. A large surface area and a moist surface make exchange effective. Haemoglobin carries much of the oxygen in the blood.",
+      "requirements": [
+        "In inspiration the diaphragm contracts and flattens and ribs move up and out.",
+        "Increasing chest volume lowers pressure and air enters the lungs.",
+        "During expiration muscles relax, the diaphragm becomes dome shaped and ribs move down and in.",
+        "Decreasing chest volume increases pressure and air leaves the lungs."
+      ]
+    },
+    {
+      "id": "challenge-029",
+      "conceptId": "sci-g11-pea-001",
+      "concept": "Electrical Power of Appliances",
+      "text": "For a 9 V motor drawing 2 A, P = VI gives 18. The answer is 18 joules of total energy. An 18 watt label means this amount is used for the entire operating period, regardless of whether the motor runs for one second or ten minutes. Voltage and current already give the complete energy consumption.",
+      "requirements": [
+        "Electrical power is energy transferred per second, measured in watts or joules per second.",
+        "P = VI multiplies voltage across the appliance by current through it.",
+        "Power is measured in watts and one kilowatt is one thousand watts."
+      ]
+    },
+    {
+      "id": "challenge-005",
+      "conceptId": "sci-g10-cur-006",
+      "concept": "Ohm's Law",
+      "text": "Ohm's law for a wire\nV = IR and resistance equals voltage divided by current. At constant temperature, raising the voltage from 4 V to 8 V makes the current fall from 2 A to 1 A. Thus the same unchanged wire carries less current when more voltage is applied. The calculated resistance becomes larger.",
+      "requirements": [
+        "Current is directly proportional to voltage; voltage divided by current is constant.",
+        "The relationship holds at constant temperature and unchanged physical conditions.",
+        "V = IR or R = V/I relates voltage, current and resistance."
+      ]
+    },
+    {
+      "id": "challenge-025",
+      "conceptId": "sci-g11-mix-009",
+      "concept": "Paper Chromatography",
+      "text": "Place a small ink spot on a pencil baseline on chromatography paper. Keep this spot above the solvent level when the bottom of the paper is immersed. The paper is the stationary phase and the rising solvent is the mobile phase. The dyes separate because their attraction to paper and their movement with solvent differ, so they travel different distances and form distinct bands.",
+      "requirements": [
+        "Place a sample spot on a baseline above the solvent level.",
+        "The stationary paper and moving solvent form stationary and mobile phases.",
+        "Components migrate different distances due to different attraction to the paper and solvent."
+      ]
+    },
+    {
+      "id": "challenge-008",
+      "conceptId": "sci-g10-som-005",
+      "concept": "Isotopes",
+      "text": "Isotopes of neon have the same atomic number and different mass numbers. Neon-22 is heavier because it has two extra electrons. Both neon nuclei contain ten neutrons. The extra electrons explain the difference between mass numbers 20 and 22.",
+      "requirements": [
+        "Isotopes are atoms of the same element with the same atomic number or proton count.",
+        "Isotopes have different neutron numbers and therefore different mass numbers."
+      ]
+    },
+    {
+      "id": "challenge-009",
+      "conceptId": "sci-g10-som-005",
+      "concept": "Isotopes",
+      "text": "Magnesium makes a positive ion by losing its two outer electrons. The neutral atom has twelve protons and twelve electrons; the ion has twelve protons and ten electrons. Electron loss changes charge. Its proton number remains twelve, so the chemical symbol is still Mg.",
+      "requirements": [
+        "Isotopes are atoms of the same element with the same atomic number or proton count.",
+        "Isotopes have different neutron numbers and therefore different mass numbers."
+      ]
+    },
+    {
+      "id": "challenge-024",
+      "conceptId": "sci-g11-hea-003",
+      "concept": "Heat Exchange Calculations",
+      "text": "Melting uses energy without increasing temperature during the phase change at fixed pressure. For a substance already at its melting point, Q = mL. Melting 0.1 kg of ice with L = 334000 J/kg requires 33400 J. Freezing releases the same energy for the same mass.",
+      "requirements": [
+        "Q = mc times temperature change gives energy transferred without a change of state.",
+        "Use final minus initial temperature rather than the final temperature alone.",
+        "Use kilograms with specific heat per kilogram and express energy in joules.",
+        "In an insulated system heat lost by the hotter body equals heat gained by the cooler body."
+      ]
+    },
+    {
+      "id": "challenge-001",
+      "conceptId": "sci-g10-cbl-007",
+      "concept": "Benedict Test for Reducing Sugars",
+      "text": "Testing the fruit extract\nMix the extract with Benedict solution in a test tube. Heat the mixture in a boiling water bath. An orange or brick-red precipitate is a positive result for reducing sugars; the original blue colour remains in a negative sample. Use the same heating procedure for the water control.",
+      "requirements": [
+        "Add Benedict solution to the food sample to test for reducing sugar.",
+        "Heat the sample with Benedict reagent in a hot water bath.",
+        "A green yellow orange or brick red precipitate indicates reducing sugar."
+      ]
+    },
+    {
+      "id": "challenge-004",
+      "conceptId": "sci-g10-cur-006",
+      "concept": "Ohm's Law",
+      "text": "--- Page 1 ---\nFor this resistor, doubling the potential difference doubles the current. Voltage is directly proportional to current, so V/I has the same value, the resistance R. We can write V = IR.\n--- Page 2 ---\nThis statement is Ohm's law and applies while the temperature and other physical conditions stay constant. For R = 8 ohms and I = 0.25 A, the voltage is 2 V.",
+      "requirements": [
+        "Current is directly proportional to voltage; voltage divided by current is constant.",
+        "The relationship holds at constant temperature and unchanged physical conditions.",
+        "V = IR or R = V/I relates voltage, current and resistance."
+      ]
+    },
+    {
+      "id": "challenge-021",
+      "conceptId": "sci-g11-ele-002",
+      "concept": "Extrinsic Semiconductors",
+      "text": "Pure silicon has four outer electrons participating in covalent bonds. Thermal energy can free a bound electron and leave a hole. The numbers of electrons and holes generated this way are equal. Increasing temperature can increase conductivity in this intrinsic material.",
+      "requirements": [
+        "Doping adds a small controlled amount of impurity to a pure semiconductor to increase conductivity.",
+        "Pentavalent donors such as phosphorus produce n-type material with electrons as majority carriers.",
+        "Trivalent acceptors such as boron produce p-type material with holes as majority carriers."
+      ]
+    }
+  ],
+  "packetSha256": "ee11b374de567490347198a6dd77f8109a56d7b7accde649da14e6ee32d980e0"
+}

@@ -8,6 +8,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { CurriculumLesson, CurriculumConcept, LearningOutcome } from "../curriculum/types";
+import { EnglishCoverageCheck } from "../ml/englishCoverageCheck";
+import type { ProcessingProgress } from "./progress";
 
 // ─── Stage Names ───────────────────────────────────────────────────────────
 
@@ -20,6 +22,7 @@ export type PipelineStage =
   | "lesson_identification"
   | "curriculum_retrieval"
   | "concept_matching"
+  | "english_coverage_check"
   | "coverage_calculation"
   | "gap_detection"
   | "material_generation"
@@ -38,8 +41,21 @@ export interface StageResult {
 
 export interface OcrExtractionOutput {
   totalPages: number;
-  extractedPages: number;
-  failedPages: number;
+  extractedPages?: number;
+  failedPages?: number;
+  qualityState?: "known" | "unknown";
+  source?: "vision" | "cached" | "provided_text";
+  textSha256?: string;
+  imagesSha256?: string;
+  warnings?: string[];
+  readability?: { confidenceScore: number; lowQualityWarning: boolean };
+}
+
+export interface CachedOcrInput {
+  extraction?: OcrExtractionOutput;
+  confidenceScore?: number;
+  lowQualityWarning?: boolean;
+  warnings?: string[];
 }
 
 export interface OcrCleaningOutput {
@@ -89,7 +105,8 @@ export interface ConceptMatch {
   found: boolean;
   /**
    * Confidence in the match (0–1).
-   * 1.0 = exact keyword found, 0.7–0.9 = semantic match, 0 = not found.
+   * Keyword-only evidence stays tentative; semantic evidence is discounted
+   * by input reliability. This is a heuristic score, not calibrated accuracy.
    */
   matchConfidence: number;
   /** Confidence that the covered/not-covered decision is correct. */
@@ -266,6 +283,7 @@ export interface PipelineContext {
 
   // ── Stage 1: OCR Extraction ───────────────────────────────────────────────
   rawOcrText?: string;
+  cachedOcr?: CachedOcrInput;
 
   // ── Stage 2: OCR Cleaning ─────────────────────────────────────────────────
   ocrExtraction?: OcrExtractionOutput;
@@ -292,6 +310,7 @@ export interface PipelineContext {
 
   // ── Stage 6: Concept Matching ─────────────────────────────────────────────
   conceptMatches?: ConceptMatch[];
+  englishCoverageCheck?: EnglishCoverageCheck;
 
   // ── Stage 7: Coverage Calculation ────────────────────────────────────────
   coverageScores?: CoverageScores;
@@ -316,6 +335,7 @@ export interface PipelineContext {
   startedAt: Date;
   stageResults: StageResult[];
   totalDurationMs?: number;
+  reportProgress?: (update: Pick<ProcessingProgress, "stage" | "currentPage">) => Promise<void>;
 }
 
 // ─── Pipeline Result ───────────────────────────────────────────────────────

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "subjects": {
+    "science": {
+      "model": "models/english-coverage-v3.1.json",
+      "sha256": "af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63"
+    },
+    "history": {
+      "model": "models/history-coverage-v5.1.json",
+      "sha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+    },
+    "ict": {
+      "model": "models/ict-coverage-v3.1.json",
+      "sha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b"
+    }
+  },
+  "encoder": {
+    "manifest": "encoders/encoder-manifest.json",
+    "directory": "encoders/minilm-l6-v2",
+    "revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+  },
+  "provenance": {
+    "historyProtocolSha256": "fde3e224978536dcadc0f1dc9e6f5d5845d338b758438ed7614aa3a336af40f8",
+    "ictReleaseSha256": "874c457410a35eacf1c3a63935c334d16b819a4ae3d7958dd074fccb32c7201c",
+    "originalEncoderManifestSha256": "03a75e7c70f78b450496c294164c9fd37d81e52b6ad9aec013b9daae23ecf45a"
+  },
+  "trainingDataIncluded": false,
+  "files": {
+    "models/english-coverage-v3.1.json": "af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63",
+    "models/history-coverage-v5.1.json": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8",
+    "models/ict-coverage-v3.1.json": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b",
+    "ml-training/src/smart_note_training/__init__.py": "748015dacb16bb97507aff608556747afe8137de762d7d383419ca76045e2579",
+    "ml-training/src/smart_note_training/english_coverage.py": "bb042a83caee169ecd8bcaa00b90be9ce6fab8d853856263e867c0c651c86138",
+    "ml-training/src/smart_note_training/english_coverage_v3.py": "c0b32b21f4c7a51328f7146b9c69227f472f7e2664a43c6efba767222f1cc020",
+    "ml-training/src/smart_note_training/english_coverage_v31.py": "b653bd56f495b67e281239bc3c7c0abbe20f0a75e7461c952a0e576862fa4af1",
+    "ml-training/src/smart_note_training/history_coverage.py": "b8312aabc6c3e800b3c239d7aee2459c11950e5418ab9c5ceac2d873e6020cdd",
+    "ml-training/src/smart_note_training/history_coverage_v31.py": "e48e770989a35e133e2f91d5d5753fd8831acd26a2d60c368bf9ff74ed83ad77",
+    "ml-training/src/smart_note_training/history_semantic.py": "46f4a478078529f13d4f4de9dd5891dca523d085e16565b8214d0ddc9aa0d067",
+    "ml-training/src/smart_note_training/history_semantic_core.py": "9baeed03091ac7b308be4a8e4d4841684fd7a0033bea724474d8c2a688154a48",
+    "ml-training/src/smart_note_training/history_semantic_review.py": "db14d92754529a93289fb836fedbf4c80f1c7237e4ed415734663f43c3f7b9d4",
+    "ml-training/src/smart_note_training/ict_coverage.py": "67db865c81c652f85c7d9c46a2723a704c4de3c478f9d3e511331019bc57ea2a",
+    "ml-training/src/smart_note_training/ict_coverage_v11.py": "3f79b908990ca6172ec34e7b468468995e06caa60f61469bc9dfe527219ec915",
+    "ml-training/src/smart_note_training/ict_coverage_v3.py": "1175a637f8674428c6785183ea6911cc0bcac53cabb713d3d2a07e78d106da47",
+    "ml-training/src/smart_note_training/ict_coverage_v31.py": "9b1ae974bb0d288481c96ccba9c65ae3b01d57697c3be6d7b72e8f227a246941",
+    "ml-training/english_coverage_v31_cli.py": "8d18fd28f8f49f42384e139328c560df0d3689cd0b391ed2aa8f72941db61f0b",
+    "ml-training/english_coverage_v3_cli.py": "ed179e07b3317a75e5a93c14f274f6a27400ca31ab456c20dfa292357f47f859",
+    "ml-training/history_preview_cli.py": "188d4c21e1e208b4aedd6e8706270575b0d23032f64bf6ee71002771f5abc3fb",
+    "ml-training/ict_service_cli.py": "68a09e26580e995353dea0f9fae760dc8c0da196786e8953dc78b5918347d6db",
+    "ml-training/coverage_runtime_bundle.py": "91b1841c8651da4885fc05d58f00449dc1d82bc4759ad06935cfa74332fe14fc",
+    "encoders/minilm-l6-v2/config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+    "encoders/minilm-l6-v2/model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+    "encoders/minilm-l6-v2/README.md": "dcd602d2fd35c203a247304a06fec6654a12f7941b739f9221a064fe8dc3b7f0",
+    "encoders/minilm-l6-v2/sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+    "encoders/minilm-l6-v2/special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+    "encoders/minilm-l6-v2/tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+    "encoders/minilm-l6-v2/tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+    "encoders/minilm-l6-v2/vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3",
+    "encoders/encoder-manifest.json": "743e17899c9f9fababfc51387f75fde99734a41a12c62ca5d931c22885c3b144"
+  }
+}

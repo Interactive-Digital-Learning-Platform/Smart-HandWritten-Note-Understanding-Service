@@ -7,8 +7,10 @@ import {
   deleteMaterialByType,
 } from "../controllers/materialsController";
 import { aiRateLimit } from "../middleware/aiRateLimit";
+import { requireNoteOwner } from "../middleware/studentOwnership";
 
 const router = Router();
+router.param("noteId", (req, res, next) => requireNoteOwner("noteId")(req, res, next));
 
 // ─── Generation routes ──────────────────────────────────────────────────────
 

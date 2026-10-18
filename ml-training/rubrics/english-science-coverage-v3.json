@@ -1,0 +1,863 @@
+{
+  "version": "english-science-coverage-v3",
+  "language": "English",
+  "provenance": "Draft finite relation checks developed using both human reviews. Neither review is an independent V3 test.",
+  "meaning": "Complete means adequate coverage of this scoped concept. Phrase matches are candidate evidence, not proof of semantic correctness. Missing refers only to the submitted, in-scope material.",
+  "concepts": [
+    {
+      "id": "sci-g10-cbl-007",
+      "name": "Benedict Test for Reducing Sugars",
+      "points": [
+        {
+          "id": "reagent",
+          "text": "Add Benedict solution to the food sample to test for reducing sugar.",
+          "groups": [
+            [
+              "benedict"
+            ],
+            [
+              "add",
+              "added",
+              "adding",
+              "mix",
+              "mixed",
+              "mixing",
+              "drops",
+              "combine",
+              "combined",
+              "treat",
+              "treated"
+            ]
+          ]
+        },
+        {
+          "id": "heat",
+          "text": "Heat the sample with Benedict reagent in a hot water bath.",
+          "groups": [
+            [
+              "heat",
+              "heating",
+              "heated",
+              "hot",
+              "boiling",
+              "warm"
+            ],
+            [
+              "water bath",
+              "bath"
+            ]
+          ],
+          "contextPatterns": [
+            "\\bbenedict\\b",
+            "\\breducing sugars?\\b"
+          ],
+          "rejectPatterns": [
+            "\\b(?:no|not|without|unnecessary|optional)\\b.{0,24}\\bheat",
+            "\\bheating\\b.{0,25}\\b(?:optional|unnecessary|not needed)\\b"
+          ]
+        },
+        {
+          "id": "result",
+          "text": "A green yellow orange or brick red precipitate indicates reducing sugar.",
+          "groups": [
+            [
+              "green",
+              "yellow",
+              "orange",
+              "brick red",
+              "red precipitate",
+              "red ppt"
+            ],
+            [
+              "sugar",
+              "glucose",
+              "positive",
+              "precipitate",
+              "ppt"
+            ]
+          ],
+          "contextPatterns": [
+            "\\bbenedict\\b",
+            "\\breducing sugars?\\b",
+            "\\bglucose\\b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sci-g10-cur-006",
+      "name": "Ohm's Law",
+      "points": [
+        {
+          "id": "relationship",
+          "text": "Current is directly proportional to voltage; voltage divided by current is constant.",
+          "groups": [
+            [
+              "voltage",
+              "potential difference",
+              "v"
+            ],
+            [
+              "current",
+              "i"
+            ],
+            [
+              "proportional",
+              "double",
+              "constant",
+              "same ratio",
+              "v / i",
+              "v/i"
+            ]
+          ],
+          "rejectPatterns": [
+            "\\b(?:inversely|not directly)\\s+proportional\\b"
+          ],
+          "supportPatterns": [
+            "\\b(?:directly\\s+)?proportional\\b",
+            "\\bv\\s*/\\s*i\\b.{0,35}\\b(?:constant|same|fixed)",
+            "\\b(?:voltage|potential difference)\\b.{0,25}\\bdouble\\w*\\b.{0,25}\\bcurrent\\b",
+            "\\bdouble\\w*\\s+(?:the\\s+)?voltage\\b.{0,30}\\bdouble\\w*\\s+(?:the\\s+)?current\\b"
+          ]
+        },
+        {
+          "id": "condition",
+          "text": "The relationship holds at constant temperature and unchanged physical conditions.",
+          "groups": [
+            [
+              "temperature",
+              "physical conditions"
+            ],
+            [
+              "constant",
+              "same",
+              "unchanged",
+              "fixed"
+            ]
+          ]
+        },
+        {
+          "id": "equation",
+          "text": "V = IR or R = V/I relates voltage, current and resistance.",
+          "groups": [
+            [
+              "v = ir",
+              "v=ir",
+              "r = v / i",
+              "r = v/i",
+              "r=v/i",
+              "voltage divided by current"
+            ]
+          ]
+        }
+      ],
+      "concernPatterns": [
+        "\\b(?:more|higher|raising|increas\\w*)\\s+(?:the\\s+)?voltage\\b.{0,70}\\b(?:less|smaller|fall\\w*|decreas\\w*)\\b.{0,15}\\bcurrent\\b"
+      ]
+    },
+    {
+      "id": "sci-g10-som-005",
+      "name": "Isotopes",
+      "points": [
+        {
+          "id": "same-protons",
+          "text": "Isotopes are atoms of the same element with the same atomic number or proton count.",
+          "groups": [
+            [
+              "same",
+              "equal",
+              "both"
+            ],
+            [
+              "protons",
+              "proton",
+              "atomic number",
+              "element"
+            ]
+          ]
+        },
+        {
+          "id": "different-neutrons",
+          "text": "Isotopes have different neutron numbers and therefore different mass numbers.",
+          "groups": [
+            [
+              "different",
+              "extra",
+              "more",
+              "fewer",
+              "changes",
+              "unequal"
+            ],
+            [
+              "neutrons",
+              "neutron"
+            ],
+            [
+              "mass",
+              "heavier",
+              "isotopes",
+              "isotope"
+            ]
+          ],
+          "supportPatterns": [
+            "\\b(?:different|unequal|extra|more|fewer)\\s+(?:(?:numbers?|counts?)\\s+of\\s+)?neutrons?\\b",
+            "\\bneutron\\s+(?:numbers?|counts?)\\b.{0,35}\\b(?:differ|different|unequal|change)",
+            "\\bneutrons?\\b.{0,12}\\b(?:differ|vary)"
+          ],
+          "rejectPatterns": [
+            "\\b(?:not|no|without)\\s+(?:any\\s+)?(?:different|extra|more|fewer)\\s+neutrons?\\b"
+          ]
+        }
+      ],
+      "concernPatterns": [
+        "\\b(?:extra|more)\\s+electrons?\\b.{0,60}\\bmass",
+        "\\bmass\\s+(?:number|difference)\\b.{0,40}\\b(?:because|due to|caused by)\\b.{0,30}\\belectrons?"
+      ]
+    },
+    {
+      "id": "sci-g10-col-001",
+      "name": "Sexual and Asexual Reproduction",
+      "points": [
+        {
+          "id": "sexual",
+          "text": "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+          "groups": [
+            [
+              "gametes",
+              "gamete"
+            ],
+            [
+              "fusion",
+              "fuse",
+              "fertilisation",
+              "fertilization"
+            ]
+          ],
+          "rejectPatterns": [
+            "\\b(?:without|no|not|never|absence of)\\b.{0,25}\\b(?:fusion|fuse|fertilis|fertiliz)",
+            "\\bgametes?\\b.{0,12}\\b(?:do not|dont|never)\\b.{0,12}\\bfuse"
+          ]
+        },
+        {
+          "id": "asexual",
+          "text": "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring.",
+          "groups": [
+            [
+              "asexual",
+              "budding",
+              "cutting",
+              "vegetative"
+            ],
+            [
+              "one parent",
+              "single parent",
+              "no fusion",
+              "without fusion",
+              "without gamete fusion",
+              "without fertilisation",
+              "without fertilization",
+              "genetically alike",
+              "identical"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sci-g10-cim-002",
+      "name": "Combination, Decomposition and Displacement Reactions",
+      "points": [
+        {
+          "id": "combination",
+          "text": "Combination joins two or more reactants to form one product.",
+          "groups": [
+            [
+              "combination",
+              "combine",
+              "joining"
+            ],
+            [
+              "one product",
+              "single product",
+              "one compound",
+              "mgo"
+            ]
+          ]
+        },
+        {
+          "id": "decomposition",
+          "text": "Decomposition breaks one compound into simpler products.",
+          "groups": [
+            [
+              "decomposition",
+              "breaks down",
+              "breaks into"
+            ],
+            [
+              "compound",
+              "simpler",
+              "caco3",
+              "one reactant"
+            ]
+          ]
+        },
+        {
+          "id": "single-displacement",
+          "text": "Single displacement replaces an element in a compound with another element.",
+          "groups": [
+            [
+              "single displacement",
+              "replaces",
+              "takes copper",
+              "displaces"
+            ],
+            [
+              "element",
+              "compound",
+              "zinc",
+              "copper",
+              "zn"
+            ]
+          ]
+        },
+        {
+          "id": "double-displacement",
+          "text": "Double displacement exchanges ions or partners between two compounds.",
+          "groups": [
+            [
+              "double displacement",
+              "exchange",
+              "exchanges"
+            ],
+            [
+              "partners",
+              "ions",
+              "compounds",
+              "bacl2",
+              "baso4"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sci-g11-bph-004",
+      "name": "Mechanics of Breathing",
+      "points": [
+        {
+          "id": "inspiration-movement",
+          "text": "In inspiration the diaphragm contracts and flattens and ribs move up and out.",
+          "groups": [
+            [
+              "diaphragm",
+              "intercostal",
+              "ribs"
+            ],
+            [
+              "contracts",
+              "contract",
+              "flattens",
+              "up",
+              "out"
+            ],
+            [
+              "inhale",
+              "inhalation",
+              "inspiration",
+              "breathe in",
+              "breathing in",
+              "air goes in"
+            ]
+          ],
+          "supportPatterns": [
+            "\\bdiaphragm\\b(?:(?!\\bribs?\\b).){0,35}\\b(?:contracts?|flattens?|moves? down)\\b"
+          ],
+          "rejectPatterns": [
+            "\\bdiaphragm\\b.{0,20}\\b(?:does not|doesnt|never)\\b.{0,15}\\bcontract"
+          ]
+        },
+        {
+          "id": "inspiration-pressure",
+          "text": "Increasing chest volume lowers pressure and air enters the lungs.",
+          "groups": [
+            [
+              "volume",
+              "cavity"
+            ],
+            [
+              "larger",
+              "bigger",
+              "increases",
+              "increasing",
+              "expands"
+            ],
+            [
+              "lower",
+              "lowers",
+              "falls",
+              "drops",
+              "decreases",
+              "below"
+            ]
+          ],
+          "supportAllPatterns": [
+            [
+              "\\b(?:volume|cavity)\\b.{0,25}\\b(?:increas\\w*|expand\\w*|larger|bigger)\\b",
+              "\\b(?:increas\\w*|larger|bigger)\\s+(?:chest\\s+|thoracic\\s+)?(?:volume|cavity)\\b"
+            ],
+            [
+              "\\bpressure\\b.{0,25}\\b(?:lower\\w*|fall\\w*|drop\\w*|decreas\\w*|below)\\b",
+              "\\b(?:lower\\w*|decreas\\w*)\\s+(?:the\\s+)?pressure\\b"
+            ]
+          ]
+        },
+        {
+          "id": "expiration-movement",
+          "text": "During expiration muscles relax, the diaphragm becomes dome shaped and ribs move down and in.",
+          "groups": [
+            [
+              "diaphragm",
+              "intercostal",
+              "muscles",
+              "ribs"
+            ],
+            [
+              "relax",
+              "relaxes",
+              "dome",
+              "down"
+            ],
+            [
+              "exhale",
+              "expiration",
+              "exhalation",
+              "breathe out",
+              "breathing out",
+              "air goes out"
+            ]
+          ],
+          "supportPatterns": [
+            "\\b(?:diaphragm|muscles)\\b.{0,35}\\b(?:relax\\w*|dome)\\b"
+          ]
+        },
+        {
+          "id": "expiration-pressure",
+          "text": "Decreasing chest volume increases pressure and air leaves the lungs.",
+          "groups": [
+            [
+              "volume",
+              "cavity"
+            ],
+            [
+              "smaller",
+              "decreases",
+              "decreasing",
+              "reduces",
+              "reduced"
+            ],
+            [
+              "rises",
+              "raises",
+              "increases",
+              "above",
+              "higher"
+            ]
+          ],
+          "supportAllPatterns": [
+            [
+              "\\b(?:volume|cavity)\\b.{0,25}\\b(?:decreas\\w*|reduc\\w*|smaller)\\b",
+              "\\b(?:decreas\\w*|smaller|reduc\\w*)\\s+(?:chest\\s+|thoracic\\s+)?(?:volume|cavity)\\b"
+            ],
+            [
+              "\\bpressure\\b.{0,25}\\b(?:ris\\w*|increas\\w*|higher|above)\\b",
+              "\\b(?:rais\\w*|increas\\w*)\\s+(?:the\\s+)?pressure\\b"
+            ]
+          ]
+        }
+      ],
+      "concernPatterns": [
+        "\\bvolume\\s+(?:increases|expands)\\b.{0,35}\\bpressure\\s+(?:rises|increases)\\b",
+        "\\bvolume\\s+(?:decreases|reduces)\\b.{0,35}\\bpressure\\s+(?:falls|decreases)\\b"
+      ]
+    },
+    {
+      "id": "sci-g11-ele-002",
+      "name": "Extrinsic Semiconductors",
+      "points": [
+        {
+          "id": "doping",
+          "text": "Doping adds a small controlled amount of impurity to a pure semiconductor to increase conductivity.",
+          "groups": [
+            [
+              "doping",
+              "impurity",
+              "impurities"
+            ],
+            [
+              "add",
+              "adding",
+              "added",
+              "controlled",
+              "small"
+            ],
+            [
+              "silicon",
+              "semiconductor",
+              "conductivity",
+              "carriers"
+            ]
+          ]
+        },
+        {
+          "id": "n-type",
+          "text": "Pentavalent donors such as phosphorus produce n-type material with electrons as majority carriers.",
+          "groups": [
+            [
+              "n type",
+              "donor",
+              "phosphorus",
+              "pentavalent"
+            ],
+            [
+              "electron",
+              "electrons"
+            ],
+            [
+              "majority",
+              "extra",
+              "five"
+            ]
+          ],
+          "spanScope": "clause",
+          "contextPatterns": [
+            "\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b"
+          ],
+          "supportPatterns": [
+            "\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b.{0,90}\\belectrons?\\b.{0,35}\\b(?:majority|extra|free)\\b",
+            "\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b.{0,90}\\b(?:majority|extra|free)\\b.{0,30}\\belectrons?\\b",
+            "\\belectrons?\\b.{0,25}\\bmajority\\b.{0,40}\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b"
+          ],
+          "rejectPatterns": [
+            "\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b.{0,60}\\bholes?\\b.{0,25}\\bmajority\\b",
+            "\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b.{0,60}\\bmajority\\b.{0,25}\\bholes?\\b",
+            "\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b.{0,55}\\b(?:no|not|never)\\b.{0,30}\\belectrons?\\b"
+          ]
+        },
+        {
+          "id": "p-type",
+          "text": "Trivalent acceptors such as boron produce p-type material with holes as majority carriers.",
+          "groups": [
+            [
+              "p type",
+              "acceptor",
+              "boron",
+              "trivalent"
+            ],
+            [
+              "hole",
+              "holes"
+            ],
+            [
+              "majority",
+              "three",
+              "vacancy",
+              "missing electron"
+            ]
+          ],
+          "spanScope": "clause",
+          "contextPatterns": [
+            "\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b"
+          ],
+          "supportPatterns": [
+            "\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b.{0,90}\\bholes?\\b.{0,35}\\b(?:majority|extra|free)\\b",
+            "\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b.{0,90}\\b(?:majority|extra|free)\\b.{0,30}\\bholes?\\b",
+            "\\bholes?\\b.{0,25}\\bmajority\\b.{0,40}\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b"
+          ],
+          "rejectPatterns": [
+            "\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b.{0,60}\\belectrons?\\b.{0,25}\\bmajority\\b",
+            "\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b.{0,60}\\bmajority\\b.{0,25}\\belectrons?\\b",
+            "\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b.{0,55}\\b(?:no|not|never)\\b.{0,30}\\bholes?\\b"
+          ]
+        }
+      ],
+      "concernPatterns": [
+        "\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b.{0,60}\\bholes?\\b.{0,25}\\bmajority\\b",
+        "\\b(?:n\\s+type|pentavalent|donors?|phosphorus)\\b.{0,60}\\bmajority\\b.{0,25}\\bholes?\\b",
+        "\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b.{0,60}\\belectrons?\\b.{0,25}\\bmajority\\b",
+        "\\b(?:p\\s+type|trivalent|acceptors?|boron)\\b.{0,60}\\bmajority\\b.{0,25}\\belectrons?\\b"
+      ]
+    },
+    {
+      "id": "sci-g11-hea-003",
+      "name": "Heat Exchange Calculations",
+      "points": [
+        {
+          "id": "formula",
+          "text": "Q = mc times temperature change gives energy transferred without a change of state.",
+          "groups": [
+            [
+              "q = mc",
+              "q=mc",
+              "heat = mass",
+              "mass times specific heat"
+            ],
+            [
+              "change",
+              "difference",
+              "delta",
+              "final",
+              "initial"
+            ]
+          ]
+        },
+        {
+          "id": "difference",
+          "text": "Use final minus initial temperature rather than the final temperature alone.",
+          "groups": [
+            [
+              "temperature",
+              "change"
+            ],
+            [
+              "difference",
+              "minus",
+              "final",
+              "initial",
+              "drop",
+              "rise"
+            ]
+          ],
+          "contextPatterns": [
+            "\\bspecific heat\\b",
+            "\\bq\\s*=\\s*mc\\b",
+            "\\btemperature\\s+(?:change|difference|rise|drop)\\b",
+            "\\b(?:initial|final)\\s+temperature\\b"
+          ]
+        },
+        {
+          "id": "units",
+          "text": "Use kilograms with specific heat per kilogram and express energy in joules.",
+          "groups": [
+            [
+              "kg",
+              "kilogram",
+              "kilograms"
+            ],
+            [
+              "joules",
+              "j",
+              "joule"
+            ],
+            [
+              "mass",
+              "convert",
+              "grams",
+              "specific heat",
+              "c"
+            ]
+          ],
+          "contextPatterns": [
+            "\\bspecific heat\\b",
+            "\\bq\\s*=\\s*mc\\b",
+            "\\bc\\s*="
+          ]
+        },
+        {
+          "id": "exchange",
+          "text": "In an insulated system heat lost by the hotter body equals heat gained by the cooler body.",
+          "groups": [
+            [
+              "heat",
+              "hotter",
+              "hot"
+            ],
+            [
+              "lost",
+              "loses",
+              "loss",
+              "losing"
+            ],
+            [
+              "gained",
+              "gains",
+              "gained by",
+              "gain",
+              "gaining"
+            ]
+          ],
+          "supportPatterns": [
+            "\\b(?:heat|energy)\\s+(?:lost|loss)\\b.{0,60}(?:equals?|equal to|=).{0,60}\\b(?:gain|gained)\\b",
+            "\\b(?:heat|energy)\\s+(?:gain|gained)\\b.{0,60}\\b(?:equals?|equal to)\\b.{0,60}\\b(?:lost|loss)\\b"
+          ],
+          "rejectPatterns": [
+            "\\b(?:not|never|doesnt|unequal)\\b.{0,15}\\b(?:equal|equals)\\b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sci-g11-mix-009",
+      "name": "Paper Chromatography",
+      "points": [
+        {
+          "id": "setup",
+          "text": "Place a sample spot on a baseline above the solvent level.",
+          "groups": [
+            [
+              "spot",
+              "sample",
+              "baseline"
+            ],
+            [
+              "above"
+            ],
+            [
+              "solvent",
+              "liquid",
+              "level"
+            ]
+          ],
+          "rejectPatterns": [
+            "\\b(?:not|never)\\s+(?:be\\s+)?above\\b"
+          ]
+        },
+        {
+          "id": "phases",
+          "text": "The stationary paper and moving solvent form stationary and mobile phases.",
+          "groups": [
+            [
+              "paper"
+            ],
+            [
+              "solvent"
+            ],
+            [
+              "stationary",
+              "mobile"
+            ]
+          ]
+        },
+        {
+          "id": "separation",
+          "text": "Components migrate different distances due to different attraction to the paper and solvent.",
+          "groups": [
+            [
+              "dyes",
+              "dye",
+              "pigments",
+              "components",
+              "colours",
+              "colors"
+            ],
+            [
+              "different",
+              "differ",
+              "separate",
+              "separated",
+              "slower",
+              "slowly"
+            ],
+            [
+              "attraction",
+              "attracted",
+              "solubility",
+              "solvent",
+              "distances"
+            ]
+          ],
+          "supportPatterns": [
+            "\\b(?:different|unequal|differing)\\s+(?:degrees?\\s+of\\s+)?(?:attractions?|affinities|solubilit\\w*)\\b",
+            "\\b(?:attraction|affinity|solubility)\\b.{0,25}\\b(?:differs?|varies|different)\\b",
+            "\\b(?:more|less|strongly|weakly)\\s+attracted\\b"
+          ],
+          "rejectPatterns": [
+            "\\b(?:same|equal|identical)\\s+(?:attraction|affinity|solubility|speed)\\b"
+          ]
+        }
+      ],
+      "concernPatterns": [
+        "\\b(?:submerge|submerging|immerse|immersing)\\b.{0,25}\\b(?:spot|sample)\\b",
+        "\\b(?:spot|sample)\\b.{0,18}\\b(?:below|underwater)\\b",
+        "\\b(?:same|equal|identical)\\s+(?:attraction|affinity|solubility|speed)\\b"
+      ]
+    },
+    {
+      "id": "sci-g11-pea-001",
+      "name": "Electrical Power of Appliances",
+      "points": [
+        {
+          "id": "rate",
+          "text": "Electrical power is energy transferred per second, measured in watts or joules per second.",
+          "groups": [
+            [
+              "energy",
+              "joules",
+              "joule"
+            ],
+            [
+              "per second",
+              "each second",
+              "every second",
+              "rate",
+              "j/s"
+            ]
+          ],
+          "rejectPatterns": [
+            "\\b(?:not|never)\\b.{0,18}\\b(?:per second|each second|every second|rate)\\b"
+          ]
+        },
+        {
+          "id": "formula",
+          "text": "P = VI multiplies voltage across the appliance by current through it.",
+          "groups": [
+            [
+              "p = vi",
+              "p=vi",
+              "volts times amps",
+              "voltage times current",
+              "voltage multiplied by current"
+            ]
+          ]
+        },
+        {
+          "id": "units",
+          "text": "Power is measured in watts (W), which are joules per second.",
+          "groups": [
+            [
+              "watt",
+              "watts",
+              "kw",
+              "kilowatt",
+              "w"
+            ],
+            [
+              "power",
+              "p",
+              "vi",
+              "lamp",
+              "heater",
+              "appliance"
+            ]
+          ]
+        },
+        {
+          "id": "kilowatt-conversion",
+          "text": "Use 1 kW = 1000 W, or correctly demonstrate an equivalent conversion.",
+          "groups": [
+            [
+              "kw",
+              "kilowatt",
+              "kilowatts"
+            ],
+            [
+              "w",
+              "watt",
+              "watts"
+            ]
+          ],
+          "numericCheck": "kilowatt_conversion"
+        }
+      ]
+    }
+  ]
+}

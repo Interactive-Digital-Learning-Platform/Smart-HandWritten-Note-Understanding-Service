@@ -55,13 +55,9 @@ export interface ChapterPageBounds {
   expectedDiagrams?: string[];
 }
 
-/**
- * Table of Contents (TOC) Chapter Boundaries and Granular Concept Taxonomies
- * mapped directly from official Sri Lankan National Science Syllabi & Textbooks.
- */
+// Chapter pages and topics from Sri Lankan school textbooks.
 export const TEXTBOOK_TOC_REGISTRY: ChapterPageBounds[] = [
-  // ── Grade 10 Science (Textbook: grade-10-science-text-book-6200ec8f089d4.pdf, PDF offset: 14) ──
-  // Official Table of Contents (Part 1, Units 1 to 12)
+  // Grade 10 Science, units 1 to 12. PDF offset: 14.
   {
     subject: "Science",
     grade: 10,
@@ -656,10 +652,7 @@ export const TEXTBOOK_TOC_REGISTRY: ChapterPageBounds[] = [
     ]
   },
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── Grade 11 Science Part 1 (Textbook: grade-11-science-part-1.pdf, PDF offset: 10) ──
-  // Official Table of Contents (Part 1, Units 1 to 8)
-  // ══════════════════════════════════════════════════════════════════════════
+  // Grade 11 Science Part 1, units 1 to 8. PDF offset: 10.
   {
     subject: "Science",
     grade: 11,
@@ -1172,10 +1165,7 @@ export const TEXTBOOK_TOC_REGISTRY: ChapterPageBounds[] = [
     ]
   },
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── Grade 11 Science Part 2 (Textbook: grade-11-science-part-2.pdf, PDF offset: 10) ──
-  // Official Table of Contents (Part 2, Units 9 to 15)
-  // ══════════════════════════════════════════════════════════════════════════
+  // Grade 11 Science Part 2, units 9 to 15. PDF offset: 10.
   {
     subject: "Science",
     grade: 11,
@@ -1644,7 +1634,7 @@ export const TEXTBOOK_TOC_REGISTRY: ChapterPageBounds[] = [
     ]
   },
 
-  // ── Grade 11 Geography (Textbook: grade-11-geography-text-book.pdf, PDF offset: 12) ──
+  // Grade 11 Geography. PDF offset: 12.
   {
     subject: "Geography",
     grade: 11,
@@ -1660,7 +1650,7 @@ export const TEXTBOOK_TOC_REGISTRY: ChapterPageBounds[] = [
     matchingKeywords: ["geography", "sri lanka", "relief", "central highlands", "coastal plain", "drainage patterns", "rivers", "climate", "monsoon"],
   },
 
-  // ── Grade 11 ICT (Textbook: ICT G-11 E.pdf, PDF offset: 10) ──
+  // Grade 11 ICT. PDF offset: 10.
   {
     subject: "ICT",
     grade: 11,
@@ -1676,8 +1666,7 @@ export const TEXTBOOK_TOC_REGISTRY: ChapterPageBounds[] = [
     matchingKeywords: ["ict", "programming", "algorithms", "flowchart", "pseudocode", "python", "variables", "data types", "loops"],
   },
 
-  // ── Grade 10 History (Textbook: grade-10-history-text-book-64017cf286c01.pdf, PDF offset: 10) ──
-  // Based on official National Institute of Education (NIE) Teacher's Instructional Guide (TG)
+  // Grade 10 History from the NIE teacher guide. PDF offset: 10.
   {
     subject: "History",
     grade: 10,
@@ -2142,10 +2131,7 @@ export const TEXTBOOK_TOC_REGISTRY: ChapterPageBounds[] = [
     ]
   },
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // ── Grade 11 History (Textbook: grade-11-history-text-book.pdf, PDF offset: 10) ──
-  // Based on official National Institute of Education (NIE) Teacher's Instructional Guide (TG)
-  // ══════════════════════════════════════════════════════════════════════════
+  // Grade 11 History from the NIE teacher guide. PDF offset: 10.
   {
     subject: "History",
     grade: 11,
@@ -2604,10 +2590,7 @@ export const TEXTBOOK_TOC_REGISTRY: ChapterPageBounds[] = [
   },
 ];
 
-/**
- * Normalizes Python/SQLAlchemy or standard PostgreSQL connection strings
- * for use with node-postgres (pg).
- */
+// Converts a PostgreSQL URL to the format used by node-postgres.
 export function normalizePostgresUrl(rawUrl: string): string {
   let url = rawUrl.trim();
   url = url.replace(/^postgresql\+[a-zA-Z0-9_-]+:\/\//i, "postgresql://");
@@ -2627,9 +2610,7 @@ export class CurriculumDbService {
     return this.connectionString.length > 0;
   }
 
-  /**
-   * Returns or initializes the PostgreSQL connection pool.
-   */
+  // Gets or creates the database pool.
   private getPool(): Pool {
     if (!this.isConfigured()) {
       throw new Error("CURRICULUM_DB_URL or DB_URL is not configured");
@@ -2662,9 +2643,7 @@ export class CurriculumDbService {
     return this.pool;
   }
 
-  /**
-   * Health check for PostgreSQL database connection.
-   */
+  // Checks the database connection.
   public async checkDatabaseHealth(): Promise<CurriculumDbHealth> {
     try {
       const pool = this.getPool();
@@ -2697,9 +2676,7 @@ export class CurriculumDbService {
     }
   }
 
-  /**
-   * Returns authoritative Table of Contents page boundaries for a given subject, grade, and topic.
-   */
+  // Finds the chapter page range for a topic.
   public getChapterPageBounds(
     subject: string,
     grade: number,
@@ -2708,7 +2685,7 @@ export class CurriculumDbService {
     const sLower = (subject || "").toLowerCase();
     const tLower = (topicHint || "").toLowerCase();
 
-    // 1. Exact match on subject + grade + unit name / keywords
+    // Filter by subject and grade first.
     const candidates = TEXTBOOK_TOC_REGISTRY.filter(
       (c) =>
         (c.subject.toLowerCase() === sLower ||
@@ -2722,7 +2699,7 @@ export class CurriculumDbService {
       return this.matchChapterFromTopic(topicHint);
     }
 
-    // Direct unit name match
+    // Check the unit name.
     for (const c of candidates) {
       const uName = c.unitName.toLowerCase();
       if (uName === tLower || tLower.includes(uName) || uName.includes(tLower)) {
@@ -2730,7 +2707,7 @@ export class CurriculumDbService {
       }
     }
 
-    // Keyword match
+    // Check topic keywords.
     let bestMatch: ChapterPageBounds | null = null;
     let bestScore = 0;
 
@@ -2746,14 +2723,11 @@ export class CurriculumDbService {
       return bestMatch;
     }
 
-    // A subject/grade match alone is not enough: defaulting to the first unit
-    // can attach unrelated textbook pages to an unknown topic.
+    // Do not guess a chapter when only the subject and grade match.
     return null;
   }
 
-  /**
-   * Matches a chapter solely from topic text.
-   */
+  // Finds a chapter from topic text.
   public matchChapterFromTopic(topic: string, subject?: string, grade?: number): ChapterPageBounds | null {
     const tLower = (topic || "").toLowerCase().trim();
     if (!tLower) return null;
@@ -2778,9 +2752,7 @@ export class CurriculumDbService {
     return null;
   }
 
-  /**
-   * Returns all available textbook chapters and page ranges registered in the system.
-   */
+  // Lists registered chapters and page ranges.
   public getAvailableTextbookChapters(subject?: string, grade?: number): ChapterPageBounds[] {
     return TEXTBOOK_TOC_REGISTRY.filter((c) => {
       if (subject && c.subject.toLowerCase() !== subject.toLowerCase()) return false;
@@ -2789,9 +2761,7 @@ export class CurriculumDbService {
     });
   }
 
-  /**
-   * Returns all available subject names from the database registry.
-   */
+  // Lists registered subjects.
   public getAllRegisteredSubjects(): string[] {
     const set = new Set<string>();
     for (const c of TEXTBOOK_TOC_REGISTRY) {
@@ -2800,9 +2770,7 @@ export class CurriculumDbService {
     return Array.from(set);
   }
 
-  /**
-   * Retrieves all completed ingestion jobs from PostgreSQL.
-   */
+  // Gets completed ingestion jobs.
   public async getCompletedCurriculumJobs(): Promise<CurriculumJob[]> {
     try {
       const pool = this.getPool();
@@ -2836,9 +2804,7 @@ export class CurriculumDbService {
     }
   }
 
-  /**
-   * Retrieves unique ingested textbooks directly from PostgreSQL.
-   */
+  // Gets the unique ingested textbooks.
   public async getUniqueCurriculumTextbooks(): Promise<CurriculumTextbookInfo[]> {
     try {
       const pool = this.getPool();
@@ -2872,9 +2838,7 @@ export class CurriculumDbService {
     }
   }
 
-  /**
-   * Retrieves a single job by its UUID.
-   */
+  // Gets an ingestion job by ID.
   public async getJobById(jobId: string): Promise<CurriculumJob | null> {
     try {
       const pool = this.getPool();
@@ -2905,9 +2869,7 @@ export class CurriculumDbService {
     }
   }
 
-  /**
-   * Closes the connection pool.
-   */
+  // Closes the database pool.
   public async closePool(): Promise<void> {
     if (this.pool) {
       await this.pool.end();

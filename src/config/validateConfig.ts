@@ -22,6 +22,11 @@ export const validateRuntimeEnvironment = (
     env.GROQ_API_KEY_3,
     ...(env.GROQ_API_KEYS?.split(",") ?? []),
   ].filter(hasValue);
+  const annotationEnabled = env.ANNOTATION_REVIEW_ENABLED?.toLowerCase() === "true";
+  const expertAnnotationKeys = (env.EXPERT_ANNOTATION_KEYS || "")
+    .split(",")
+    .map((entry) => entry.slice(entry.indexOf("=") + 1).trim())
+    .filter(Boolean);
 
   if (nodeEnv === "production") {
     if (!hasValue(env.MONGODB_URI)) {
@@ -32,11 +37,41 @@ export const validateRuntimeEnvironment = (
     }
   }
 
+  if (annotationEnabled) {
+    if (!hasValue(env.EXPERT_ANNOTATION_KEYS)) {
+      errors.push("EXPERT_ANNOTATION_KEYS is required when annotation review is enabled");
+    }
+    if (!hasValue(env.ANNOTATION_PSEUDONYM_SECRET)) {
+      errors.push(
+        "ANNOTATION_PSEUDONYM_SECRET is required when annotation review is enabled"
+      );
+    }
+    const credentials = (env.EXPERT_ANNOTATION_KEYS || "")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    if (credentials.some((entry) => !/^[a-zA-Z0-9._-]{3,64}=.{16,}$/.test(entry))) {
+      errors.push(
+        "EXPERT_ANNOTATION_KEYS must use expert-id=access-key with keys of at least 16 characters"
+      );
+    }
+    if (
+      hasValue(env.ANNOTATION_PSEUDONYM_SECRET) &&
+      env.ANNOTATION_PSEUDONYM_SECRET.trim().length < 32
+    ) {
+      errors.push("ANNOTATION_PSEUDONYM_SECRET must be at least 32 characters");
+    }
+  }
+
   const namedSecrets: Array<[string, string | undefined]> = [
     ["MONGODB_URI", env.MONGODB_URI],
     ["CURRICULUM_DB_URL", env.CURRICULUM_DB_URL || env.DB_URL],
     ["HUGGINGFACE_API_KEY", env.HUGGINGFACE_API_KEY],
     ["ELEVENLABS_API_KEY", env.ELEVENLABS_API_KEY],
+    ["ANNOTATION_PSEUDONYM_SECRET", env.ANNOTATION_PSEUDONYM_SECRET],
+    ...expertAnnotationKeys.map(
+      (value, index) => [`EXPERT_ANNOTATION_KEY[${index}]`, value] as [string, string]
+    ),
     ...groqKeys.map((value, index) => [`GROQ_API_KEY[${index}]`, value] as [string, string]),
   ];
 

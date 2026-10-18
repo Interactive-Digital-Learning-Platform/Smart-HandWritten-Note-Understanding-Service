@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>History note coverage preview</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body><main>
+<header><span class="tag">Experimental · History V5.1 · English</span><h1>What does your note cover?</h1><p>Compare your note with one selected History concept. Every suggestion needs review. This preview does not update the mobile app or student records.</p></header>
+<section><h2>1. Choose the expected concept</h2><p>These are proposed Grade 10–11 criteria from the supplied dataset. Check them against your teacher’s expectations.</p>
+<label for="grade">Grade</label><select id="grade"><option value="10">Grade 10</option><option value="11">Grade 11</option></select>
+<label for="concept">Concept</label><select id="concept"></select><ul id="criteria"></ul></section>
+<section><h2>2. Add your English note</h2>
+<div class="samples"><span>Try a synthetic example:</span><button type="button" data-sample="complete">Full explanation</button><button type="button" data-sample="partial">One point</button><button type="button" data-sample="missing">Unrelated text</button></div>
+<details><summary>No handwritten notes? Use the synthetic demo pack</summary><p>These typed examples and simulated OCR errors are for practice and robustness checks. Expected labels were proposed by AI, and do not establish accuracy on students’ handwriting.</p><label for="demo">Demo note</label><select id="demo"><option value="">Choose an example…</option></select><button id="loadDemo" type="button">Load demo note</button><p id="demoExpectation"></p><p><a href="/demo-pack.json" download>Download all 12 examples</a> · <a href="/demo-check-results.json" download>Download the model comparison</a></p></details>
+<details><summary>Extract text from a handwritten image</summary><p>Select one PNG or JPEG page, up to 8 MB. Clicking Extract sends this image to the service’s Groq OCR provider. The local temporary image is removed after processing. Review and correct the transcription before checking coverage.</p>
+<label for="image">Note image</label><input id="image" type="file" accept="image/png,image/jpeg"><button id="extract" type="button">Extract text with Groq OCR</button><p>Extraction replaces the text below. Copy any text you want to keep first.</p>
+<details id="transcriptionDetails" hidden><summary>Original OCR transcription, including deleted text</summary><pre id="transcription"></pre></details></details>
+<label for="text">Editable note text</label><textarea id="text" rows="10" maxlength="20000" placeholder="Paste English note text, or extract an image above."></textarea>
+<label class="check"><input id="scope" type="checkbox">I confirm this concept is expected in the note, and I have checked the text above.</label>
+<button id="analyze" type="button" class="primary">Check concept coverage</button><p id="status" role="status" aria-live="polite">Loading concepts…</p></section>
+<section id="result" hidden aria-live="polite"><h2 id="verdict"></h2><p id="explanation"></p><p class="notice">Review required. Similar wording can still miss an explanation or contain a factual error. This is a coverage suggestion, not a verified grade or accuracy score.</p><div id="evidence"></div><div id="concerns"></div><button id="download" type="button">Download this preview result</button><p>The download includes your note text and model evidence. It is saved only when you click.</p></section>
+<footer>Coverage inference runs locally with the frozen MiniLM encoder and our trained linear classifier. Real handwriting accuracy has not been established for this History candidate. Automatic History suggestions remain disabled in the main app.</footer>
+</main></body></html>

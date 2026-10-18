@@ -1,4 +1,9 @@
 import mongoose, { Schema, Document } from "mongoose";
+import type { OcrExtractionOutput } from "../pipeline/types";
+import type { SavedHistoryCheck } from "../services/historyNoteChecks";
+import type {SavedScienceCheck} from '../services/scienceNoteChecks';
+import { ResearchConsentStatus } from "../annotations/liveReview";
+import { EnglishCoverageCheck } from "../ml/englishCoverageCheck";
 
 // ─── Enums ─────────────────────────────────────────────────────────────────
 
@@ -112,11 +117,7 @@ export interface IAnalysis {
   // ── OCR quality ────────────────────────────────────────────────────────
   ocrConfidence?: number;          // 0–100
   ocrLowQualityWarning?: boolean;
-  ocrPageSummary?: {
-    totalPages: number;
-    extractedPages: number;
-    failedPages: number;
-  };
+  ocrPageSummary?: OcrExtractionOutput;
   noteScope?: {
     scope: "complete_lesson_note" | "partial_lesson_note" | "revision_summary" | "exercise_or_worksheet" | "diagram_or_formula_sheet" | "unknown";
     confidence: number;
@@ -132,6 +133,7 @@ export interface IAnalysis {
   partialConcepts?: string[];      // concept names only partly covered
   missingConcepts: string[];       // concept names not found
   conceptFindings?: IConceptFinding[];
+  englishCoverageCheck?: EnglishCoverageCheck;
   coverageScores?: ICoverageScores;
   overallCompleteness: number;     // 0-100 percentage (= weightedCoverage if available)
 
@@ -159,12 +161,24 @@ export interface INote extends Document {
   imageUrls: string[];      // array of all uploaded page image URLs
   pageCount: number;        // total number of pages in this note
   rawText: string;          // extracted OCR text (combined across all pages)
+  rawOcrText?: string;      // uncleaned OCR snapshot for consented expert QA
   status: NoteStatus;
+  processingProgress?: import("../pipeline/progress").ProcessingProgress;
   userSubject?: string;     // optional user-selected subject (e.g., "Science")
   userGrade?: number;       // optional user-selected grade (e.g., 10)
   userTopic?: string;       // optional user-selected topic / lesson name
   userLessonId?: string;    // optional user-selected lesson ID
+  researchConsent: {
+    status: ResearchConsentStatus;
+    version?: string;
+    grantedAt?: Date;
+    withdrawnAt?: Date;
+  };
   analysis?: IAnalysis;
+  historyCoverageCheck?: SavedHistoryCheck;
+  scienceCoverageReview?: SavedScienceCheck;
+  processingRunId?: string;
+  processingLeaseExpiresAt?: Date;
   errorMessage?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -308,10 +322,18 @@ const AnalysisSchema = new Schema<IAnalysis>(
     ocrConfidence: { type: Number },
     ocrLowQualityWarning: { type: Boolean },
     ocrPageSummary: {
-      totalPages: { type: Number, default: 0 },
-      extractedPages: { type: Number, default: 0 },
-      failedPages: { type: Number, default: 0 },
-      _id: false,
+      type: new Schema({
+        totalPages: Number,
+        extractedPages: Number,
+        failedPages: Number,
+        qualityState: { type: String, enum: ["known", "unknown"] },
+        source: { type: String, enum: ["vision", "cached", "provided_text"] },
+        textSha256: String,
+        imagesSha256: String,
+        warnings: { type: [String], default: undefined },
+        readability: { confidenceScore: Number, lowQualityWarning: Boolean, _id: false },
+      }, { _id: false }),
+      default: undefined,
     },
     noteScope: {
       scope: {
@@ -333,6 +355,7 @@ const AnalysisSchema = new Schema<IAnalysis>(
     partialConcepts: { type: [String], default: [] },
     missingConcepts: { type: [String], default: [] },
     conceptFindings: { type: [ConceptFindingSchema], default: [] },
+    englishCoverageCheck: { type: Schema.Types.Mixed },
     coverageScores: { type: CoverageScoresSchema },
     overallCompleteness: { type: Number, min: 0, max: 100, default: 0 },
 
@@ -362,6 +385,10 @@ const NoteSchema = new Schema<INote>(
     imageUrls: { type: [String], default: [] },
     pageCount: { type: Number, default: 1 },
     rawText: { type: String, default: "" },
+    rawOcrText: { type: String },
+    processingProgress: { type: Schema.Types.Mixed },
+    processingRunId: {type:String},
+    processingLeaseExpiresAt: {type:Date},
     status: {
       type: String,
       enum: ["uploaded", "processing", "analyzed", "failed"],
@@ -371,7 +398,20 @@ const NoteSchema = new Schema<INote>(
     userGrade: { type: Number },
     userTopic: { type: String },
     userLessonId: { type: String },
+    researchConsent: {
+      status: {
+        type: String,
+        enum: ["not_provided", "granted", "withdrawn"],
+        default: "not_provided",
+      },
+      version: { type: String },
+      grantedAt: { type: Date },
+      withdrawnAt: { type: Date },
+      _id: false,
+    },
     analysis: { type: AnalysisSchema, default: undefined },
+    historyCoverageCheck: { type: Schema.Types.Mixed },
+    scienceCoverageReview: {type:Schema.Types.Mixed},
     errorMessage: { type: String },
   },
   {

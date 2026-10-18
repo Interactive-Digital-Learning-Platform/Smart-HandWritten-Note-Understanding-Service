@@ -1,0 +1,186 @@
+{
+  "synthetic": true,
+  "independentHumanReview": false,
+  "usedForTraining": false,
+  "purpose": "Demo and robustness checks, not an independent accuracy estimate.",
+  "expectedLabelAuthor": "AI, based on the supplied proposed concept criteria",
+  "realHandwritingIncluded": false,
+  "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8",
+  "summary": {
+    "synthetic_typed": {
+      "total": 9,
+      "matchesAIExpectation": 9,
+      "withheld": 0
+    },
+    "simulated_ocr_text": {
+      "total": 3,
+      "matchesAIExpectation": 2,
+      "withheld": 1
+    }
+  },
+  "results": [
+    {
+      "id": "sources-complete",
+      "conceptId": "hist-g10-l01-c01",
+      "expectedLabel": "present",
+      "text": "Historical sources provide evidence about past human activity. Literary sources are written materials, including books and documents. Archaeological sources are physical remains, such as coins, old buildings and inscriptions.",
+      "rationale": "Explains evidence and both classes with examples.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "present",
+      "rawModelStatus": "present",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "sources-partial",
+      "conceptId": "hist-g10-l01-c01",
+      "expectedLabel": "partial",
+      "text": "Literary sources include written books and documents that provide evidence about past human activity.",
+      "rationale": "The archaeological class is not explained.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "partial",
+      "rawModelStatus": "partial",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "sources-missing",
+      "conceptId": "hist-g10-l01-c01",
+      "expectedLabel": "missing",
+      "text": "The port of Trincomalee was important for naval security around India.",
+      "rationale": "This explains a different History concept.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "missing",
+      "rawModelStatus": "missing",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "british-complete",
+      "conceptId": "hist-g11-l02-c01",
+      "expectedLabel": "present",
+      "text": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes. Trincomalee harbour was strategically important for naval security around India.",
+      "rationale": "Covers sea-route location and Trincomalee naval security.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "present",
+      "rawModelStatus": "present",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "british-partial",
+      "conceptId": "hist-g11-l02-c01",
+      "expectedLabel": "partial",
+      "text": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
+      "rationale": "Does not explain Trincomalee and naval security around India.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "partial",
+      "rawModelStatus": "partial",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "british-missing",
+      "conceptId": "hist-g11-l02-c01",
+      "expectedLabel": "missing",
+      "text": "Literary sources include books and written documents. Archaeological sources include coins and buildings.",
+      "rationale": "This describes historical sources, not British strategic interests.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "missing",
+      "rawModelStatus": "missing",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "kandy-complete",
+      "conceptId": "hist-g11-l02-c04",
+      "expectedLabel": "present",
+      "text": "The Kandyan kingdom came under British rule in 1815. This ended the independent Kandyan monarchy and expanded British control over the whole island.",
+      "rationale": "Includes 1815, annexation, the end of monarchy and island-wide control.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "present",
+      "rawModelStatus": "present",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "kandy-partial",
+      "conceptId": "hist-g11-l02-c04",
+      "expectedLabel": "partial",
+      "text": "The Kandyan kingdom came under British rule in 1815.",
+      "rationale": "Does not explain the end of independent monarchy and island-wide control.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "partial",
+      "rawModelStatus": "partial",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "kandy-missing",
+      "conceptId": "hist-g11-l02-c04",
+      "expectedLabel": "missing",
+      "text": "Britain valued Sri Lanka for its location on Indian Ocean sea routes. Trincomalee was useful for naval security near India.",
+      "rationale": "Strategic interests do not explain the 1815 annexation and its consequences.",
+      "inputType": "synthetic_typed",
+      "suggestedStatus": "missing",
+      "rawModelStatus": "missing",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": [
+        "required_year_missing_from_semantic_evidence"
+      ]
+    },
+    {
+      "id": "sources-complete-ocr-noise",
+      "conceptId": "hist-g10-l01-c01",
+      "expectedLabel": "present",
+      "text": "Historical sourccs provide evidence about past human activity. Literary sourccs are written materials, including books and docurnents. Archaeological sourccs are physical remains, such as coins, old buildings and inscriptions.",
+      "rationale": "Intended meaning matches the clean example. Simulated character substitutions can make the text ambiguous; the reviewer should restore them first.",
+      "inputType": "simulated_ocr_text",
+      "cleanExampleId": "sources-complete",
+      "suggestedStatus": "present",
+      "rawModelStatus": "present",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "british-complete-ocr-noise",
+      "conceptId": "hist-g11-l02-c01",
+      "expectedLabel": "present",
+      "text": "Britain valued Sri Lanka because of its position on lndian Ocean sea routes. Trincomalce harbour was strategically important for naval security around India.",
+      "rationale": "Intended meaning matches the clean example. Simulated character substitutions can make the text ambiguous; the reviewer should restore them first.",
+      "inputType": "simulated_ocr_text",
+      "cleanExampleId": "british-complete",
+      "suggestedStatus": "present",
+      "rawModelStatus": "present",
+      "withheld": false,
+      "matchesAIExpectation": true,
+      "concernKinds": []
+    },
+    {
+      "id": "kandy-complete-ocr-noise",
+      "conceptId": "hist-g11-l02-c04",
+      "expectedLabel": "present",
+      "text": "The Kandyan kingdom came under Britlsh rule in 18l5. This ended the independent Kandyan monarchy and expanded Britlsh control over the whole island.",
+      "rationale": "Intended meaning matches the clean example. Simulated character substitutions can make the text ambiguous; the reviewer should restore them first.",
+      "inputType": "simulated_ocr_text",
+      "cleanExampleId": "kandy-complete",
+      "suggestedStatus": null,
+      "rawModelStatus": "present",
+      "withheld": true,
+      "matchesAIExpectation": false,
+      "concernKinds": [
+        "required_year_missing_from_semantic_evidence"
+      ]
+    }
+  ]
+}

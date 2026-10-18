@@ -19,7 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { PipelineContext, MaterialPriorities } from "../types";
-import { generateMaterials, NoteDataOverride } from "../../services/materialsService";
+import { queueMaterials, NoteDataOverride } from "../../services/materialsService";
 import { MaterialType } from "../../models/LearningMaterial";
 import mongoose from "mongoose";
 
@@ -45,9 +45,9 @@ const determineMaterialPriorities = (
 
 // ─── Stage Runner ──────────────────────────────────────────────────────────
 
-export const runMaterialGeneration = async (
+export const queuePipelineMaterials = async (
   ctx: PipelineContext
-): Promise<void> => {
+) => {
   console.log(`  [Stage 9] Personalized Material Generation...`);
 
   const priorities = determineMaterialPriorities(ctx);
@@ -105,13 +105,12 @@ export const runMaterialGeneration = async (
       contentLanguage: ctx.contentLanguage?.primaryLanguage,
     };
 
-    const result = await generateMaterials(
+    const queued = await queueMaterials(
       ctx.noteId,
       priorities.typesToGenerate as MaterialType[],
       override
     );
-    ctx.materialsGenerated = result?.results?.length ?? 0;
-    console.log(`  [Stage 9] ✅ Generated ${ctx.materialsGenerated} material(s)`);
+    return queued;
   } catch (err) {
     // Material generation failure is non-fatal
     console.error(
@@ -120,4 +119,9 @@ export const runMaterialGeneration = async (
     );
     ctx.materialsGenerated = 0;
   }
+};
+
+export const runMaterialGeneration = async (ctx: PipelineContext): Promise<void> => {
+  const queued = await queuePipelineMaterials(ctx);
+  if (queued) ctx.materialsGenerated = (await queued.completion).succeeded;
 };

@@ -17,7 +17,7 @@
 //   const result = await runPipeline({ noteId, userId, imageUrl });
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { PipelineContext, PipelineResult, PipelineStage, StageResult } from "./types";
+import { CachedOcrInput, PipelineContext, PipelineResult, PipelineStage, StageResult } from "./types";
 import { runOcrExtraction } from "./stages/01-ocrExtraction";
 import { runOcrCleaning } from "./stages/02-ocrCleaning";
 import { runNoteScopeAssessment } from "./stages/03-noteScopeAssessment";
@@ -26,13 +26,15 @@ import { runSubjectDetection } from "./stages/03-subjectDetection";
 import { runLessonIdentification } from "./stages/04-lessonIdentification";
 import { runCurriculumRetrieval } from "./stages/05-curriculumRetrieval";
 import { runConceptMatching } from "./stages/06-conceptMatching";
+import { runEnglishCoverageCheck } from "./stages/06-englishCoverageCheck";
 import { runCoverageCalculation } from "./stages/07-coverageCalculation";
 import { runGapDetection } from "./stages/08-gapDetection";
-import { runMaterialGeneration } from "./stages/09-materialGeneration";
+import { queuePipelineMaterials } from "./stages/09-materialGeneration";
 import { runQualityVerification } from "./stages/10-qualityVerification";
 import { CURRICULUM_VERSION } from "../curriculum/identity";
+import { createProgressReporter, ProcessingProgress } from "./progress";
 
-const PIPELINE_VERSION = "2.0.0";
+const PIPELINE_VERSION = "2.1.9";
 
 // ─── Stage Definition ──────────────────────────────────────────────────────
 
@@ -47,25 +49,28 @@ interface StageDefinition {
 
 const ANALYSIS_STAGES: StageDefinition[] = [
   { name: "ocr_extraction",        run: runOcrExtraction,        critical: true  },
-  { name: "ocr_cleaning",          run: runOcrCleaning,          critical: false },
+  { name: "ocr_cleaning",          run: runOcrCleaning,          critical: true  },
   { name: "note_scope_assessment", run: runNoteScopeAssessment, critical: false },
   { name: "language_detection",    run: runLanguageDetection,    critical: false },
   { name: "subject_detection",     run: runSubjectDetection,     critical: false },
   { name: "lesson_identification", run: runLessonIdentification, critical: false },
   { name: "curriculum_retrieval",  run: runCurriculumRetrieval,  critical: false },
   { name: "concept_matching",      run: runConceptMatching,      critical: false },
+  { name: "english_coverage_check", run: runEnglishCoverageCheck, critical: false },
   { name: "coverage_calculation",  run: runCoverageCalculation,  critical: false },
   { name: "gap_detection",         run: runGapDetection,         critical: false },
   { name: "quality_verification",  run: runQualityVerification,  critical: false },
 ];
 
 export interface PipelineOptions {
+  onProgress?: (progress: ProcessingProgress) => Promise<void> | void;
   /** If true, runs material generation asynchronously in background so analysis returns immediately */
   asyncMaterialGeneration?: boolean;
   /** Callback fired immediately when core analysis stages (1-9) are completed */
   onAnalysisReady?: (ctx: PipelineContext) => Promise<void> | void;
   /** Internal reprocessing can skip creating student-facing materials. */
   skipMaterialGeneration?: boolean;
+  beforeAnalysisPublish?:()=>Promise<void>;
 }
 
 // ─── Pipeline Runner ───────────────────────────────────────────────────────
@@ -86,6 +91,7 @@ export const runPipeline = async (
     imageUrl: string;
     imageUrls?: string[];
     rawOcrText?: string;
+    cachedOcr?: CachedOcrInput;
     userSubject?: string;
     userGrade?: number;
     userTopic?: string;
@@ -108,6 +114,7 @@ export const runPipeline = async (
     imageUrl: pages[0],
     imageUrls: pages,
     rawOcrText: input.rawOcrText,
+    cachedOcr: input.cachedOcr,
     userSubject: input.userSubject,
     userGrade: input.userGrade,
     userTopic: input.userTopic,
@@ -118,9 +125,13 @@ export const runPipeline = async (
     stageResults: [],
   };
 
+  ctx.reportProgress = createProgressReporter(ctx.startedAt, pages.length,
+    () => ctx.stageResults.map(result => result.stage), options?.onProgress);
+
   // ── Execute core analysis stages in sequence ───────────────────────────
   for (const stage of ANALYSIS_STAGES) {
     const stageStart = Date.now();
+    await ctx.reportProgress({ stage: stage.name });
 
     try {
       await Promise.resolve(stage.run(ctx));
@@ -166,12 +177,17 @@ export const runPipeline = async (
     }
   }
 
+  try{await options?.beforeAnalysisPublish?.();}catch{return {success:false,noteId:input.noteId,error:'This analysis attempt expired or was replaced',context:ctx};}
+  // Save the generation plan before the analyzed note becomes visible.
+  const queuedMaterials = options?.skipMaterialGeneration ? undefined : await queuePipelineMaterials(ctx);
+
   // ── Analysis Ready Callback ────────────────────────────────────────────
+  await ctx.reportProgress({ stage: "saving_analysis" });
   if (options?.onAnalysisReady) {
     try {
       await Promise.resolve(options.onAnalysisReady(ctx));
     } catch (cbErr) {
-      console.error(`⚠️ Error in onAnalysisReady callback for note ${input.noteId}:`, cbErr);
+      return {success:false,noteId:input.noteId,error:'Could not save note analysis. Please try again.',context:ctx};
     }
   }
 
@@ -179,7 +195,7 @@ export const runPipeline = async (
   const runMaterials = async () => {
     const matStart = Date.now();
     try {
-      await Promise.resolve(runMaterialGeneration(ctx));
+      if (queuedMaterials) ctx.materialsGenerated = (await queuedMaterials.completion).succeeded;
       ctx.stageResults.push({
         stage: "material_generation",
         success: true,

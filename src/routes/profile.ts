@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { StudentProfile } from "../models/StudentProfile";
+import { requireProfileOwner } from "../middleware/studentOwnership";
 import {
   getProfile,
   getPersistentGaps,
@@ -8,6 +9,7 @@ import {
 import { sendSuccess, sendError } from "../middleware/errorHandler";
 
 const router = Router();
+router.param("userId", (req, res, next) => requireProfileOwner(req, res, next));
 
 // ─── GET /api/profile/:userId ──────────────────────────────────────────────
 

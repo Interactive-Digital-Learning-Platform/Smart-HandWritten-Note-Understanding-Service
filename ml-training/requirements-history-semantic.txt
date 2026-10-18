@@ -1,0 +1,10 @@
+# Optional experimental History semantic runtime; Science runtime is separate.
+# Exact versions exercised locally. PyTorch is used on CPU.
+numpy==2.4.6
+scipy==1.17.1
+scikit-learn==1.9.1
+torch==2.11.0
+transformers==5.17.0
+huggingface-hub==1.31.0
+safetensors==0.8.0
+tokenizers==0.23.2

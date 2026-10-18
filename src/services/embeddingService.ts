@@ -7,12 +7,7 @@ type FeatureExtractor = (
 
 let extractorPromise: Promise<FeatureExtractor> | undefined;
 
-/**
- * Produces query vectors compatible with the vectors written by the PDF
- * Ingestion service. That service embeds documents with Nomic's
- * `search_document:` prefix; Nomic requires the matching `search_query:`
- * prefix for retrieval queries.
- */
+// Creates Nomic query vectors that match the stored document vectors.
 export class EmbeddingService {
   public async embedRetrievalQuery(query: string): Promise<number[]> {
     const cleanQuery = query.trim();
@@ -40,11 +35,7 @@ export class EmbeddingService {
     return vector;
   }
 
-  /**
-   * Creates semantic features for the learned concept-status classifier.
-   * Nomic uses task prefixes; classification features must not use the
-   * retrieval-specific search_query prefix used for Qdrant.
-   */
+  // Creates vectors for concept classification without the search prefix.
   public async embedClassificationBatch(inputs: string[]): Promise<number[][]> {
     if (inputs.length === 0) return [];
     if (inputs.some((input) => !input.trim())) {
@@ -79,8 +70,7 @@ export class EmbeddingService {
   private async getExtractor(): Promise<FeatureExtractor> {
     if (!extractorPromise) {
       extractorPromise = (async () => {
-        // Transformers.js is ESM-only. This dynamic import preserves this
-        // service's CommonJS build while loading the local model once per process.
+        // Loads the ESM-only model once in this CommonJS service.
         const transformers = await new Function(
           "specifier",
           "return import(specifier)"
@@ -96,8 +86,7 @@ export class EmbeddingService {
         transformers.env.cacheDir = config.embedding.cacheDir;
         transformers.env.allowLocalModels = true;
         return transformers.pipeline("feature-extraction", config.embedding.model, {
-          // Use full precision so query vectors are as close as practical to
-          // the SentenceTransformer vectors used during ingestion.
+          // Matches the precision used for stored vectors.
           dtype: "fp32",
         });
       })();
@@ -106,9 +95,7 @@ export class EmbeddingService {
   }
 
   private truncate(text: string): string {
-    // Mirrors the ingestion and Learning Assistant services. It is a safe
-    // word-based approximation before tokenization, preventing unexpectedly
-    // long note text from exceeding the embedding model's context window.
+    // Keeps long text within the model's input limit.
     const estimatedTokens = Math.ceil(text.split(/\s+/).length * 1.3);
     if (estimatedTokens <= config.embedding.maxTokens) return text;
 

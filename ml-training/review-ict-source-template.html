@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ICT concept criteria review</title>
+<style>
+body{font:16px/1.55 system-ui,sans-serif;max-width:880px;margin:32px auto;padding:0 18px;background:#f5f7fb;color:#18243a}article{background:white;padding:22px;border:1px solid #d5deea;border-radius:12px;margin:22px 0}h2{font-size:21px}label{display:block;margin:12px 0}select,input,textarea,button{font:inherit;padding:10px;max-width:100%;box-sizing:border-box}textarea{display:block;width:100%;min-height:65px}button{border:0;border-radius:7px;background:#244ba0;color:white;cursor:pointer;margin:5px 8px 5px 0}pre{white-space:pre-wrap;font:inherit;background:#f5f7fb;padding:15px;border-radius:7px}.muted{color:#526179}.bar{position:sticky;top:0;background:#fff;padding:12px;border:1px solid #d5deea;border-radius:7px;z-index:1}#message{color:#8b3010}a{color:#244ba0}select:focus,textarea:focus,input:focus{outline:3px solid #93b3eb}
+</style>
+<h1>ICT concept criteria review</h1>
+<p>Review these <strong>10 proposed concepts and 30 synthetic English examples</strong>. No ICT model has been trained. This is a development review, not an accuracy evaluation.</p>
+<p>The criteria are proposed from the supplied textbooks and teacher guides. Approve them or request changes. A concept applies only when it belongs in the selected note's lesson or question; an absent out-of-scope concept must not be called missing.</p>
+<p><strong>Complete:</strong> all required points are correctly explained. <strong>Partial:</strong> meaningful correct coverage with an important omission or error. <strong>Missing:</strong> no meaningful correct coverage; a heading alone is insufficient. Choose <strong>Unsure</strong> if the criterion or answer needs discussion.</p>
+<label>Your name <input id="reviewer" autocomplete="name"></label>
+<div class="bar"><span id="progress"></span><br><button id="draft">Download draft</button><button id="export">Download completed review</button><div id="message" role="status"></div></div>
+<div id="concepts"></div>
+<script>
+const original=__PACKET__;
+let packet=structuredClone(original);
+const key='ict-review-'+packet.packetSha256;
+try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved?.packetSha256===packet.packetSha256)packet=saved;}catch{}
+const $=id=>document.getElementById(id);
+function save(){packet.reviewerName=$('reviewer').value.trim();try{localStorage.setItem(key,JSON.stringify(packet));}catch{}progress();}
+function progress(){const reviewed=packet.examples.filter(e=>e.humanLabel).length;const criteria=packet.concepts.filter(c=>c.criterionReview).length;$('progress').textContent=`Examples ${reviewed}/30 · Criteria ${criteria}/10`;}
+function el(tag,text,parent){const e=document.createElement(tag);if(text)e.textContent=text;if(parent)parent.append(e);return e;}
+function select(label,values,value,change,parent){const wrap=el('label',label,parent),s=el('select',null,wrap);for(const [v,t]of values){const o=el('option',t,s);o.value=v;}s.value=value||'';s.onchange=()=>{change(s.value||null);save();};return s;}
+$('reviewer').value=packet.reviewerName;$('reviewer').oninput=save;
+for(const concept of packet.concepts){
+ const a=el('article',null,$('concepts'));el('h2',`Grade ${concept.grade} · ${concept.name}`,a);
+ const list=el('ol',null,a);for(const p of concept.points)el('li',p.text,list);
+ const refs=el('p','Source references (PDF page numbers): ',a);refs.className='muted';
+ for(const ref of concept.sourceReferences){const source=packet.sources.find(s=>s.id===ref.sourceId),link=el('a',ref.sourceId+' p.'+ref.pdfPage,refs);link.href=source.url+'#page='+ref.pdfPage;link.target='_blank';link.rel='noopener';refs.append(' · ');}
+ select('Are these required points suitable?', [['','Choose'],['approve','Approve'],['revise','Needs changes']],concept.criterionReview,v=>concept.criterionReview=v,a);
+ const criterion=el('textarea',null,a);criterion.placeholder='Explain any changes needed to the criteria';criterion.setAttribute('aria-label','Criteria comment for '+concept.name);criterion.value=concept.criterionComment;criterion.oninput=()=>{concept.criterionComment=criterion.value;save();};
+ for(const example of packet.examples.filter(e=>e.conceptId===concept.id)){
+   el('h3','Note example',a);el('pre',example.text,a);
+   select('Your label', [['','Choose'],['present','Complete'],['partial','Partial'],['missing','Missing'],['uncertain','Unsure']],example.humanLabel,v=>example.humanLabel=v,a);
+   const comment=el('textarea',null,a);comment.placeholder='Explain errors, missing points, or ambiguity';comment.setAttribute('aria-label','Comment for '+example.id);comment.value=example.comment;comment.oninput=()=>{example.comment=comment.value;save();};
+ }
+}
+function download(final){save();if(final&&(!packet.reviewerName||packet.examples.some(e=>!e.humanLabel)||packet.concepts.some(c=>!c.criterionReview)||(packet.concepts.some(c=>c.criterionReview==='revise'&&!c.criterionComment.trim())))){$('message').textContent='Enter your name, review all examples and criteria, and explain criteria needing changes.';return;}
+ const exported=structuredClone(packet);exported.reviewedAt=new Date().toISOString();exported.reviewComplete=final;const url=URL.createObjectURL(new Blob([JSON.stringify(exported,null,2)],{type:'application/json'}));const link=el('a');link.href=url;link.download=final?'ict-coverage-source-reviewed.json':'ict-coverage-source-draft.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);$('message').textContent=final?'Review downloaded. Send the JSON file back for analysis.':'Draft downloaded.';}
+$('draft').onclick=()=>download(false);$('export').onclick=()=>download(true);progress();
+</script></html>

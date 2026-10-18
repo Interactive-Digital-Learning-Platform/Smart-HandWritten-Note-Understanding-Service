@@ -10,6 +10,7 @@ const readArg = (name: string): string | undefined => {
 
 const groupCounts = async (field: string): Promise<Record<string, number>> => {
   const rows = await ConceptAnnotation.aggregate<{ _id: string; count: number }>([
+    { $match: { trainingEligible: { $ne: false } } },
     { $group: { _id: `$${field}`, count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
@@ -20,6 +21,8 @@ const main = async (): Promise<void> => {
   await connectDB();
   const [
     total,
+    eligible,
+    withdrawn,
     usedForTraining,
     verdicts,
     systemPredictions,
@@ -31,7 +34,12 @@ const main = async (): Promise<void> => {
     confusionRows,
   ] = await Promise.all([
     ConceptAnnotation.countDocuments(),
-    ConceptAnnotation.countDocuments({ usedForTraining: true }),
+    ConceptAnnotation.countDocuments({ trainingEligible: { $ne: false } }),
+    ConceptAnnotation.countDocuments({ trainingEligible: false }),
+    ConceptAnnotation.countDocuments({
+      usedForTraining: true,
+      trainingEligible: { $ne: false },
+    }),
     groupCounts("reviewerVerdict"),
     groupCounts("systemPrediction.status"),
     groupCounts("subject"),
@@ -81,7 +89,9 @@ const main = async (): Promise<void> => {
   const report = {
     generatedAt: new Date().toISOString(),
     total,
-    availableForNextDataset: total - usedForTraining,
+    eligible,
+    withdrawnOrIneligible: withdrawn,
+    availableForNextDataset: Math.max(0, eligible - usedForTraining),
     usedForTraining,
     verdicts,
     systemPredictions,

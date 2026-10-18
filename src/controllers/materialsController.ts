@@ -1,19 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { LearningMaterial, MaterialType } from "../models/LearningMaterial";
-import { generateMaterials } from "../services/materialsService";
+import { generateMaterials, queueMaterials } from "../services/materialsService";
+import { expireMaterialJobs, materialOverview, MATERIAL_TYPES } from "../services/materialJobs";
+import { Note } from "../models/Note";
 import { sendSuccess, sendError, AppError } from "../middleware/errorHandler";
 
 // ─── Valid material types ──────────────────────────────────────────────────
 
-const VALID_TYPES: MaterialType[] = [
-  "structured_notes",
-  "definitions",
-  "flashcards",
-  "mindmap",
-  "revision_summary",
-  "learning_points",
-  "audio",
-];
+const VALID_TYPES = MATERIAL_TYPES;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // READ HANDLERS
@@ -31,22 +25,12 @@ export const getMaterialsByNote = async (
   try {
     const { noteId } = req.params;
 
+    await expireMaterialJobs(noteId as string);
     const materials = await LearningMaterial.find({ noteId })
-      .select("noteId userId type generatedAt audioUrl targetedGaps estimatedMinutes purposeDescription createdAt")
+      .select("noteId userId type generatedAt audioUrl targetedGaps estimatedMinutes purposeDescription createdAt generationStatus generationError")
       .sort({ generatedAt: -1 });
 
-    // Return which types exist and which are still missing
-    const generatedTypes = materials.map(m => m.type);
-    const missingTypes = VALID_TYPES.filter(t => !generatedTypes.includes(t));
-
-    sendSuccess(res, {
-      noteId,
-      generatedCount: materials.length,
-      missingCount: missingTypes.length,
-      generatedTypes,
-      missingTypes,
-      materials,
-    });
+    sendSuccess(res, { noteId, ...materialOverview(materials) });
   } catch (error) {
     next(error);
   }
@@ -76,7 +60,8 @@ export const getMaterialByType = async (
     const material = await LearningMaterial.findOne({
       noteId,
       type: type as MaterialType,
-    }).select("-__v");
+      generatedAt: { $exists: true },
+    }).select("-__v -generationId -generationExpiresAt");
 
     if (!material) {
       throw new AppError(
@@ -109,36 +94,27 @@ export const triggerGenerateAll = async (
 ): Promise<void> => {
   try {
     const { noteId } = req.params;
-    const requestedTypes = req.body?.types as MaterialType[] | undefined;
-
-    // Validate any requested subset
-    if (requestedTypes) {
-      const invalid = requestedTypes.filter(t => !VALID_TYPES.includes(t));
-      if (invalid.length > 0) {
-        sendError(
-          res,
-          `Invalid type(s): ${invalid.join(", ")}. Valid: ${VALID_TYPES.join(", ")}`,
-          400
-        );
-        return;
-      }
+    const requestedTypes = req.body?.types;
+    if (requestedTypes !== undefined && (!Array.isArray(requestedTypes) || requestedTypes.length === 0 || requestedTypes.some((type: unknown) => !VALID_TYPES.includes(type as MaterialType)))) {
+      sendError(res, "types must be a non-empty array of supported material types", 400);
+      return;
     }
-
-    const typesToGenerate = requestedTypes ?? VALID_TYPES;
-
-    // Fire and forget — generation runs in background
-    generateMaterials(noteId as string, typesToGenerate).catch(err => {
-      console.error(`❌ Background materials generation failed for ${noteId}:`, err);
-    });
+    const note = await Note.findById(noteId).select("status analysis rawText");
+    if (!note || note.status !== "analyzed" || !note.analysis || !note.rawText) {
+      sendError(res, "Analyze this note before creating study materials.", 409);
+      return;
+    }
+    const { typesQueued, completion } = await queueMaterials(noteId as string, requestedTypes ?? VALID_TYPES);
+    void completion.catch(() => {});
 
     sendSuccess(
       res,
       {
         noteId,
-        typesQueued: typesToGenerate,
+        typesQueued,
         pollUrl: `/api/materials/${noteId}`,
       },
-      `Generating ${typesToGenerate.length} material(s). Poll pollUrl to check progress.`,
+      typesQueued.length ? "Materials queued. Check the overview for progress." : "These materials are already being created.",
       202
     );
   } catch (error) {
@@ -174,6 +150,10 @@ export const triggerGenerateOne = async (
 
     const typeResult = result.results[0];
 
+    if (!typeResult) {
+      sendSuccess(res, { noteId, typesQueued: [], pollUrl: `/api/materials/${noteId}` }, "This material is already being created.", 202);
+      return;
+    }
     if (!typeResult.success) {
       sendError(res, typeResult.error || "Generation failed", 500);
       return;
@@ -183,7 +163,8 @@ export const triggerGenerateOne = async (
     const material = await LearningMaterial.findOne({
       noteId,
       type: type as MaterialType,
-    }).select("-__v");
+      generatedAt: { $exists: true },
+    }).select("-__v -generationId -generationExpiresAt");
 
     sendSuccess(res, material, `${type} generated successfully`);
   } catch (error) {

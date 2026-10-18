@@ -1,0 +1,114 @@
+{
+  "passed": 15,
+  "mode": "offline_service_bridges",
+  "platform": "linux",
+  "bundleMode": true,
+  "maxNumericDifference": 2.980232238769531e-7,
+  "results": [
+    {
+      "id": "science-1",
+      "subject": "science",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 1682
+    },
+    {
+      "id": "science-2",
+      "subject": "science",
+      "suggestedStatus": "partial",
+      "withheld": false,
+      "milliseconds": 1180
+    },
+    {
+      "id": "science-3",
+      "subject": "science",
+      "suggestedStatus": "missing",
+      "withheld": false,
+      "milliseconds": 1030
+    },
+    {
+      "id": "sources-complete",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 5715
+    },
+    {
+      "id": "sources-partial",
+      "subject": "history",
+      "suggestedStatus": "partial",
+      "withheld": false,
+      "milliseconds": 14
+    },
+    {
+      "id": "sources-missing",
+      "subject": "history",
+      "suggestedStatus": "missing",
+      "withheld": false,
+      "milliseconds": 12
+    },
+    {
+      "id": "british-complete",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 24
+    },
+    {
+      "id": "british-partial",
+      "subject": "history",
+      "suggestedStatus": "partial",
+      "withheld": false,
+      "milliseconds": 14
+    },
+    {
+      "id": "british-missing",
+      "subject": "history",
+      "suggestedStatus": "missing",
+      "withheld": false,
+      "milliseconds": 20
+    },
+    {
+      "id": "kandy-complete",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 15
+    },
+    {
+      "id": "kandy-partial",
+      "subject": "history",
+      "suggestedStatus": "partial",
+      "withheld": false,
+      "milliseconds": 5
+    },
+    {
+      "id": "kandy-missing",
+      "subject": "history",
+      "suggestedStatus": "missing",
+      "withheld": false,
+      "milliseconds": 21
+    },
+    {
+      "id": "sources-complete-ocr-noise",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 34
+    },
+    {
+      "id": "british-complete-ocr-noise",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 25
+    },
+    {
+      "id": "kandy-complete-ocr-noise",
+      "subject": "history",
+      "suggestedStatus": null,
+      "withheld": true,
+      "milliseconds": 27
+    }
+  ]
+}

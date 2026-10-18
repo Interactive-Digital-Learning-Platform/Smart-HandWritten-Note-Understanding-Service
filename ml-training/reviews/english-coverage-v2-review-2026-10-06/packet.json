@@ -1,0 +1,342 @@
+{
+  "version": "english-coverage-human-review-v2",
+  "examples": [
+    {
+      "id": "v2-review-020",
+      "conceptId": "sci-g11-ele-002",
+      "concept": "Extrinsic Semiconductors",
+      "text": "Doping introduces a controlled impurity into a pure semiconductor. Pentavalent donors make n-type material, but holes are its majority carriers. Trivalent acceptors make p-type material, whose majority carriers are electrons. The five-valence and three-valence impurities distinguish the two types.",
+      "requirements": [
+        "Doping adds a small controlled amount of impurity to a pure semiconductor to increase conductivity.",
+        "Pentavalent donors such as phosphorus produce n-type material with electrons as majority carriers.",
+        "Trivalent acceptors such as boron produce p-type material with holes as majority carriers."
+      ]
+    },
+    {
+      "id": "v2-review-015",
+      "conceptId": "sci-g10-cim-002",
+      "concept": "Combination, Decomposition and Displacement Reactions",
+      "text": "Conservation of mass\nIn a closed system, total mass before a reaction equals total mass afterwards. Gas can escape from an open vessel and make the measured mass appear to decrease. Using a sealed vessel helps account for every product. The balance measures the whole apparatus before and after the change.",
+      "requirements": [
+        "Combination joins two or more reactants to form one product.",
+        "Decomposition breaks one compound into simpler products.",
+        "Single displacement replaces an element in a compound with another element.",
+        "Double displacement exchanges ions or partners between two compounds."
+      ]
+    },
+    {
+      "id": "v2-review-011",
+      "conceptId": "sci-g10-col-001",
+      "concept": "Sexual and Asexual Reproduction",
+      "text": "During fertilisation the sperm and egg gametes fuse to form a zygote. The zygote divides and develops into a new organism. This is sexual reproduction. In a flowering plant the male gamete reaches the ovule through a pollen tube. No second reproductive method is described on this page.",
+      "requirements": [
+        "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+        "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring."
+      ]
+    },
+    {
+      "id": "v2-review-027",
+      "conceptId": "sci-g11-mix-009",
+      "concept": "Paper Chromatography",
+      "text": "Recovering salt\nWarm a salt solution gently so some water evaporates. Allow the concentrated solution to cool, and crystals form. Separate and dry the crystals. The dissolved salt is recovered by crystallisation; no moving solvent front or paper strip is used.",
+      "requirements": [
+        "Place a sample spot on a baseline above the solvent level.",
+        "The stationary paper and moving solvent form stationary and mobile phases.",
+        "Components migrate different distances due to different attraction to the paper and solvent."
+      ]
+    },
+    {
+      "id": "v2-review-023",
+      "conceptId": "sci-g11-hea-003",
+      "concept": "Heat Exchange Calculations",
+      "text": "A 0.25 kg sample with specific heat 800 J per kilogram per degree warms from 12 C to 22 C. Using Q = mc times the temperature change, Q = 0.25 x 800 x 10 = 20000 J. The mass is in kg and the answer in joules. In an insulated mixture, heat lost equals heat gained.",
+      "requirements": [
+        "Q = mc times temperature change gives energy transferred without a change of state.",
+        "Use final minus initial temperature rather than the final temperature alone.",
+        "Use kilograms with specific heat per kilogram and express energy in joules.",
+        "In an insulated system heat lost by the hotter body equals heat gained by the cooler body."
+      ]
+    },
+    {
+      "id": "v2-review-007",
+      "conceptId": "sci-g10-som-005",
+      "concept": "Isotopes",
+      "text": "Oxygen-16 and oxygen-18 are isotopes. Each nucleus contains eight protons. The first has eight neutrons and the second ten. Isotopes therefore have the same proton number but different neutron counts, giving different mass numbers while remaining the same element.",
+      "requirements": [
+        "Isotopes are atoms of the same element with the same atomic number or proton count.",
+        "Isotopes have different neutron numbers and therefore different mass numbers."
+      ]
+    },
+    {
+      "id": "v2-review-006",
+      "conceptId": "sci-g10-cur-006",
+      "concept": "Ohm's Law",
+      "text": "Electrical safety\nA fuse melts if too much current flows. The earth wire provides a path that can help protective devices disconnect a faulty appliance. Dry insulation around a wire reduces the chance of contact with live metal. Turn off the supply before replacing a fuse.",
+      "requirements": [
+        "Current is directly proportional to voltage; voltage divided by current is constant.",
+        "The relationship holds at constant temperature and unchanged physical conditions.",
+        "V = IR or R = V/I relates voltage, current and resistance."
+      ]
+    },
+    {
+      "id": "v2-review-013",
+      "conceptId": "sci-g10-cim-002",
+      "concept": "Combination, Decomposition and Displacement Reactions",
+      "text": "--- Page 1 ---\nCombination joins substances to form a single product, for example carbon burning to carbon dioxide. Decomposition breaks a compound into simpler products, for example water decomposing into hydrogen and oxygen.\n--- Page 2 ---\nIn single displacement an element replaces another in a compound, such as iron replacing copper in copper sulphate. In double displacement two compounds exchange ions, as when barium chloride and sodium sulphate produce barium sulphate and sodium chloride.",
+      "requirements": [
+        "Combination joins two or more reactants to form one product.",
+        "Decomposition breaks one compound into simpler products.",
+        "Single displacement replaces an element in a compound with another element.",
+        "Double displacement exchanges ions or partners between two compounds."
+      ]
+    },
+    {
+      "id": "v2-review-012",
+      "conceptId": "sci-g10-col-001",
+      "concept": "Sexual and Asexual Reproduction",
+      "text": "Seed structure\nThe seed coat protects the embryo. The plumule develops into the shoot and the radicle into the root. Cotyledons may contain stored food. Soaking a bean softens its outer coat and makes these structures easier to observe under a hand lens.",
+      "requirements": [
+        "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+        "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring."
+      ]
+    },
+    {
+      "id": "v2-review-016",
+      "conceptId": "sci-g11-bph-004",
+      "concept": "Mechanics of Breathing",
+      "text": "Quiet breathing\nBreathing in: diaphragm contracts and moves down; ribs lift up and out through intercostal muscle contraction. Chest volume becomes larger, pressure falls, air flows into the lungs.\nBreathing out: these muscles relax, the diaphragm returns to a dome and ribs move down and in. Smaller chest volume raises pressure, sending air out. The pressure is compared with atmospheric pressure in each phase.",
+      "requirements": [
+        "In inspiration the diaphragm contracts and flattens and ribs move up and out.",
+        "Increasing chest volume lowers pressure and air enters the lungs.",
+        "During expiration muscles relax, the diaphragm becomes dome shaped and ribs move down and in.",
+        "Decreasing chest volume increases pressure and air leaves the lungs."
+      ]
+    },
+    {
+      "id": "v2-review-010",
+      "conceptId": "sci-g10-col-001",
+      "concept": "Sexual and Asexual Reproduction",
+      "text": "Comparison\nSexual reproduction: male and female gametes unite during fertilisation to form a zygote.\nAsexual reproduction: a single parent produces new organisms without the union of gametes; a potato tuber producing new plants is an example. The new plants are usually genetically alike to the parent, whereas sexual offspring can show inherited variation.",
+      "requirements": [
+        "Sexual reproduction involves fusion of male and female gametes during fertilisation.",
+        "Asexual reproduction involves one parent without gamete fusion, usually producing genetically alike offspring."
+      ]
+    },
+    {
+      "id": "v2-review-026",
+      "conceptId": "sci-g11-mix-009",
+      "concept": "Paper Chromatography",
+      "text": "For paper chromatography keep the starting sample spot above the solvent level. Paper remains stationary and solvent moves through it. All dyes have exactly the same attraction to paper and solvent and move at the same speed. Their different colours alone cause separate bands to appear at different heights.",
+      "requirements": [
+        "Place a sample spot on a baseline above the solvent level.",
+        "The stationary paper and moving solvent form stationary and mobile phases.",
+        "Components migrate different distances due to different attraction to the paper and solvent."
+      ]
+    },
+    {
+      "id": "v2-review-030",
+      "conceptId": "sci-g11-pea-001",
+      "concept": "Electrical Power of Appliances",
+      "text": "Electrical energy transformations\nA rechargeable battery stores energy chemically. When it powers a torch, chemical energy is transferred electrically and eventually becomes light and heat. Recharging transfers energy back into the battery. An energy-flow diagram represents these changes with arrows.",
+      "requirements": [
+        "Electrical power is energy transferred per second, measured in watts or joules per second.",
+        "P = VI multiplies voltage across the appliance by current through it.",
+        "Power is measured in watts (W), which are joules per second.",
+        "Use 1 kW = 1000 W, or correctly demonstrate an equivalent conversion."
+      ]
+    },
+    {
+      "id": "v2-review-022",
+      "conceptId": "sci-g11-hea-003",
+      "concept": "Heat Exchange Calculations",
+      "text": "A 0.25 kg sample has specific heat 800 J per kilogram per degree. Its temperature changes from 12 C to 22 C, a rise of 10 C. Q = mc times the change = 0.25 x 800 x 10 = 2000 J. No change of state occurs. For insulated mixing, the hotter body's heat loss equals the cooler body's heat gain until both reach a common final temperature.",
+      "requirements": [
+        "Q = mc times temperature change gives energy transferred without a change of state.",
+        "Use final minus initial temperature rather than the final temperature alone.",
+        "Use kilograms with specific heat per kilogram and express energy in joules.",
+        "In an insulated system heat lost by the hotter body equals heat gained by the cooler body."
+      ]
+    },
+    {
+      "id": "v2-review-017",
+      "conceptId": "sci-g11-bph-004",
+      "concept": "Mechanics of Breathing",
+      "text": "Expiration occurs as the diaphragm and intercostal muscles relax. The diaphragm becomes dome-shaped and the ribs move down and in. Chest volume decreases, pressure rises and air moves out of the lungs. This revision card only describes quiet expiration.",
+      "requirements": [
+        "In inspiration the diaphragm contracts and flattens and ribs move up and out.",
+        "Increasing chest volume lowers pressure and air enters the lungs.",
+        "During expiration muscles relax, the diaphragm becomes dome shaped and ribs move down and in.",
+        "Decreasing chest volume increases pressure and air leaves the lungs."
+      ]
+    },
+    {
+      "id": "v2-review-028",
+      "conceptId": "sci-g11-pea-001",
+      "concept": "Electrical Power of Appliances",
+      "text": "A heater takes 2.5 A at 200 V. P = VI = 200 x 2.5 = 500 W = 0.5 kW. Power is electrical energy transferred per second; 500 W means 500 joules each second. Total energy used depends on the operating time as well as this power.",
+      "requirements": [
+        "Electrical power is energy transferred per second, measured in watts or joules per second.",
+        "P = VI multiplies voltage across the appliance by current through it.",
+        "Power is measured in watts (W), which are joules per second.",
+        "Use 1 kW = 1000 W, or correctly demonstrate an equivalent conversion."
+      ]
+    },
+    {
+      "id": "v2-review-002",
+      "conceptId": "sci-g10-cbl-007",
+      "concept": "Benedict Test for Reducing Sugars",
+      "text": "Warm the food sample with Benedict solution in a water bath. This is a test for reducing sugar. A blue solution after heating means a positive result; a brick-red deposit means no reducing sugar was present. The colour observations should be written down before disposing of the contents.",
+      "requirements": [
+        "Add Benedict solution to the food sample to test for reducing sugar.",
+        "Heat the sample with Benedict reagent in a hot water bath.",
+        "A green yellow orange or brick red precipitate indicates reducing sugar."
+      ]
+    },
+    {
+      "id": "v2-review-014",
+      "conceptId": "sci-g10-cim-002",
+      "concept": "Combination, Decomposition and Displacement Reactions",
+      "text": "Combination and decomposition\nTwo or more reactants form a single product in combination. One compound breaks into simpler substances in decomposition. Hydrogen and oxygen making water illustrates the first pattern, while heated silver oxide giving silver and oxygen illustrates the second. Displacement reactions are listed as homework but not explained in these notes.",
+      "requirements": [
+        "Combination joins two or more reactants to form one product.",
+        "Decomposition breaks one compound into simpler products.",
+        "Single displacement replaces an element in a compound with another element.",
+        "Double displacement exchanges ions or partners between two compounds."
+      ]
+    },
+    {
+      "id": "v2-review-019",
+      "conceptId": "sci-g11-ele-002",
+      "concept": "Extrinsic Semiconductors",
+      "text": "Doped silicon\nA very small controlled amount of impurity is added to increase conductivity. A pentavalent donor supplies an extra electron, producing n-type material with electrons as majority carriers. A trivalent acceptor creates an electron vacancy or hole, producing p-type material with holes as majority carriers. The letters indicate the dominant carriers, not a net charge on the whole crystal.",
+      "requirements": [
+        "Doping adds a small controlled amount of impurity to a pure semiconductor to increase conductivity.",
+        "Pentavalent donors such as phosphorus produce n-type material with electrons as majority carriers.",
+        "Trivalent acceptors such as boron produce p-type material with holes as majority carriers."
+      ]
+    },
+    {
+      "id": "v2-review-003",
+      "conceptId": "sci-g10-cbl-007",
+      "concept": "Benedict Test for Reducing Sugars",
+      "text": "Carbohydrates\nGlucose and fructose are simple sugars. Starch consists of many sugar units and occurs in cereal grains. Sucrose is a disaccharide. These classes differ in their structures and some of their properties. Benedict's test is the title of the next page; no laboratory instructions are recorded here.",
+      "requirements": [
+        "Add Benedict solution to the food sample to test for reducing sugar.",
+        "Heat the sample with Benedict reagent in a hot water bath.",
+        "A green yellow orange or brick red precipitate indicates reducing sugar."
+      ]
+    },
+    {
+      "id": "v2-review-018",
+      "conceptId": "sci-g11-bph-004",
+      "concept": "Mechanics of Breathing",
+      "text": "Cellular respiration\nCells break down glucose to release usable energy. With oxygen, carbon dioxide and water are formed. The energy supports processes such as muscle activity and active transport. Respiration happens in living cells and is distinct from simply moving air along an airway.",
+      "requirements": [
+        "In inspiration the diaphragm contracts and flattens and ribs move up and out.",
+        "Increasing chest volume lowers pressure and air enters the lungs.",
+        "During expiration muscles relax, the diaphragm becomes dome shaped and ribs move down and in.",
+        "Decreasing chest volume increases pressure and air leaves the lungs."
+      ]
+    },
+    {
+      "id": "v2-review-029",
+      "conceptId": "sci-g11-pea-001",
+      "concept": "Electrical Power of Appliances",
+      "text": "P = VI gives electrical power from voltage and current. A 200 V appliance drawing 2.5 A uses 500 W, meaning 500 joules per second. Power is a rate of energy transfer. To change units, 500 W = 5 kW; divide watts by 100 to obtain kilowatts.",
+      "requirements": [
+        "Electrical power is energy transferred per second, measured in watts or joules per second.",
+        "P = VI multiplies voltage across the appliance by current through it.",
+        "Power is measured in watts (W), which are joules per second.",
+        "Use 1 kW = 1000 W, or correctly demonstrate an equivalent conversion."
+      ]
+    },
+    {
+      "id": "v2-review-005",
+      "conceptId": "sci-g10-cur-006",
+      "concept": "Ohm's Law",
+      "text": "Ohm's law: potential difference is directly proportional to current. Resistance equals their ratio, R = V/I, and V = IR. A resistor carrying 2 A at 10 V has resistance 5 ohms. This relationship is true for every component at every temperature, even when a filament becomes much hotter.",
+      "requirements": [
+        "Current is directly proportional to voltage; voltage divided by current is constant.",
+        "The relationship holds at constant temperature and unchanged physical conditions.",
+        "V = IR or R = V/I relates voltage, current and resistance."
+      ]
+    },
+    {
+      "id": "v2-review-025",
+      "conceptId": "sci-g11-mix-009",
+      "concept": "Paper Chromatography",
+      "text": "Separating leaf colours\nPut a small pigment spot on a pencil baseline and let it dry. Suspend the paper with the spot above the liquid solvent surface. Paper is the stationary phase; moving solvent is the mobile phase. Pigments have different attractions to paper and solvent, so they travel different distances and separate into bands. Mark the solvent front before the paper dries.",
+      "requirements": [
+        "Place a sample spot on a baseline above the solvent level.",
+        "The stationary paper and moving solvent form stationary and mobile phases.",
+        "Components migrate different distances due to different attraction to the paper and solvent."
+      ]
+    },
+    {
+      "id": "v2-review-008",
+      "conceptId": "sci-g10-som-005",
+      "concept": "Isotopes",
+      "text": "Boron-10 and boron-11 are called isotopes. Their mass numbers are different. The boron-10 nucleus has five protons and five neutrons, while boron-11 has six protons and five neutrons. They remain the same element despite having different numbers of protons.",
+      "requirements": [
+        "Isotopes are atoms of the same element with the same atomic number or proton count.",
+        "Isotopes have different neutron numbers and therefore different mass numbers."
+      ]
+    },
+    {
+      "id": "v2-review-009",
+      "conceptId": "sci-g10-som-005",
+      "concept": "Isotopes",
+      "text": "Atoms in chemical bonds\nSodium transfers its outer electron to chlorine. Sodium becomes positively charged and chlorine becomes negatively charged. Opposite charges attract, forming an ionic lattice. This rearranges electrons; it does not change either nucleus during the reaction.",
+      "requirements": [
+        "Isotopes are atoms of the same element with the same atomic number or proton count.",
+        "Isotopes have different neutron numbers and therefore different mass numbers."
+      ]
+    },
+    {
+      "id": "v2-review-024",
+      "conceptId": "sci-g11-hea-003",
+      "concept": "Heat Exchange Calculations",
+      "text": "Thermal expansion\nA metal rod becomes longer when heated because the average spacing between particles increases. Bridges have expansion gaps to accommodate changes in length. Liquid expansion is used in some thermometers. The particles themselves do not become larger in this account.",
+      "requirements": [
+        "Q = mc times temperature change gives energy transferred without a change of state.",
+        "Use final minus initial temperature rather than the final temperature alone.",
+        "Use kilograms with specific heat per kilogram and express energy in joules.",
+        "In an insulated system heat lost by the hotter body equals heat gained by the cooler body."
+      ]
+    },
+    {
+      "id": "v2-review-001",
+      "conceptId": "sci-g10-cbl-007",
+      "concept": "Benedict Test for Reducing Sugars",
+      "text": "Sugar practical\nThe pear juice goes into a small test tube. Add Benedict's reagent and place the tube in a hot water bath. Heat it and inspect for a coloured precipitate: green through orange to brick red indicates reducing sugar. A sample that remains blue after this procedure is negative. Compare it with water treated in the same way.",
+      "requirements": [
+        "Add Benedict solution to the food sample to test for reducing sugar.",
+        "Heat the sample with Benedict reagent in a hot water bath.",
+        "A green yellow orange or brick red precipitate indicates reducing sugar."
+      ]
+    },
+    {
+      "id": "v2-review-004",
+      "conceptId": "sci-g10-cur-006",
+      "concept": "Ohm's Law",
+      "text": "The test wire was kept at the same temperature. At 1.5 V it carried 0.3 A, and at 3 V it carried 0.6 A. The ratio V/I stays 5 ohms: current and potential difference are directly proportional. This is Ohm's law, V = IR, with physical conditions held constant.",
+      "requirements": [
+        "Current is directly proportional to voltage; voltage divided by current is constant.",
+        "The relationship holds at constant temperature and unchanged physical conditions.",
+        "V = IR or R = V/I relates voltage, current and resistance."
+      ]
+    },
+    {
+      "id": "v2-review-021",
+      "conceptId": "sci-g11-ele-002",
+      "concept": "Extrinsic Semiconductors",
+      "text": "Metals and insulators\nIn a metal some electrons can move through the structure and carry current. Plastic covering around a cable has very few mobile charge carriers under ordinary conditions. The copper core conducts while the covering insulates. The choice of materials suits their different jobs.",
+      "requirements": [
+        "Doping adds a small controlled amount of impurity to a pure semiconductor to increase conductivity.",
+        "Pentavalent donors such as phosphorus produce n-type material with electrons as majority carriers.",
+        "Trivalent acceptors such as boron produce p-type material with holes as majority carriers."
+      ]
+    }
+  ],
+  "packetSha256": "89e57356ecc5d3e3474cda61c87e3481b0e5a0de30f3f02a3764e261e82358e8"
+}

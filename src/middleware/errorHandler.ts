@@ -51,6 +51,10 @@ export const errorHandler = (
   console.error("❌ Error:", err.message);
 
   // Multer errors
+  if ((err as Error & {code?:string}).code === 'LIMIT_FILE_COUNT') {
+    sendError(res,'Upload up to 20 note pages at a time',400);
+    return;
+  }
   if (err.message.includes("Unsupported file type")) {
     sendError(res, err.message, 400);
     return;

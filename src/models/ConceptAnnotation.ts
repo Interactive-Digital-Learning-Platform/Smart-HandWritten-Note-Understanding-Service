@@ -9,6 +9,7 @@ export interface IConceptAnnotation extends Document {
   schemaVersion: string;
   recordId: string;
   noteId: string;
+  evaluationGroupId?: string;
   curriculumVersion: string;
   pipelineVersion?: string;
   subject: string;
@@ -32,10 +33,13 @@ export interface IConceptAnnotation extends Document {
   reviewerVerdict: ConceptStatus;
   reviewerId: string;
   labelQuality: AnnotationLabelQuality;
+  evidencePage?: number;
   evidenceText?: string;
   reviewerNotes?: string;
   reviewedAt: Date;
   usedForTraining: boolean;
+  trainingEligible: boolean;
+  consentWithdrawnAt?: Date;
   datasetVersion?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -55,6 +59,7 @@ const ConceptAnnotationSchema = new Schema<IConceptAnnotation>(
     schemaVersion: { type: String, required: true },
     recordId: { type: String, required: true, unique: true, index: true },
     noteId: { type: String, required: true, index: true },
+    evaluationGroupId: { type: String, index: true },
     curriculumVersion: { type: String, required: true, index: true },
     pipelineVersion: { type: String },
     subject: { type: String, required: true, index: true },
@@ -117,10 +122,13 @@ const ConceptAnnotationSchema = new Schema<IConceptAnnotation>(
       required: true,
       index: true,
     },
+    evidencePage: { type: Number, min: 1 },
     evidenceText: { type: String },
     reviewerNotes: { type: String },
     reviewedAt: { type: Date, required: true },
     usedForTraining: { type: Boolean, default: false, index: true },
+    trainingEligible: { type: Boolean, default: true, index: true },
+    consentWithdrawnAt: { type: Date },
     datasetVersion: { type: String, index: true },
   },
   { timestamps: true }

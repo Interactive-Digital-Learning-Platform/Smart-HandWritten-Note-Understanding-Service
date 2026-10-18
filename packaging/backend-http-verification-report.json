@@ -1,0 +1,93 @@
+{
+  "passed": 12,
+  "mode": "full_backend_http",
+  "platform": "linux",
+  "bundleMode": true,
+  "maxNumericDifference": 2.980232238769531e-7,
+  "results": [
+    {
+      "id": "sources-complete",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 7042
+    },
+    {
+      "id": "sources-partial",
+      "subject": "history",
+      "suggestedStatus": "partial",
+      "withheld": false,
+      "milliseconds": 20
+    },
+    {
+      "id": "sources-missing",
+      "subject": "history",
+      "suggestedStatus": "missing",
+      "withheld": false,
+      "milliseconds": 17
+    },
+    {
+      "id": "british-complete",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 30
+    },
+    {
+      "id": "british-partial",
+      "subject": "history",
+      "suggestedStatus": "partial",
+      "withheld": false,
+      "milliseconds": 17
+    },
+    {
+      "id": "british-missing",
+      "subject": "history",
+      "suggestedStatus": "missing",
+      "withheld": false,
+      "milliseconds": 21
+    },
+    {
+      "id": "kandy-complete",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 20
+    },
+    {
+      "id": "kandy-partial",
+      "subject": "history",
+      "suggestedStatus": "partial",
+      "withheld": false,
+      "milliseconds": 8
+    },
+    {
+      "id": "kandy-missing",
+      "subject": "history",
+      "suggestedStatus": "missing",
+      "withheld": false,
+      "milliseconds": 26
+    },
+    {
+      "id": "sources-complete-ocr-noise",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 38
+    },
+    {
+      "id": "british-complete-ocr-noise",
+      "subject": "history",
+      "suggestedStatus": "present",
+      "withheld": false,
+      "milliseconds": 27
+    },
+    {
+      "id": "kandy-complete-ocr-noise",
+      "subject": "history",
+      "suggestedStatus": null,
+      "withheld": true,
+      "milliseconds": 29
+    }
+  ]
+}

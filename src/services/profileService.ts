@@ -1,17 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// Student Profile Service — Improvement 7
-// ═══════════════════════════════════════════════════════════════════════════
-//
-// Provides functions to create, read, and update StudentProfile documents
-// after each note analysis. Called by processingService after the pipeline
-// completes.
-//
-// Key operations:
-//   - updateProfileFromAnalysis() — update all tracking after a note is analyzed
-//   - getProfile()               — fetch profile (creates if not exists)
-//   - getPersistentGaps()        — return concepts missed 2+ times
-//   - getSubjectMastery()        — return subject-level performance summary
-// ═══════════════════════════════════════════════════════════════════════════
+// Creates and updates student learning profiles.
 
 import {
   StudentProfile,
@@ -23,12 +10,7 @@ import { IAnalysis } from "../models/Note";
 import { ConceptStatus, PipelineContext } from "../pipeline/types";
 import { normalizeConceptStatus } from "../pipeline/conceptPrediction";
 
-// ─── Trend Calculation ─────────────────────────────────────────────────────
-
-/**
- * Computes whether the student's performance is improving, stable,
- * or declining based on the last 5 scores.
- */
+// Finds the trend from the last five scores.
 const calculateTrend = (
   scores: number[]
 ): "improving" | "stable" | "declining" => {
@@ -44,11 +26,7 @@ const calculateTrend = (
   return "stable";
 };
 
-// ─── Upsert concept performance ────────────────────────────────────────────
-
-/**
- * Updates or inserts a concept performance record in the profile.
- */
+// Adds or updates a concept result.
 const upsertConceptPerformance = (
   existing: IConceptPerformance[],
   conceptId: string,
@@ -62,7 +40,7 @@ const upsertConceptPerformance = (
   const idx = existing.findIndex((c) => c.conceptId === conceptId);
 
   if (idx === -1) {
-    // New concept — insert
+    // Add a new concept.
     existing.push({
       conceptId,
       conceptName,
@@ -79,8 +57,7 @@ const upsertConceptPerformance = (
       isPersistentSupportNeed: false,
     });
   } else {
-    // Existing — update
-    // Profiles created before this change do not have the newer counters.
+    // Update an existing concept. Older profiles may not have these counters.
     existing[idx].timesFoundInNotes ??= 0;
     existing[idx].timesPartiallyFoundInNotes ??= 0;
     existing[idx].timesNotFoundInNotes ??= 0;
@@ -102,11 +79,7 @@ const upsertConceptPerformance = (
   return existing;
 };
 
-// ─── Upsert subject mastery ────────────────────────────────────────────────
-
-/**
- * Updates or inserts a subject mastery record in the profile.
- */
+// Adds or updates subject progress.
 const upsertSubjectMastery = (
   existing: ISubjectMastery[],
   subjectName: string,
@@ -128,13 +101,13 @@ const upsertSubjectMastery = (
     existing[idx].notesAnalyzed += 1;
     existing[idx].notesUploaded += 1;
 
-    // Rolling average
+    // Update the average score.
     const n = existing[idx].notesAnalyzed;
     existing[idx].averageWeightedCoverage = Math.round(
       (existing[idx].averageWeightedCoverage * (n - 1) + weightedCoverage) / n
     );
 
-    // Keep last 10 scores for trend calculation
+    // Keep the last ten scores for the trend.
     existing[idx].recentScores = [
       ...existing[idx].recentScores.slice(-9),
       weightedCoverage,
@@ -147,22 +120,13 @@ const upsertSubjectMastery = (
   return existing;
 };
 
-// ─── Main: Update profile from pipeline context ────────────────────────────
-
-/**
- * Updates (or creates) the StudentProfile document after a successful
- * pipeline analysis.
- *
- * Should be called from processingService after the Note is saved.
- *
- * @param ctx - The completed PipelineContext
- */
+// Updates the student profile after a note is analyzed.
 export const updateProfileFromAnalysis = async (
   ctx: PipelineContext,
   previousAnalysis?: IAnalysis
 ): Promise<void> => {
   if (!ctx.matchedLesson || !ctx.conceptMatches) {
-    // No curriculum match — skip profile update
+    // Skip notes without a curriculum match.
     return;
   }
 
@@ -171,7 +135,7 @@ export const updateProfileFromAnalysis = async (
   const weightedCoverage = ctx.coverageScores?.weightedCoverage ?? 0;
 
   try {
-    // Fetch or create profile
+    // Load or create the profile.
     let profile = await StudentProfile.findOne({ userId: ctx.userId });
 
     if (!profile) {
@@ -184,10 +148,7 @@ export const updateProfileFromAnalysis = async (
       });
     }
 
-    // A re-run may happen after OCR retry or student context correction. It is
-    // still the same uploaded note, so counting it again would fabricate a
-    // learning trend and inflate found/not-found counters. One session per
-    // noteId acts as the profile aggregation idempotency key.
+    // Count each note once, even when it is processed again.
     const alreadyProfiled = (profile.recentSessions ?? []).some(
       (session) => session.noteId === ctx.noteId
     );
@@ -197,9 +158,7 @@ export const updateProfileFromAnalysis = async (
     }
 
     if (alreadyProfiled && previousAnalysis) {
-      // Remove this note's previous contribution before adding the corrected
-      // analysis below. Student self-verification counters are deliberately
-      // retained because they are student actions, not pipeline output.
+      // Replace the old analysis but keep the student's own answers.
       for (const finding of previousAnalysis.conceptFindings ?? []) {
         const previous = (profile.conceptPerformance as IConceptPerformance[])
           .find((concept) => concept.conceptId === finding.conceptId);
@@ -246,7 +205,7 @@ export const updateProfileFromAnalysis = async (
       }
     }
 
-    // ── Update concept performance ─────────────────────────────────────────
+    // Update concept results.
     let conceptPerformance = profile.conceptPerformance as IConceptPerformance[];
 
     for (const match of ctx.conceptMatches) {
@@ -264,17 +223,17 @@ export const updateProfileFromAnalysis = async (
 
     profile.conceptPerformance = conceptPerformance;
 
-    // ── Update subject mastery ─────────────────────────────────────────────
+    // Update subject progress.
     let subjectMastery = profile.subjectMastery as ISubjectMastery[];
     subjectMastery = upsertSubjectMastery(subjectMastery, subject, weightedCoverage);
     profile.subjectMastery = subjectMastery;
 
-    // ── Update grade ───────────────────────────────────────────────────────
+    // Update the grade.
     if (ctx.subjectDetection?.grade && ctx.subjectDetection.grade > 0) {
       profile.primaryGrade = ctx.subjectDetection.grade;
     }
 
-    // ── Add session ────────────────────────────────────────────────────────
+    // Add this session.
     const newSession = {
       noteId: ctx.noteId,
       subject,
@@ -290,11 +249,11 @@ export const updateProfileFromAnalysis = async (
       analyzedAt: new Date(),
     };
 
-    // Keep only last 20 sessions
+    // Keep the last twenty sessions.
     const sessions = [...(profile.recentSessions ?? []), newSession].slice(-20);
     profile.recentSessions = sessions;
 
-    // ── Totals ─────────────────────────────────────────────────────────────
+    // Update totals.
     profile.totalNotesAnalyzed = (profile.totalNotesAnalyzed ?? 0) + 1;
 
     await profile.save();
@@ -308,7 +267,7 @@ export const updateProfileFromAnalysis = async (
         `${persistentGapCount} persistent gap(s)`
     );
   } catch (err) {
-    // Profile update failures are non-fatal
+    // Do not fail note processing if this update fails.
     console.error(
       `  [Profile] ❌ Failed to update profile for user ${ctx.userId}:`,
       err instanceof Error ? err.message : err
@@ -316,21 +275,14 @@ export const updateProfileFromAnalysis = async (
   }
 };
 
-// ─── Getters ───────────────────────────────────────────────────────────────
-
-/**
- * Gets or creates the student profile for a userId.
- */
+// Gets or creates a student profile.
 export const getProfile = async (
   userId: string
 ): Promise<IStudentProfile | null> => {
   return StudentProfile.findOne({ userId });
 };
 
-/**
- * Returns all concepts that are persistent gaps (missed 2+ times).
- * Sorted by timesMissed descending (worst gaps first).
- */
+// Gets concepts missed at least twice, worst first.
 export const getPersistentGaps = async (
   userId: string
 ): Promise<IConceptPerformance[]> => {
@@ -342,7 +294,7 @@ export const getPersistentGaps = async (
     .sort((a, b) => b.timesStudentConfirmedNeedsHelp - a.timesStudentConfirmedNeedsHelp);
 };
 
-/** Records a student confirmation without treating note absence as a weakness. */
+/** Saves the student's answer about a concept. */
 export const recordStudentConceptVerification = async (
   userId: string,
   conceptId: string,
@@ -377,9 +329,7 @@ export const recordStudentConceptVerification = async (
   await profile.save();
 };
 
-/**
- * Returns subject mastery sorted by coverage (best first).
- */
+// Gets subject progress, best first.
 export const getSubjectMastery = async (
   userId: string
 ): Promise<ISubjectMastery[]> => {

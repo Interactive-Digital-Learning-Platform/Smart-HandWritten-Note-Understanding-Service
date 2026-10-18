@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { parseExpertKeyList } from "../annotations/expertCredentials";
 
 dotenv.config();
 
@@ -25,6 +26,9 @@ const parseGroqApiKeys = (): string[] => {
 
 const groqApiKeys = parseGroqApiKeys();
 
+const parseBoolean = (value: string | undefined): boolean =>
+  value?.trim().toLowerCase() === "true";
+
 export const config = {
   port: parseInt(process.env.PORT || "3001", 10),
   nodeEnv: process.env.NODE_ENV || "development",
@@ -37,6 +41,7 @@ export const config = {
     apiKey: groqApiKeys[0] || "",
     apiKeys: groqApiKeys,
     model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+    ocrModel: process.env.GROQ_OCR_MODEL?.trim() || "qwen/qwen3.8-27b",
   },
 
 
@@ -73,6 +78,24 @@ export const config = {
       process.env.CURRICULUM_DB_URL ||
       process.env.DB_URL ||
       "",
+  },
+
+  annotationReview: {
+    enabled: parseBoolean(process.env.ANNOTATION_REVIEW_ENABLED),
+    expertCredentials: parseExpertKeyList(
+      process.env.EXPERT_ANNOTATION_KEYS || ""
+    ),
+    pseudonymSecret: process.env.ANNOTATION_PSEUDONYM_SECRET || "",
+    consentVersion: process.env.RESEARCH_CONSENT_VERSION || "1.0",
+    allowedSubjects: (process.env.ANNOTATION_ALLOWED_SUBJECTS || "Science")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  },
+
+  englishCoverage: {
+    // User-authorized automatic suggestions; every prediction still requires review.
+    suggestionsEnabled: process.env.ENGLISH_COVERAGE_SUGGESTIONS_ENABLED?.trim().toLowerCase() !== "false",
   },
 
   gateway: {
