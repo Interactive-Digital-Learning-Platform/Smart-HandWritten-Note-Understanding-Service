@@ -71,10 +71,20 @@ export interface CurriculumRetrievalContext {
 export class QdrantService {
   private qdrantBaseUrl: string;
   private collectionName: string;
+  private vectorName: string;
 
   constructor() {
     this.qdrantBaseUrl = config.qdrant.url.replace(/\/+$/, "");
     this.collectionName = config.qdrant.collection;
+    this.vectorName = config.qdrant.vectorName;
+  }
+
+  // Adds the API key Qdrant Cloud requires to each request.
+  private requestOptions(timeout: number) {
+    return {
+      timeout,
+      headers: config.qdrant.apiKey ? { "api-key": config.qdrant.apiKey } : {},
+    };
   }
 
   // Gets the Qdrant collection status and counts.
@@ -82,19 +92,22 @@ export class QdrantService {
     try {
       const response = await axios.get(
         `${this.qdrantBaseUrl}/collections/${this.collectionName}`,
-        { timeout: 3000 }
+        this.requestOptions(3000)
       );
 
       const result = response.data?.result;
       const pointsCount = result?.points_count ?? result?.vectors_count ?? 0;
       const status = result?.status ?? "unknown";
+      // Named vectors are keyed by name; a single unnamed vector is not.
+      const vectors = result?.config?.params?.vectors;
+      const vectorParams = this.vectorName ? vectors?.[this.vectorName] : vectors;
 
       return {
         collection: this.collectionName,
         totalPoints: pointsCount,
         status,
-        vectorDim: result?.config?.params?.vectors?.size,
-        distance: result?.config?.params?.vectors?.distance,
+        vectorDim: vectorParams?.size,
+        distance: vectorParams?.distance,
         isAvailable: pointsCount > 0 || status === "green" || status === "yellow",
       };
     } catch (error) {
@@ -142,6 +155,7 @@ export class QdrantService {
     const candidateLimit = Math.max(limit * 8, 40);
     const requestBody = {
       query: vector,
+      ...(this.vectorName ? { using: this.vectorName } : {}),
       limit: candidateLimit,
       with_payload: true,
       with_vector: false,
@@ -152,7 +166,7 @@ export class QdrantService {
       const response = await axios.post(
         `${this.qdrantBaseUrl}/collections/${this.collectionName}/points/query`,
         requestBody,
-        { timeout: 10000 }
+        this.requestOptions(10000)
       );
       points = response.data?.result?.points || [];
     } catch (queryError) {
@@ -160,8 +174,13 @@ export class QdrantService {
       try {
         const legacyResponse = await axios.post(
           `${this.qdrantBaseUrl}/collections/${this.collectionName}/points/search`,
-          { ...requestBody, vector },
-          { timeout: 10000 }
+          {
+            limit: candidateLimit,
+            with_payload: true,
+            with_vector: false,
+            vector: this.vectorName ? { name: this.vectorName, vector } : vector,
+          },
+          this.requestOptions(10000)
         );
         points = legacyResponse.data?.result || [];
       } catch {
@@ -444,7 +463,7 @@ Rules:
           with_payload: true,
           with_vector: false,
         },
-        { timeout: 5000 }
+        this.requestOptions(5000)
       );
 
       const result = response.data?.result;

@@ -71,6 +71,11 @@ export const config = {
   qdrant: {
     url: process.env.QDRANT_DB_URL || "http://localhost:6333",
     collection: process.env.QDRANT_COLLECTION || "pdf_knowledge_base",
+    // Required by Qdrant Cloud; a local Qdrant accepts requests without it.
+    apiKey: process.env.QDRANT_API_KEY?.trim() || "",
+    // Named dense vector of hybrid collections (pdf_knowledge_base_v2 has
+    // "dense" plus sparse "bm25"). Set empty for a single unnamed vector.
+    vectorName: process.env.QDRANT_VECTOR_NAME?.trim() ?? "dense",
   },
 
   curriculumDb: {

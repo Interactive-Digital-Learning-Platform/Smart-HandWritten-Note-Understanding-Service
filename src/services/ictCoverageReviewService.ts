@@ -87,7 +87,8 @@ export class ICTCoverageReviewService {
     const base = config.qdrant.url;
     if (!base) throw new AppError('Textbook references are temporarily unavailable', 503);
     const response = await this.fetchReference(`${base.replace(/\/$/, '')}/collections/${config.qdrant.collection}/points/scroll`, {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, signal: AbortSignal.timeout(10000),
+      method: 'POST', signal: AbortSignal.timeout(10000),
+      headers: {'Content-Type': 'application/json', ...(config.qdrant.apiKey ? {'api-key': config.qdrant.apiKey} : {})},
       body: JSON.stringify({filter: {must: [{key: 'job_id', match: {value: concept.textbook.jobId}},
         {key: 'pages', match: {any: concept.textbook.pdfPages}}]}, limit: 8, with_payload: true, with_vector: false}),
     });

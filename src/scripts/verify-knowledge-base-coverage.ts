@@ -34,7 +34,10 @@ const scrollAllPoints = async (): Promise<StoredPoint[]> => {
     const response = await axios.post(
       `${config.qdrant.url.replace(/\/+$/, "")}/collections/${config.qdrant.collection}/points/scroll`,
       body,
-      { timeout: 10000 }
+      {
+        timeout: 10000,
+        headers: config.qdrant.apiKey ? { "api-key": config.qdrant.apiKey } : {},
+      }
     );
     const result = response.data?.result ?? {};
     points.push(...(result.points ?? []));
