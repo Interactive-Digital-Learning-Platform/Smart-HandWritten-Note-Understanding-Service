@@ -29,7 +29,7 @@ export class HistoryCoverageReviewService {
         points: c.points.map((p: any) => ({id: p.id, text: p.text})),
       }));
     }
-    return {concepts: this.concepts!, modelSha256: HISTORY_PREVIEW_SHA, model: 'History V5.1',
+    return {concepts: this.concepts!, modelSha256: HISTORY_PREVIEW_SHA, model: 'History V6.2',
       experimental: true as const, reviewRequired: true as const, automaticHistoryEnabled: false as const};
   }
 

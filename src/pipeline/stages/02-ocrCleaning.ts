@@ -15,7 +15,7 @@
 import { config } from "../../config/config";
 import { groqPool } from "../../services/groqPool";
 import { PipelineContext, OcrCleaningOutput } from "../types";
-import { activeOcrText } from "../../services/ocrText";
+import { activeOcrText, hasReadableOcrContent } from "../../services/ocrText";
 
 // ─── Rule-based pre-cleaning ───────────────────────────────────────────────
 
@@ -74,6 +74,9 @@ export const runOcrCleaning = async (ctx: PipelineContext): Promise<void> => {
   const precleaned = precleanText(activeOcrText(ctx.rawOcrText));
   if (!precleaned.replace(/---\s*Page\s+\d+\s*---/gi, "").trim()) {
     throw new Error("No active note text remains after excluding crossed-out writing");
+  }
+  if (!hasReadableOcrContent(precleaned)) {
+    throw new Error("No readable note text was found. Please upload a clearer image.");
   }
 
   // ── Step 2: Readability assessment (analysis text remains deterministic) ──

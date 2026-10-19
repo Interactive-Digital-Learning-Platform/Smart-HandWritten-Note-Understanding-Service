@@ -1,0 +1,49 @@
+{
+  "release": "notes-azure-ready-2026-10-19",
+  "scope": "Handwritten Notes service only",
+  "image": "smart-notes:science-v35-history-v62-r2-20261019",
+  "localImageId": "sha256:b765a626ba5952f13305dfa4b19bca7f4ff82c1603cf4ff1bc1523e5f364f13b",
+  "platform": "linux/amd64",
+  "containerPort": 8004,
+  "containerUser": 1000,
+  "imageStorage": "Private Cloudflare R2; configured at runtime",
+  "models": {
+    "science": {"version": "3.5", "sha256": "021bb8bd41df5d55599258144a9694097a32cae054ebabd12643783d1d50b191"},
+    "history": {"version": "6.2", "sha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"},
+    "ictArtifactIncluded": true,
+    "ictEnabledInProductionProfile": false
+  },
+  "validation": {
+    "typescriptBuildPassed": true,
+    "regressionTestsPassed": 176,
+    "offlineModelFixturesPassed": 15,
+    "configurationAndCatalogCheckPassed": true,
+    "customPortHealthCheckPassed": true,
+    "unhealthyResponseRejected": true,
+    "productionComposeTemplateValid": true,
+    "credentialsAbsentFromImage": true,
+    "studentUploadsAbsentFromImage": true,
+    "existingNotesContainerHealthy": true,
+    "existingNotesHealthHttpStatus": 200,
+    "syntheticRegressionObjectCleaned": true
+  },
+  "deployment": {
+    "hostingOption": "Not selected by the group yet",
+    "registryPushed": false,
+    "azureResourcesCreated": false,
+    "azureDeployed": false,
+    "destinationConnectivityVerified": false,
+    "minimumActiveInstances": 1,
+    "maximumActiveInstances": 1,
+    "persistentPaths": ["/app/generated_audio", "/app/.cache"],
+    "temporaryPaths": ["/app/uploads", "/tmp"],
+    "externalDependencies": ["Notes MongoDB", "v2 ingestion PostgreSQL", "v2 Qdrant with ingested textbooks", "Clerk", "Groq", "R2"]
+  },
+  "source": {
+    "builtFromCurrentWorkingTree": true,
+    "committedOrPushedByThisTask": false,
+    "otherServicesModifiedByThisTask": false
+  },
+  "guide": "deployment/azure-ready-2026-10-19/README.md",
+  "imageVerification": "deployment/azure-ready-2026-10-19/image-verification.json"
+}

@@ -7,7 +7,34 @@ import os from "node:os";
 import path from "node:path";
 import { config } from "../config/config";
 import { groqPool } from "./groqPool";
+import sharp from "sharp";
+import { noteImageStorage } from "./noteImageStorage";
 const tinyPng=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j5l8AAAAASUVORK5CYII=","base64");
+
+test("OCR reads a private R2 page without needing a local file", async t => {
+  const previous = config.groq.apiKeys; config.groq.apiKeys = ["test-key"];
+  t.after(() => { config.groq.apiKeys = previous; });
+  const name = "r2-00000000-0000-4000-8000-000000000000.png";
+  t.mock.method(noteImageStorage, "read", async (filename: string) => { assert.equal(filename, name); return tinyPng; });
+  t.mock.method(groqPool, "getStatus", () => ({ totalKeys: 1, healthyKeys: 1, cooldowns: [] }));
+  t.mock.method(groqPool, "getNextClient", () => ({ keyIndex: 0, maskedKey: "test", client: { chat: { completions: { create: async (request: any) => {
+    assert.equal(request.messages[0].content[1].image_url.url, `data:image/png;base64,${tinyPng.toString("base64")}`);
+    return { choices: [{ finish_reason: "stop", message: { content: request.response_format ? JSON.stringify({ deletedText: [] }) : "Plants use light energy for photosynthesis." } }] };
+  } } } } }));
+  const result = await extractTextFromImage(path.join(config.uploads.uploadDir, name));
+  assert.equal(result.success, true); assert.match(result.text, /photosynthesis/);
+});
+
+test("vision quota messages use the earliest available key rather than the longest cooldown",async(t)=>{
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),"ocr-quota-test-"));
+  const image=path.join(directory,"page.png");fs.writeFileSync(image,tinyPng);
+  const old=config.groq.apiKeys;config.groq.apiKeys=["test-key"];
+  t.after(()=>{config.groq.apiKeys=old;fs.rmSync(directory,{recursive:true,force:true});});
+  t.mock.method(groqPool,"getStatus",()=>({totalKeys:2,healthyKeys:0,cooldowns:[{cooldownSecondsRemaining:30},{cooldownSecondsRemaining:90}]}));
+  t.mock.method(groqPool,"getNextClient",()=>{throw Error("must not call provider");});
+  const result=await extractTextFromImage(image);
+  assert.equal(result.success,false);assert.match(result.error??"",/approximately 1 minute/);
+});
 
 test("image OCR sends the configured vision model and returns transcription", async (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "ocr-model-test-"));
@@ -49,6 +76,13 @@ test("OCR page validation accepts a normal handwritten transcription", () => {
   assert.equal(result.valid, true);
 });
 
+test("unreadable placeholders and deleted-only pages cannot become missing-concept findings", () => {
+  for (const text of ["[illegible]", "[illegible]\n[illegible]", "--- Page 2 ---\n[unreadable text]", "<deleted>Rejected writing</deleted>\n[illegible]"]) {
+    assert.equal(validateOcrPageText(text).valid, false, text);
+  }
+  assert.equal(validateOcrPageText("Proteins contain [illegible] amino acids.").valid, true);
+});
+
 test("OCR page validation rejects implausibly long single-page output", () => {
   const result = validateOcrPageText("hallucinated textbook content ".repeat(600));
   assert.equal(result.valid, false);
@@ -87,6 +121,35 @@ test("deletion markers exclude only rejected phrases and preserve active replace
   assert.match(active, /Carbohydrates/);
   assert.match(active, /CO2 is inorganic/);
   assert.equal(validateOcrPageText("<deleted>unclosed crossed-out sentence").valid, false);
+});
+
+test('OCR accepts visible facts repeated in a summary chart but rejects a second copy of that page', () => {
+  // Faithful transcription of the generated History summary-chart regression.
+  // The same facts really appear in both prose and diagram boxes in the image.
+  const chart = `02 - Foreign accounts and archaeological sources
+Main points in a chart
+1. Travellers and foreign writers provide information about Sri Lanka, but their interests and circumstances shape what they describe.
+2. Religious buildings, palaces, reservoirs and settlement remains provide evidence about organisation and technology.
+3. Sculpture, paintings, pottery and tools help reveal beliefs, skills and everyday life.
+
+Sources about Sri Lanka's past
+Foreign accounts
+Archaeological sources
+
+Foreign accounts
+• Travellers and foreign writers.
+• Give information about Sri Lanka.
+• Their interests and circumstances affect what they describe.
+
+Ruins
+• Religious buildings, palaces, reservoirs and settlement remains.
+• Show organisation and technology.
+
+Art and objects
+• Sculpture, paintings, pottery and tools.
+• Help reveal beliefs, skills and everyday life.`;
+  assert.equal(validateOcrPageText(chart).valid, true);
+  assert.match(validateOcrPageText(`${chart}\n\n${chart}`).reason ?? '', /repeated passage/);
 });
 
 test("a repeated heading alone does not reject distinct note sections", () => {
@@ -139,4 +202,23 @@ test("visual deletion review marks exact phrases without adding or replacing con
     assert.throws(()=>markReviewedDeletions(raw,review),/unique/);
   }
   assert.throws(()=>markReviewedDeletions(`${line}\n${line}`,[{line,text:"food storage"}]),/unique OCR line/);
+});
+
+test("OCR retries repeated full-page output using smaller pixels without cropping writing",async(t)=>{
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),"ocr-resize-test-"));
+  const image=path.join(directory,"page.png");
+  await sharp({create:{width:3200,height:2000,channels:3,background:"white"}}).png().toFile(image);
+  const old=config.groq.apiKeys;config.groq.apiKeys=["test-key"];
+  t.after(()=>{config.groq.apiKeys=old;fs.rmSync(directory,{recursive:true,force:true});});
+  t.mock.method(groqPool,"getStatus",()=>({totalKeys:1,healthyKeys:1,cooldowns:[]}));
+  const sizes:Array<{width?:number;height?:number}>=[];
+  t.mock.method(groqPool,"getNextClient",()=>({keyIndex:0,maskedKey:"test-key",client:{chat:{completions:{create:async(request:any)=>{
+    if(request.response_format)return {choices:[{finish_reason:"stop",message:{content:'{"deletedText":[]}'}}]};
+    const encoded=request.messages[0].content[1].image_url.url.split(",")[1];
+    const {width,height}=await sharp(Buffer.from(encoded,"base64")).metadata();sizes.push({width,height});
+    return {choices:[{finish_reason:"stop",message:{content:sizes.length===1?`${repeatedSection}\n${repeatedSection}`:"Historical sources provide evidence about the past."}}]};
+  }}}}}));
+  const result=await extractTextFromImage(image);
+  assert.equal(result.success,true);
+  assert.deepEqual(sizes,[{width:3200,height:2000},{width:1280,height:800}]);
 });

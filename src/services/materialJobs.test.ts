@@ -101,3 +101,20 @@ test("deleting materials during generation prevents the worker recreating them",
   await tick(); records.length = 0; content.resolve({ textContent: "old context" });
   await queued.completion; assert.equal(records.length, 0);
 });
+
+test("short study tools become ready while a full guide from the same request is still generating",async()=>{
+  const guide=deferred<any>();const order:string[]=[];
+  const queued=await enqueueMaterialJobs("note","owner",["structured_notes","audio","flashcards"],async(type)=>{
+    order.push(type);return type==="structured_notes"?guide.promise:{textContent:type};
+  });
+  try {
+    await tick();
+    assert.deepEqual(queued.typesQueued,["structured_notes","audio","flashcards"]);
+    assert.deepEqual(order,["flashcards","structured_notes"]);
+    const states=materialOverview(records).states;
+    assert.equal(states.find(s=>s.type==="flashcards")?.status,"ready");
+    assert.equal(states.find(s=>s.type==="structured_notes")?.status,"generating");
+    assert.equal(states.find(s=>s.type==="audio")?.status,"queued");
+  } finally {guide.resolve({textContent:"complete guide"});await queued.completion;}
+  assert.deepEqual(order,["flashcards","structured_notes","audio"]);
+});

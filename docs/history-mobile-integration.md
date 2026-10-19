@@ -1,8 +1,12 @@
 # Manual History coverage in the application
 
-The History V5.1 candidate is connected to the main note service and the mobile
+The History V6.2 candidate is connected to the main note service and the mobile
 note screen as an explicitly requested text check. It is not an automatic
 pipeline stage. Existing Science coverage checks are unchanged.
+
+See [the current model report](history-paraphrases-v62.md) for the short-paraphrase
+update and remaining limitations. Previously saved checks require a rerun when
+their model hash is stale.
 
 On an analyzed History note, `HistoryCoverageCard` starts with that note's OCR
 text. The student chooses Grade 10/11 and one proposed concept, reviews/edits the
@@ -12,11 +16,12 @@ withheld suggestion with semantic candidate passages and evidence concerns.
 Changing the text, grade, concept, or source snapshot clears the prior result
 and confirmation; abandoned requests cannot populate a newer snapshot.
 
-These text edits and results are transient. The service does not fetch stored
-notes through this endpoint, save edited OCR or labels, change existing note
-analysis, award a grade, update profiles, or add training annotations. Crossed
-out text in valid deletion markers is excluded; malformed markers stop the
-check. Real handwritten History uploads have not been evaluated. Concept IDs
+The transient `/suggestions` endpoint processes submitted text. Normal note
+screens also use owned-note saved-check routes: reviewed text and coverage
+results are saved separately from the original OCR and analysis. Neither flow
+awards a grade, updates learning profiles or creates training annotations.
+Crossed-out text in valid deletion markers is excluded; malformed markers stop
+the check. Real handwritten History uploads have not been evaluated. Concept IDs
 are selected explicitly because no reviewed mapping to live curriculum IDs has
 been established.
 
@@ -28,6 +33,8 @@ It is enabled in this machine's local `.env` for the integration demo.
 
 - `GET /api/history-coverage/concepts`: 94 proposed concepts with grade and points.
 - `POST /api/history-coverage/suggestions`: `{text, conceptId, language:"English", scopeConfirmed:true}`.
+- `GET /api/history-coverage/notes/:noteId/check`: restore a saved check.
+- `POST /api/history-coverage/notes/:noteId/check`: start a bounded saved check.
 
 Responses use the normal `{success,data}` envelope. Review responses explicitly
 declare experimental/manual mode, review required, analyzed text, text hash,
@@ -36,13 +43,14 @@ misaligned quotes, unsupported automatic-assessment contracts, calibrated-score
 claims and inconsistent withheld labels. The API limits text to 20,000 code
 points, runs one check at a time, rate-limits calls, and returns a bounded generic
 failure when the model is unavailable. It reuses the persistent CPU worker and
-frozen artifact; model parameters and inference rules have not changed.
+frozen artifact. The [V6 update](history-v6-grounded-release.md) replaces the
+classification head and adds passage-support features using the same frozen
+encoder and rubrics. Saved results from older model hashes can be rechecked.
 
-The new endpoint follows the existing note service's access architecture, which
-does not independently verify Clerk tokens. It accepts only submitted text and
-does not expose stored notes, student identities or previous predictions. It
-should not be described as an authenticated teacher review system. The feature
-flag does not promote this candidate to autonomous grading.
+These routes use the existing Notes Clerk verification; saved-note routes also
+require note ownership. This authenticates the student but does not make a
+model suggestion teacher-confirmed. The feature flag does not promote this
+candidate to autonomous grading.
 
 The local artifact, encoder files, pinned Python environment and frozen protocol
 sources must be packaged before deployment to another machine. This work

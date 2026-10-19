@@ -16,6 +16,44 @@ export const validateRuntimeEnvironment = (
 ): void => {
   const errors: string[] = [];
   const nodeEnv = env.NODE_ENV || "development";
+  const imageStorage = env.NOTE_IMAGE_STORAGE?.trim() || "local";
+  if (!["local", "r2"].includes(imageStorage)) errors.push("NOTE_IMAGE_STORAGE must be local or r2");
+  if (imageStorage === "r2") {
+    for (const name of ["R2_ENDPOINT", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"]) {
+      if (!hasValue(env[name])) errors.push(`${name} is required for R2 image storage`);
+    }
+  }
+  // Validate supplied R2 settings even while uploads still use local storage.
+  // Older R2 notes can still be read after changing the upload provider to local.
+  if (hasValue(env.R2_ENDPOINT)) {
+    try {
+      const url = new URL(env.R2_ENDPOINT.trim());
+      if (url.protocol !== "https:" || !/^[a-f0-9]{32}(?:\.(?:eu|fedramp))?\.r2\.cloudflarestorage\.com$/.test(url.hostname)
+        || url.port || url.username || url.password || url.search || url.hash || url.pathname !== "/") {
+        errors.push("R2_ENDPOINT must be the HTTPS S3 API endpoint from Cloudflare, without a bucket path or credentials");
+      }
+    } catch { errors.push("R2_ENDPOINT must be a valid Cloudflare HTTPS S3 endpoint"); }
+  }
+  if (hasValue(env.R2_BUCKET) && !/^(?!.*\.\.)(?!\d+\.\d+\.\d+\.\d+$)[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/.test(env.R2_BUCKET.trim())) {
+    errors.push("R2_BUCKET must be a valid bucket name");
+  }
+  const collection = env.QDRANT_COLLECTION?.trim();
+  if (env.QDRANT_PAYLOAD_PAGE_BASE !== undefined && !["0", "1"].includes(env.QDRANT_PAYLOAD_PAGE_BASE.trim())) {
+    errors.push("QDRANT_PAYLOAD_PAGE_BASE must be 0 or 1");
+  }
+  if (collection === "pdf_knowledge_base") errors.push("QDRANT_COLLECTION must use pdf_knowledge_base_v2; the v1 collection has been retired");
+  if (hasValue(env.QDRANT_DB_URL)) {
+    try {
+      const url = new URL(env.QDRANT_DB_URL.trim());
+      if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
+        errors.push("QDRANT_DB_URL must be an HTTP(S) endpoint without credentials or query parameters");
+      }
+      if (url.hostname.endsWith(".qdrant.io")) {
+        if (url.protocol !== "https:") errors.push("Qdrant Cloud requires HTTPS");
+        if (!hasValue(env.QDRANT_API_KEY)) errors.push("QDRANT_API_KEY is required for Qdrant Cloud");
+      }
+    } catch { errors.push("QDRANT_DB_URL must be a valid HTTP(S) endpoint"); }
+  }
   const groqKeys = [
     env.GROQ_API_KEY,
     env.GROQ_API_KEY_2,
@@ -68,6 +106,9 @@ export const validateRuntimeEnvironment = (
     ["CURRICULUM_DB_URL", env.CURRICULUM_DB_URL || env.DB_URL],
     ["HUGGINGFACE_API_KEY", env.HUGGINGFACE_API_KEY],
     ["ELEVENLABS_API_KEY", env.ELEVENLABS_API_KEY],
+    ["QDRANT_API_KEY", env.QDRANT_API_KEY],
+    ["R2_ACCESS_KEY_ID", env.R2_ACCESS_KEY_ID],
+    ["R2_SECRET_ACCESS_KEY", env.R2_SECRET_ACCESS_KEY],
     ["ANNOTATION_PSEUDONYM_SECRET", env.ANNOTATION_PSEUDONYM_SECRET],
     ...expertAnnotationKeys.map(
       (value, index) => [`EXPERT_ANNOTATION_KEY[${index}]`, value] as [string, string]

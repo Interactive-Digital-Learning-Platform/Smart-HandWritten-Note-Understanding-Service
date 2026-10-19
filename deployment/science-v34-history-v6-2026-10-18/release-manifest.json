@@ -1,0 +1,154 @@
+{
+  "release": "notes-science-v34-history-v6-2026-10-18",
+  "imageTag": "smart-notes-coverage:science-v34-history-v6-ict-v31",
+  "imageId": "sha256:c37185efdce836dc329f22a0ef8b082056ed3f8e1f03efb809b10ddcff6504be",
+  "imageBytes": 694883853,
+  "activatedAt": "2026-10-18T16:10:35.4992547Z",
+  "notesOnlyChanges": true,
+  "mobileCodeScope": "Notes History card only",
+  "previousReleasesPreserved": true,
+  "namedVolumesPreserved": true,
+  "runtimeBundleSha256": "9d13e401402c1f7d0421a7f60e592712782545d93b63c0c12051ead7b6fc418c",
+  "models": {
+    "science": {
+      "sha256": "af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63"
+    },
+    "history": {
+      "sha256": "445f2986afecc521597d5ff82e69191bfe782e38ab42a099d49d5d4d8477f629"
+    },
+    "ict": {
+      "sha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b"
+    }
+  },
+  "validation": {
+    "pythonTests": 50,
+    "notesApiWorkerSavedCheckTests": 15,
+    "notesMobileSchemaAndChecklistTests": 20,
+    "releaseConfigTests": 4,
+    "windowsScienceHistoryCases": 15,
+    "linuxScienceHistoryCases": 15,
+    "linuxIctCases": 6,
+    "linuxMaximumNumericDifference": 2.980232238769531e-07,
+    "activeContainerBridgeCases": 5,
+    "healthStatus": 200,
+    "unauthenticatedHistoryStatus": 401,
+    "appHeaderStatus": 200,
+    "backendTypeScript": true
+  },
+  "training": {
+    "assistantReviewedCasesFitted": 50,
+    "reviewedPartialCasesFitted": 29,
+    "originalHumanTrainingReplay": 18,
+    "baseConceptTrainingFeatureRows": 1761,
+    "svmHeadTrainingRows": 2185,
+    "reviewer": "AI assistant, not human confirmation",
+    "independentAccuracyClaimAllowed": false
+  },
+  "developmentChecks": {
+    "exposedHumanReview": {
+      "total": 24,
+      "matches": 23,
+      "confusion": {
+        "partial->partial": 10,
+        "present->present": 7,
+        "missing->missing": 6,
+        "present->partial": 1
+      },
+      "falseComplete": [],
+      "withheld": 0
+    },
+    "exposedSyntheticTest": {
+      "total": 340,
+      "matches": 332,
+      "confusion": {
+        "present->present": 80,
+        "missing->missing": 170,
+        "partial->partial": 82,
+        "missing->partial": 2,
+        "present->None": 2,
+        "present->partial": 2,
+        "partial->None": 1,
+        "partial->missing": 1
+      },
+      "falseComplete": [],
+      "withheld": 3
+    },
+    "exposedSyntheticValidation": {
+      "total": 338,
+      "matches": 334,
+      "confusion": {
+        "missing->missing": 167,
+        "present->present": 86,
+        "partial->partial": 81,
+        "present->None": 1,
+        "partial->None": 1,
+        "missing->partial": 2
+      },
+      "falseComplete": [],
+      "withheld": 2
+    },
+    "previousFreshChecks": {
+      "total": 18,
+      "matches": 18,
+      "confusion": {
+        "present->present": 5,
+        "partial->partial": 6,
+        "missing->missing": 6,
+        "None->None": 1
+      },
+      "falseComplete": [],
+      "withheld": 1
+    },
+    "presentation": {
+      "total": 12,
+      "matches": 12,
+      "confusion": {
+        "present->present": 5,
+        "partial->partial": 3,
+        "missing->missing": 3,
+        "None->None": 1
+      },
+      "falseComplete": [],
+      "withheld": 1
+    },
+    "assistantReviewedDevelopment": {
+      "total": 50,
+      "matches": 50,
+      "confusion": {
+        "missing->missing": 18,
+        "partial->partial": 29,
+        "present->present": 3
+      },
+      "falseComplete": [],
+      "withheld": 0
+    }
+  },
+  "stressCheckSummary": {
+    "modelSha256": "679793d1792836c7a9da5252045b3763cce91f019d215ac30932c58937787da6",
+    "casesSha256": "f02e64b0720ac793d4f3758ea3435f84967b069004e63866bd74df55391d5268",
+    "total": 18,
+    "baselineMatches": 11,
+    "matches": 15,
+    "failures": [
+      {
+        "id": "annexation-paraphrase",
+        "expected": "present",
+        "actual": "partial"
+      },
+      {
+        "id": "capitals-conflated",
+        "expected": "partial",
+        "actual": null
+      },
+      {
+        "id": "settlements-conflated",
+        "expected": "partial",
+        "actual": null
+      }
+    ],
+    "independentRealStudentAccuracy": false
+  },
+  "studentFilesCredentialsTrainingMatricesInImage": false,
+  "hostingDeployed": false,
+  "committedOrPushed": false
+}

@@ -3,11 +3,11 @@
   "independentAccuracyEvaluation": false,
   "purpose": "Cross-platform prediction regression, not an accuracy estimate",
   "numericTolerance": {
-    "absolute": 0.000001,
-    "relative": 0.00001
+    "absolute": 1e-06,
+    "relative": 1e-05
   },
-  "scienceSha256": "af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63",
-  "historySha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8",
+  "scienceSha256": "021bb8bd41df5d55599258144a9694097a32cae054ebabd12643783d1d50b191",
+  "historySha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7",
   "cases": [
     {
       "id": "science-1",
@@ -27,9 +27,9 @@
         "rawModelStatus": "present",
         "displaySuggestion": "complete",
         "scores": {
-          "present": 0.9816266842821754,
-          "partial": 0.01823515720708466,
-          "missing": 0.0001381585107398235
+          "present": 0.9854259346400165,
+          "partial": 0.014437194869994265,
+          "missing": 0.00013687048998908079
         },
         "scoresCalibrated": false,
         "reviewRequired": true,
@@ -59,7 +59,7 @@
           ],
           "concerns": []
         },
-        "modelVersion": "english-coverage-v3.4-review-fix-2026-10-18"
+        "modelVersion": "english-coverage-v3.5-ocr-notes-2026-10-19"
       }
     },
     {
@@ -82,9 +82,9 @@
         "rawModelStatus": "partial",
         "displaySuggestion": "partial",
         "scores": {
-          "present": 0.14787100063378644,
-          "partial": 0.8425576609569172,
-          "missing": 0.009571338409296365
+          "present": 0.1568619906215435,
+          "partial": 0.8328298775451547,
+          "missing": 0.010308131833301785
         },
         "scoresCalibrated": false,
         "reviewRequired": true,
@@ -114,7 +114,7 @@
           ],
           "concerns": []
         },
-        "modelVersion": "english-coverage-v3.4-review-fix-2026-10-18"
+        "modelVersion": "english-coverage-v3.5-ocr-notes-2026-10-19"
       }
     },
     {
@@ -138,9 +138,9 @@
         "rawModelStatus": "missing",
         "displaySuggestion": "missing",
         "scores": {
-          "present": 0.007603539011861563,
-          "partial": 0.031100917172102713,
-          "missing": 0.9612955438160358
+          "present": 0.0077180028283979395,
+          "partial": 0.036841261077298404,
+          "missing": 0.9554407360943037
         },
         "scoresCalibrated": false,
         "reviewRequired": true,
@@ -170,7 +170,7 @@
           ],
           "concerns": []
         },
-        "modelVersion": "english-coverage-v3.4-review-fix-2026-10-18"
+        "modelVersion": "english-coverage-v3.5-ocr-notes-2026-10-19"
       }
     },
     {
@@ -184,23 +184,22 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "present",
         "rawModelStatus": "present",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "present",
         "scores": {
-          "present": 0.9639064719166354,
-          "partial": 0.03106852368467355,
-          "missing": 0.005025004398691046
+          "present": 0.984664239396781,
+          "partial": 0.004436509102830839,
+          "missing": 0.0108992515003881
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "evidence",
               "requirement": "Sources provide evidence of past human activity.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.7179,
               "candidateEvidence": "Historical sources provide evidence about past human activity.",
               "start": 0,
@@ -209,12 +208,24 @@
               "semanticSimilarity": 0.9358288049697876,
               "semanticCandidateEvidence": "Historical sources provide evidence about past human activity.",
               "semanticStart": 0,
-              "semanticEnd": 62
+              "semanticEnd": 62,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9948009877528886,
+                "partial": 0.004945668988084667,
+                "missing": 0.00025334325902665077
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.4224894046783447,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "literary",
               "requirement": "Literary sources include books and written documents.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.4617,
               "candidateEvidence": "Literary sources are written materials, including books and documents.",
               "start": 63,
@@ -223,12 +234,24 @@
               "semanticSimilarity": 0.947833240032196,
               "semanticCandidateEvidence": "Literary sources are written materials, including books and documents.",
               "semanticStart": 63,
-              "semanticEnd": 133
+              "semanticEnd": 133,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9939663732478037,
+                "partial": 0.005895714186747035,
+                "missing": 0.0001379125654493231
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.5003238916397095,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "archaeological",
               "requirement": "Archaeological sources include physical remains such as coins buildings and inscriptions.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.7045,
               "candidateEvidence": "Archaeological sources are physical remains, such as coins, old buildings and inscriptions.",
               "start": 134,
@@ -237,15 +260,28 @@
               "semanticSimilarity": 0.9553961157798767,
               "semanticCandidateEvidence": "Archaeological sources are physical remains, such as coins, old buildings and inscriptions.",
               "semanticStart": 134,
-              "semanticEnd": 225
+              "semanticEnd": 225,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9891659840936793,
+                "partial": 0.01045423317550137,
+                "missing": 0.0003797827308193543
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.27170783281326294,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -259,23 +295,22 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "partial",
         "rawModelStatus": "partial",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "partial",
         "scores": {
-          "present": 0.0539654602458528,
-          "partial": 0.9429522857395615,
-          "missing": 0.003082254014585766
+          "present": 0.06559225454229177,
+          "partial": 0.8845098375075522,
+          "missing": 0.049897907950156056
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "evidence",
               "requirement": "Sources provide evidence of past human activity.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.4553,
               "candidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
               "start": 0,
@@ -284,12 +319,24 @@
               "semanticSimilarity": 0.8388832807540894,
               "semanticCandidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
               "semanticStart": 0,
-              "semanticEnd": 101
+              "semanticEnd": 101,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9973426363250569,
+                "partial": 0.0011624066345047113,
+                "missing": 0.0014949570404383784
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.2756364345550537,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "literary",
               "requirement": "Literary sources include books and written documents.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.4441,
               "candidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
               "start": 0,
@@ -298,12 +345,24 @@
               "semanticSimilarity": 0.7049182057380676,
               "semanticCandidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
               "semanticStart": 0,
-              "semanticEnd": 101
+              "semanticEnd": 101,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9977147126208996,
+                "partial": 0.00040305996171203194,
+                "missing": 0.0018822274173884085
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.14167135953903198,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "archaeological",
               "requirement": "Archaeological sources include physical remains such as coins buildings and inscriptions.",
-              "lexicalCoverage": 0,
+              "lexicalCoverage": 0.0,
               "wordSimilarity": 0.1188,
               "candidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
               "start": 0,
@@ -312,15 +371,28 @@
               "semanticSimilarity": 0.525790274143219,
               "semanticCandidateEvidence": "Literary sources include written books and documents that provide evidence about past human activity.",
               "semanticStart": 0,
-              "semanticEnd": 101
+              "semanticEnd": 101,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.11679218795715571,
+                "partial": 0.053320046668156804,
+                "missing": 0.8298877653746874
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": -0.037456512451171875,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -334,23 +406,22 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "missing",
         "rawModelStatus": "missing",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "missing",
         "scores": {
-          "present": 0.000006104563138521315,
-          "partial": 0.00002635304074015508,
-          "missing": 0.9999675423961213
+          "present": 0.03591177757610435,
+          "partial": 0.01514662879125428,
+          "missing": 0.9489415936326413
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "evidence",
               "requirement": "Sources provide evidence of past human activity.",
-              "lexicalCoverage": 0,
+              "lexicalCoverage": 0.0,
               "wordSimilarity": 0.011,
               "candidateEvidence": "The port of Trincomalee was important for naval security around India.",
               "start": 0,
@@ -359,13 +430,25 @@
               "semanticSimilarity": -0.0045294445008039474,
               "semanticCandidateEvidence": "The port of Trincomalee was important for naval security around India.",
               "semanticStart": 0,
-              "semanticEnd": 70
+              "semanticEnd": 70,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.026604483224585928,
+                "partial": 6.376820953272848e-05,
+                "missing": 0.9733317485658812
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": -0.18161147832870483,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "literary",
               "requirement": "Literary sources include books and written documents.",
-              "lexicalCoverage": 0,
-              "wordSimilarity": 0,
+              "lexicalCoverage": 0.0,
+              "wordSimilarity": 0.0,
               "candidateEvidence": "The port of Trincomalee was important for naval security around India.",
               "start": 0,
               "end": 70,
@@ -373,13 +456,25 @@
               "semanticSimilarity": -0.034889593720436096,
               "semanticCandidateEvidence": "The port of Trincomalee was important for naval security around India.",
               "semanticStart": 0,
-              "semanticEnd": 70
+              "semanticEnd": 70,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.023382679480406853,
+                "partial": 4.508844294662375e-05,
+                "missing": 0.9765722320766465
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": -0.21197162568569183,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "archaeological",
               "requirement": "Archaeological sources include physical remains such as coins buildings and inscriptions.",
-              "lexicalCoverage": 0,
-              "wordSimilarity": 0,
+              "lexicalCoverage": 0.0,
+              "wordSimilarity": 0.0,
               "candidateEvidence": "The port of Trincomalee was important for naval security around India.",
               "start": 0,
               "end": 70,
@@ -387,15 +482,28 @@
               "semanticSimilarity": 0.05772186443209648,
               "semanticCandidateEvidence": "The port of Trincomalee was important for naval security around India.",
               "semanticStart": 0,
-              "semanticEnd": 70
+              "semanticEnd": 70,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.01661291625664086,
+                "partial": 0.00011848930882803455,
+                "missing": 0.9832685944345311
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": -0.11936016380786896,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -409,23 +517,22 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "present",
         "rawModelStatus": "present",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "present",
         "scores": {
-          "present": 0.9733581174285699,
-          "partial": 0.024077675743200765,
-          "missing": 0.002564206828229399
+          "present": 0.984485286824683,
+          "partial": 0.003904894397710994,
+          "missing": 0.011609818777605908
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "facet-1",
               "requirement": "Britain valued Sri Lanka for its position on Indian Ocean sea routes.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.8542,
               "candidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
               "start": 0,
@@ -434,12 +541,24 @@
               "semanticSimilarity": 0.9751272201538086,
               "semanticCandidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
               "semanticStart": 0,
-              "semanticEnd": 76
+              "semanticEnd": 76,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9947497171122061,
+                "partial": 0.0042547313358436804,
+                "missing": 0.0009955515519502998
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.4718444347381592,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "facet-2",
               "requirement": "Trincomalee harbour was important for naval security around India.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.8427,
               "candidateEvidence": "Trincomalee harbour was strategically important for naval security around India.",
               "start": 77,
@@ -448,15 +567,28 @@
               "semanticSimilarity": 0.9830870032310486,
               "semanticCandidateEvidence": "Trincomalee harbour was strategically important for naval security around India.",
               "semanticStart": 77,
-              "semanticEnd": 157
+              "semanticEnd": 157,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9965766443430079,
+                "partial": 0.0027521903134281617,
+                "missing": 0.0006711653435639123
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.4827461838722229,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -470,23 +602,22 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "partial",
         "rawModelStatus": "partial",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "partial",
         "scores": {
-          "present": 0.00048462074049151696,
-          "partial": 0.9993989108167369,
-          "missing": 0.00011646844277158689
+          "present": 0.023272037336404136,
+          "partial": 0.9682745460224446,
+          "missing": 0.008453416641151481
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "facet-1",
               "requirement": "Britain valued Sri Lanka for its position on Indian Ocean sea routes.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.8542,
               "candidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
               "start": 0,
@@ -495,13 +626,25 @@
               "semanticSimilarity": 0.9751269817352295,
               "semanticCandidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
               "semanticStart": 0,
-              "semanticEnd": 76
+              "semanticEnd": 76,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9928986551965046,
+                "partial": 0.002312028934540553,
+                "missing": 0.004789315868954881
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.47184425592422485,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "facet-2",
               "requirement": "Trincomalee harbour was important for naval security around India.",
-              "lexicalCoverage": 0,
-              "wordSimilarity": 0,
+              "lexicalCoverage": 0.0,
+              "wordSimilarity": 0.0,
               "candidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
               "start": 0,
               "end": 76,
@@ -509,15 +652,28 @@
               "semanticSimilarity": 0.41178250312805176,
               "semanticCandidateEvidence": "Britain valued Sri Lanka because of its position on Indian Ocean sea routes.",
               "semanticStart": 0,
-              "semanticEnd": 76
+              "semanticEnd": 76,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.007506296878582995,
+                "partial": 0.0005282009823840076,
+                "missing": 0.991965502139033
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 0.0,
+                "competingFactMargin": -0.09150022268295288,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -531,24 +687,23 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "missing",
         "rawModelStatus": "missing",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "missing",
         "scores": {
-          "present": 0.00008175624801081542,
-          "partial": 0.00013195040779787347,
-          "missing": 0.9997862933441912
+          "present": 0.010267404475212075,
+          "partial": 0.0033503512245761234,
+          "missing": 0.9863822443002117
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "facet-1",
               "requirement": "Britain valued Sri Lanka for its position on Indian Ocean sea routes.",
-              "lexicalCoverage": 0,
-              "wordSimilarity": 0,
+              "lexicalCoverage": 0.0,
+              "wordSimilarity": 0.0,
               "candidateEvidence": "Literary sources include books and written documents.",
               "start": 0,
               "end": 53,
@@ -556,13 +711,25 @@
               "semanticSimilarity": 0.10570153594017029,
               "semanticCandidateEvidence": "Literary sources include books and written documents.",
               "semanticStart": 0,
-              "semanticEnd": 53
+              "semanticEnd": 53,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.004907163670717181,
+                "partial": 3.977881754174478e-05,
+                "missing": 0.995053057511741
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 0.0,
+                "competingFactMargin": -0.018482930958271027,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "facet-2",
               "requirement": "Trincomalee harbour was important for naval security around India.",
-              "lexicalCoverage": 0,
-              "wordSimilarity": 0,
+              "lexicalCoverage": 0.0,
+              "wordSimilarity": 0.0,
               "candidateEvidence": "Literary sources include books and written documents. Archaeological sources include coins and buildings.",
               "start": 0,
               "end": 105,
@@ -570,15 +737,28 @@
               "semanticSimilarity": 0.148000106215477,
               "semanticCandidateEvidence": "Archaeological sources include coins and buildings.",
               "semanticStart": 54,
-              "semanticEnd": 105
+              "semanticEnd": 105,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.00998961082737272,
+                "partial": 5.531327736419743e-05,
+                "missing": 0.9899550758952631
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 0.0,
+                "competingFactMargin": 0.06983309984207153,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -592,24 +772,23 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "present",
         "rawModelStatus": "present",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "present",
         "scores": {
-          "present": 0.9809784093955615,
-          "partial": 0.015885590776148904,
-          "missing": 0.003135999828289564
+          "present": 0.9842507156977673,
+          "partial": 0.004266465285311692,
+          "missing": 0.011482819016920876
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "facet-1",
               "requirement": "The Kandyan kingdom came under British rule in 1815.",
-              "lexicalCoverage": 1,
-              "wordSimilarity": 1,
+              "lexicalCoverage": 1.0,
+              "wordSimilarity": 1.0,
               "candidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
               "start": 0,
               "end": 52,
@@ -617,29 +796,54 @@
               "semanticSimilarity": 0.9999999403953552,
               "semanticCandidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
               "semanticStart": 0,
-              "semanticEnd": 52
+              "semanticEnd": 52,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9947455727972414,
+                "partial": 0.004794717362930965,
+                "missing": 0.0004597098398276402
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.17645859718322754,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "facet-2",
               "requirement": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
-              "lexicalCoverage": 1,
-              "wordSimilarity": 1,
+              "lexicalCoverage": 1.0,
+              "wordSimilarity": 1.0,
               "candidateEvidence": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
               "start": 53,
               "end": 148,
               "semanticCorrectnessVerified": false,
-              "semanticSimilarity": 1,
+              "semanticSimilarity": 1.0,
               "semanticCandidateEvidence": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
               "semanticStart": 53,
-              "semanticEnd": 148
+              "semanticEnd": 148,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.975210423206078,
+                "partial": 0.02380836464272016,
+                "missing": 0.0009812121512018264
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.30839598178863525,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -653,24 +857,23 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "partial",
         "rawModelStatus": "partial",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "partial",
         "scores": {
-          "present": 0.05609115641669248,
-          "partial": 0.9438539642677535,
-          "missing": 0.00005487931555409106
+          "present": 0.07511281488839186,
+          "partial": 0.8304512288488004,
+          "missing": 0.09443595626280758
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "facet-1",
               "requirement": "The Kandyan kingdom came under British rule in 1815.",
-              "lexicalCoverage": 1,
-              "wordSimilarity": 1,
+              "lexicalCoverage": 1.0,
+              "wordSimilarity": 1.0,
               "candidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
               "start": 0,
               "end": 52,
@@ -678,7 +881,19 @@
               "semanticSimilarity": 0.9999999403953552,
               "semanticCandidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
               "semanticStart": 0,
-              "semanticEnd": 52
+              "semanticEnd": 52,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9709497267340165,
+                "partial": 0.018324464368676848,
+                "missing": 0.010725808897306727
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.27739351987838745,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "facet-2",
@@ -692,15 +907,28 @@
               "semanticSimilarity": 0.7078564167022705,
               "semanticCandidateEvidence": "The Kandyan kingdom came under British rule in 1815.",
               "semanticStart": 0,
-              "semanticEnd": 52
+              "semanticEnd": 52,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.009497947190948769,
+                "partial": 0.008463264461186937,
+                "missing": 0.9820387883478644
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.25,
+                "nameCoverage": 0.0,
+                "competingFactMargin": -0.014750003814697266,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -714,24 +942,23 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "missing",
         "rawModelStatus": "missing",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "missing",
         "scores": {
-          "present": 0.0031118307117452607,
-          "partial": 0.00108938259118004,
-          "missing": 0.9957987866970748
+          "present": 0.008284626750217397,
+          "partial": 0.004964669829079565,
+          "missing": 0.986750703420703
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "facet-1",
               "requirement": "The Kandyan kingdom came under British rule in 1815.",
-              "lexicalCoverage": 0,
-              "wordSimilarity": 0,
+              "lexicalCoverage": 0.0,
+              "wordSimilarity": 0.0,
               "candidateEvidence": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
               "start": 0,
               "end": 69,
@@ -739,13 +966,25 @@
               "semanticSimilarity": 0.3415200114250183,
               "semanticCandidateEvidence": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
               "semanticStart": 0,
-              "semanticEnd": 69
+              "semanticEnd": 69,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 7.760953221415621e-07,
+                "partial": 0.03148927936324885,
+                "missing": 0.968509944541429
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 0.0,
+                "competingFactMargin": -0.6410667300224304,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "facet-2",
               "requirement": "This ended the independent Kandyan monarchy and expanded British control over the whole island.",
-              "lexicalCoverage": 0,
-              "wordSimilarity": 0,
+              "lexicalCoverage": 0.0,
+              "wordSimilarity": 0.0,
               "candidateEvidence": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
               "start": 0,
               "end": 69,
@@ -753,7 +992,19 @@
               "semanticSimilarity": 0.3573033809661865,
               "semanticCandidateEvidence": "Britain valued Sri Lanka for its location on Indian Ocean sea routes.",
               "semanticStart": 0,
-              "semanticEnd": 69
+              "semanticEnd": 69,
+              "learnedCoverageStatus": "missing",
+              "coverageScores": {
+                "present": 0.00876137348819777,
+                "partial": 0.027918556964442735,
+                "missing": 0.9633200695473594
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.0,
+                "nameCoverage": 0.0,
+                "competingFactMargin": -0.6252833604812622,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": [
@@ -773,10 +1024,11 @@
             }
           ]
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -790,17 +1042,16 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "present",
         "rawModelStatus": "present",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "present",
         "scores": {
-          "present": 0.6783483900670514,
-          "partial": 0.2498363167688006,
-          "missing": 0.07181529316414806
+          "present": 0.8795971004981366,
+          "partial": 0.09982781588458216,
+          "missing": 0.02057508361728125
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
@@ -815,12 +1066,24 @@
               "semanticSimilarity": 0.8784719705581665,
               "semanticCandidateEvidence": "Historical sourccs provide evidence about past human activity.",
               "semanticStart": 0,
-              "semanticEnd": 62
+              "semanticEnd": 62,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.7794415497461435,
+                "partial": 0.2181042593952213,
+                "missing": 0.00245419085863521
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.5,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.3713839054107666,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "literary",
               "requirement": "Literary sources include books and written documents.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.3325,
               "candidateEvidence": "Literary sourccs are written materials, including books and docurnents.",
               "start": 63,
@@ -829,12 +1092,24 @@
               "semanticSimilarity": 0.7270941734313965,
               "semanticCandidateEvidence": "Literary sourccs are written materials, including books and docurnents.",
               "semanticStart": 63,
-              "semanticEnd": 134
+              "semanticEnd": 134,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9973192109139234,
+                "partial": 0.00016969313653454184,
+                "missing": 0.0025110959495421525
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.3233258128166199,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "archaeological",
               "requirement": "Archaeological sources include physical remains such as coins buildings and inscriptions.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.672,
               "candidateEvidence": "Archaeological sourccs are physical remains, such as coins, old buildings and inscriptions.",
               "start": 135,
@@ -843,15 +1118,28 @@
               "semanticSimilarity": 0.7967872619628906,
               "semanticCandidateEvidence": "Archaeological sourccs are physical remains, such as coins, old buildings and inscriptions.",
               "semanticStart": 135,
-              "semanticEnd": 226
+              "semanticEnd": 226,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9970452093079889,
+                "partial": 0.001313155158591384,
+                "missing": 0.0016416355334196798
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 1.0,
+                "competingFactMargin": 0.13611894845962524,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -865,23 +1153,22 @@
       },
       "prediction": {
         "status": null,
-        "suggestedStatus": "present",
         "rawModelStatus": "present",
-        "completeSuggestionWithheld": false,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
+        "suggestedStatus": "present",
         "scores": {
-          "present": 0.9667201505462752,
-          "partial": 0.028456819171150886,
-          "missing": 0.004823030282573694
+          "present": 0.9399244933713076,
+          "partial": 0.03958773658606583,
+          "missing": 0.020487770042626696
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
               "pointId": "facet-1",
               "requirement": "Britain valued Sri Lanka for its position on Indian Ocean sea routes.",
-              "lexicalCoverage": 1,
+              "lexicalCoverage": 1.0,
               "wordSimilarity": 0.7609,
               "candidateEvidence": "Britain valued Sri Lanka because of its position on lndian Ocean sea routes.",
               "start": 0,
@@ -890,7 +1177,19 @@
               "semanticSimilarity": 0.9422149062156677,
               "semanticCandidateEvidence": "Britain valued Sri Lanka because of its position on lndian Ocean sea routes.",
               "semanticStart": 0,
-              "semanticEnd": 76
+              "semanticEnd": 76,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9892693762761222,
+                "partial": 0.0039359850044265185,
+                "missing": 0.006794638719451446
+              },
+              "passageSupport": {
+                "localGroupCoverage": 1.0,
+                "nameCoverage": 0.0,
+                "competingFactMargin": 0.4677541255950928,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "facet-2",
@@ -904,15 +1203,28 @@
               "semanticSimilarity": 0.9543285369873047,
               "semanticCandidateEvidence": "Trincomalce harbour was strategically important for naval security around India.",
               "semanticStart": 77,
-              "semanticEnd": 157
+              "semanticEnd": 157,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.9724652728161052,
+                "partial": 0.02123252930465115,
+                "missing": 0.006302197879243817
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.8,
+                "nameCoverage": 0.0,
+                "competingFactMargin": 0.45745110511779785,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": []
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": false,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     },
     {
@@ -926,17 +1238,16 @@
       },
       "prediction": {
         "status": null,
+        "rawModelStatus": "partial",
         "suggestedStatus": null,
-        "rawModelStatus": "present",
-        "completeSuggestionWithheld": true,
-        "reviewRequired": true,
-        "scoresCalibrated": false,
         "scores": {
-          "present": 0.614361780780916,
-          "partial": 0.3271418868552252,
-          "missing": 0.058496332363858865
+          "present": 0.014109178254024603,
+          "partial": 0.9833498386922911,
+          "missing": 0.0025409830536844372
         },
-        "modelVersion": "history-coverage-v5.1-review-policy-2026-10-15",
+        "scoresCalibrated": false,
+        "reviewRequired": true,
+        "modelVersion": "history-coverage-v6.2-paraphrases-2026-10-19",
         "evidence": {
           "points": [
             {
@@ -951,7 +1262,19 @@
               "semanticSimilarity": 0.7787150144577026,
               "semanticCandidateEvidence": "The Kandyan kingdom came under Britlsh rule in 18l5.",
               "semanticStart": 0,
-              "semanticEnd": 52
+              "semanticEnd": 52,
+              "learnedCoverageStatus": "partial",
+              "coverageScores": {
+                "present": 2.1909923354643335e-05,
+                "partial": 0.9913140725906753,
+                "missing": 0.008664017485970147
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.6667,
+                "nameCoverage": 0.0,
+                "competingFactMargin": 0.08750909566879272,
+                "polarityAgrees": true
+              }
             },
             {
               "pointId": "facet-2",
@@ -965,10 +1288,30 @@
               "semanticSimilarity": 0.9646783471107483,
               "semanticCandidateEvidence": "This ended the independent Kandyan monarchy and expanded Britlsh control over the whole island.",
               "semanticStart": 53,
-              "semanticEnd": 148
+              "semanticEnd": 148,
+              "learnedCoverageStatus": "present",
+              "coverageScores": {
+                "present": 0.896740844541355,
+                "partial": 0.09870871091810825,
+                "missing": 0.004550444540536501
+              },
+              "passageSupport": {
+                "localGroupCoverage": 0.875,
+                "nameCoverage": 0.0,
+                "competingFactMargin": 0.3236789107322693,
+                "polarityAgrees": true
+              }
             }
           ],
           "concerns": [
+            {
+              "pointId": "facet-1",
+              "start": 47,
+              "end": 51,
+              "quote": "18l5",
+              "kind": "possible_ocr_year_ambiguity",
+              "reason": "A required year may contain handwriting/OCR letter substitutions. Check the original photo rather than treating it as an omitted date."
+            },
             {
               "start": 0,
               "end": 52,
@@ -985,11 +1328,13 @@
             }
           ]
         },
+        "completeSuggestionWithheld": false,
         "suggestionWithheld": true,
-        "reviewPolicyVersion": "semantic-evidence-review-v1",
+        "reviewPolicyVersion": "point-assisted-semantic-review-v2",
         "previewOnly": true,
-        "modelSha256": "12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8"
+        "modelSha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7"
       }
     }
-  ]
+  ],
+  "historyModelVersion": "History V6.2"
 }

@@ -11,6 +11,7 @@ import { queueMaterials } from "../services/materialsService";
 import { QuizDiagnosticRequest } from "../models/QuizDiagnosticRequest";
 import { config } from "../config/config";
 import { studentId } from "../middleware/studentAuth";
+import { noteImageStorage } from "../services/noteImageStorage";
 import { parseResearchConsent } from "../annotations/liveReview";
 import {
   queueNoteForExpertReview,
@@ -87,19 +88,15 @@ export const uploadNote = async (
     } = req.body;
     const userId = studentId(res);
 
-    const imageUrls = uploadedFiles.map(
-      (file) => `/uploads/${path.basename(file.path)}`
-    );
-    const primaryImageUrl = imageUrls[0];
-    const pageCount = imageUrls.length;
+    const pageCount = uploadedFiles.length;
 
     const parsedGrade = grade ? parseInt(String(grade), 10) : undefined;
     const userTopic = topic || lessonName || undefined;
 
-    const note = await Note.create({
+    const note = await noteImageStorage.withUploadedImages(uploadedFiles, (imageUrls) => Note.create({
       userId,
       title: title || (userTopic ? `${userTopic} Note` : "Untitled Note"),
-      imageUrl: primaryImageUrl,
+      imageUrl: imageUrls[0],
       imageUrls,
       pageCount,
       rawText: "",
@@ -113,7 +110,7 @@ export const uploadNote = async (
         researchConsentVersion,
         config.annotationReview.consentVersion
       ),
-    });
+    }));
 
     sendSuccess(
       res,
@@ -365,7 +362,7 @@ export const deleteNote = async (
     // so a database value can never delete a file outside the uploads directory.
     const noteImageUrls = note.imageUrls?.length ? note.imageUrls : [note.imageUrl];
     await Promise.all(
-      noteImageUrls.map((imageUrl) => deleteStoredFile(config.uploads.uploadDir, imageUrl))
+      noteImageUrls.map((imageUrl) => noteImageStorage.remove(imageUrl))
     );
 
     await LearningMaterial.deleteMany({ noteId: req.params.id });
@@ -527,18 +524,14 @@ export const uploadAndProcess = async (
       researchConsent, researchConsentVersion,
     } = req.body;
 
-    const imageUrls = uploadedFiles.map(
-      (file) => `/uploads/${path.basename(file.path)}`
-    );
-    const primaryImageUrl = imageUrls[0];
-    const pageCount = imageUrls.length;
+    const pageCount = uploadedFiles.length;
     const parsedGrade = grade ? parseInt(String(grade), 10) : undefined;
     const userTopic = topic || lessonName || undefined;
 
-    const note = await Note.create({
+    const note = await noteImageStorage.withUploadedImages(uploadedFiles, (imageUrls) => Note.create({
       userId: studentId(res),
       title: title || (userTopic ? `${userTopic} Note` : "Untitled Note"),
-      imageUrl: primaryImageUrl,
+      imageUrl: imageUrls[0],
       imageUrls,
       pageCount,
       rawText: "",
@@ -552,7 +545,7 @@ export const uploadAndProcess = async (
         researchConsentVersion,
         config.annotationReview.consentVersion
       ),
-    });
+    }));
 
     const noteId = (note._id as unknown as string).toString();
 

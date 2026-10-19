@@ -51,3 +51,21 @@ test('history check state survives Mongoose serialization without changing an ex
   assert.equal(doc.validateSync(),undefined);const restored=Note.hydrate(JSON.parse(JSON.stringify(doc)));
   assert.equal(restored.historyCoverageCheck?.state,'running');assert.equal(restored.historyCoverageCheck?.input.text,input.text);
 });
+
+test('an older model result becomes stale without deleting it and can be checked with the current model',async()=>{
+  const {note,store}=fixture();const service=new HistoryCoverageReviewService(async()=>({suggestedStatus:'partial'}));
+  const jobs=new HistoryNoteChecks(service,store);const analysis=JSON.stringify(note.analysis);
+  try {
+    await jobs.start('fixture','owner',input);await jobs.completion;
+    assert.equal((await jobs.get('fixture','owner')).state,'ready');
+    note.historyCoverageCheck.result.modelSha256='0'.repeat(64);
+    const old=JSON.stringify(note.historyCoverageCheck.result);
+    const stale=await new HistoryNoteChecks(service,store).get('fixture','owner');
+    assert.equal(stale.state,'stale');assert.equal(stale.result,undefined);
+    assert.equal(JSON.stringify(note.historyCoverageCheck.result),old);
+    await jobs.start('fixture','owner',input);await jobs.completion;
+    assert.equal((await jobs.get('fixture','owner')).state,'ready');
+    assert.equal(note.historyCoverageCheck.result.modelSha256,service.catalog().modelSha256);
+    assert.equal(JSON.stringify(note.analysis),analysis);
+  } finally {service.dispose();}
+});

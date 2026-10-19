@@ -1,9 +1,21 @@
 # Science, History and ICT deployment package
 
+Latest local Notes image (19 October): Science V3.5 / History V6.2 / ICT V3.1.
+The prepared source/Compose now targets Knowledge Base v2; see
+[the v2 migration and activation requirements](knowledge-base-v2-notes-migration.md).
+The existing container remains on the previous image pending the shared cloud URL/key.
+See [the V6.2 report](history-paraphrases-v62.md) and
+[release manifest](../deployment/history-v62-2026-10-19/release-manifest.json).
+`compose.coverage.yaml` selects the new `-kb-v2` build. Earlier dated profiles below remain
+historical; hosting, commit and push are still pending.
+
 ## Current GitHub handover — 18 October 2026
 
 Use [build from GitHub](../deployment/README.md) and the
-[Science v3.4 / History v5.1 profile](../deployment/science-history-v34-2026-10-18/README.md).
+[Science v3.4 / History v6 profile](../deployment/science-v34-history-v6-2026-10-18/README.md).
+The History v6 changes are prepared locally and have not been committed or
+pushed. See [the v6 report](history-v6-grounded-release.md) for the current
+model and validation. Earlier release descriptions below are historical.
 The inference-only `runtime/coverage/` bundle is included in the repository,
 with its large encoder binary in Git LFS. Fetch LFS contents before building
 the Docker image. Separate Blob Storage is not required. Training outputs,

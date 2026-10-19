@@ -4,7 +4,7 @@ import {StringDecoder} from 'string_decoder';
 import {coverageRuntimeRoot, coveragePython} from './coverageRuntime';
 
 const ROOT = coverageRuntimeRoot(path.resolve(__dirname, '../..'));
-export const HISTORY_PREVIEW_SHA = '12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8';
+export const HISTORY_PREVIEW_SHA = '7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7';
 export type HistoryPreviewInput = {text: string; conceptId: string; scopeConfirmed: true};
 type State = {child: ChildProcessWithoutNullStreams; buffer: string; decoder: StringDecoder; ready: boolean};
 type Job = {id: number; input: HistoryPreviewInput; resolve: (value: unknown) => void; reject: (error: Error) => void; timer: NodeJS.Timeout};

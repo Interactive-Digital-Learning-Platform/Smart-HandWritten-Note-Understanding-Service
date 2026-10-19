@@ -2,9 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import axios from "axios";
+import { knowledgeBasePdfPages, qdrantCollectionUrl, qdrantRequestOptions } from "../services/knowledgeBaseV2";
 
 async function run() {
-  const url = "http://localhost:6333/collections/pdf_knowledge_base/points/scroll";
+  const url = `${qdrantCollectionUrl()}/points/scroll`;
   let offset: string | null = null;
   let historyChunks: any[] = [];
 
@@ -14,10 +15,12 @@ async function run() {
       offset,
       with_payload: true,
       with_vector: false,
-    });
+    }, qdrantRequestOptions(10000));
     const pts = res.data.result.points || [];
     for (const pt of pts) {
-      const payload = pt.payload || {};
+      const raw = pt.payload || {};
+      const pdfPages = knowledgeBasePdfPages(raw);
+      const payload = {...raw, pages: pdfPages, page_start: pdfPages[0] ?? 0};
       const fn = payload.filename || "";
       if (fn.toLowerCase().includes("history")) {
         historyChunks.push(payload);
@@ -36,4 +39,4 @@ async function run() {
   }
 }
 
-run();
+run().catch(() => {console.error("Knowledge base inspection failed. Check the v2 endpoint and credentials.");process.exitCode=1;});

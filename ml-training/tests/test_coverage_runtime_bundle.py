@@ -37,7 +37,12 @@ class RuntimeBundleTest(unittest.TestCase):
         self.assertEqual(manifest['subjects']['science']['sha256'], SCIENCE_SHA)
         self.assertEqual(manifest['subjects']['history']['sha256'], HISTORY_SHA)
         self.assertEqual(manifest['subjects']['ict']['sha256'], ICT_SHA)
-        self.assertEqual(len(manifest['files']), 30)
+        # The bundle grows when frozen inference modules are added. Verify its
+        # exact contents instead of a stale file count from an older release.
+        actual = {p.relative_to(root).as_posix() for p in root.rglob('*')
+                  if p.is_file() and p.name != 'manifest.json'
+                  and '__pycache__' not in p.parts and p.suffix != '.pyc'}
+        self.assertEqual(actual, set(manifest['files']))
         for name in manifest['files']:
             self.assertFalse(any(part in name for part in ['outputs/', 'datasets/', '.env', 'annotations/']))
 

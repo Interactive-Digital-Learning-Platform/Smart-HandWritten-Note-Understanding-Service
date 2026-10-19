@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-19",
+  "scope": "Notes backend routes and local v2; synthetic test data",
+  "productionAuthenticationChanged": false,
+  "otherMembersFunctionsChanged": false,
+  "browserUiVerified": false,
+  "freshImageEndToEndPassed": false,
+  "freshImageBlocker": "Groq vision HTTP 429 on both configured keys; safe terminal error, no endless polling",
+  "earlierFreshScienceImageAnalysisPassed": true,
+  "smallerHistoryImageOcrProbePassed": true,
+  "providedSyntheticTextComponentsPassed": true,
+  "science": {
+    "analysisSeconds": 20,
+    "localV2Passages": 6,
+    "automaticTrainedModel": "Benedict test: complete suggestion, review required",
+    "guideWords": 5891,
+    "guideChecklistConcepts": 25,
+    "savedCoverageLabelsVerified": true,
+    "optionalVisuals": 0,
+    "flashcards": 5,
+    "materialBatchSeconds": 487
+  },
+  "history": {
+    "analysisSeconds": 8,
+    "localV2Passages": 6,
+    "trainedModel": "Explicit saved Sources check: present suggestion, review required",
+    "automaticHistoryModelEnabled": false,
+    "flashcards": 6,
+    "materialBatchSeconds": 6
+  },
+  "tests": {
+    "defaultNotes": 161,
+    "studyMaterials": 34,
+    "finalProviderChecks": 19,
+    "offlinePackagedModelFixtures": 15
+  },
+  "cleanup": "Test notes, images, materials and profiles removed; synthetic diagnostics retained in ignored tmp",
+  "accuracyMeasured": false,
+  "report": "docs/notes-v2-upload-retest-2026-10-19.md"
+}

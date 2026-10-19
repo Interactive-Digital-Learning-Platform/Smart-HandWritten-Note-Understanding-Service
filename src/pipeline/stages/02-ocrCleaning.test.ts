@@ -8,6 +8,11 @@ import {runPipeline} from "../index";
 const raw="--- Page 1 ---\n<deleted>Protein is made from fatty acids.</deleted>\nProteins are made from amino acids.\nStarch gives blue-black colour with iodine.";
 const context=(text=raw)=>({rawOcrText:text,qualityWarnings:[]} as unknown as PipelineContext);
 
+test("placeholder-only cached OCR aborts before AI coverage or material generation",async(t)=>{
+  t.mock.method(groqPool,"createChatCompletion",()=>{throw Error("must not call provider");});
+  await assert.rejects(runOcrCleaning(context("--- Page 1 ---\n[illegible]\n--- Page 2 ---\n[illegible]")),/No readable note text/);
+});
+
 test("cleaning preserves raw deleted writing and never accepts an LLM content rewrite",async(t)=>{
   t.mock.method(groqPool,"createChatCompletion",async()=>({choices:[{message:{content:JSON.stringify({cleanedText:"Protein is made from fatty acids. Added textbook explanation.",confidenceScore:85,lowQualityWarning:false,qualityNote:"Readable extracted text"})}}]}));
   const ctx=context();await runOcrCleaning(ctx);

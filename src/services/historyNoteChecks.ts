@@ -42,6 +42,7 @@ export class HistoryNoteChecks {
     const check=note.historyCoverageCheck;
     if(!check)return {state:'not_requested' as const};
     if(note.status!=='analyzed'||check.sourceRevision!==historySourceRevision(note))return {state:'stale' as const};
+    if(check.state==='ready'&&check.result?.modelSha256!==this.service.catalog().modelSha256)return {state:'stale' as const,input:check.input};
     if(check.state==='running'&&new Date(check.expiresAt).getTime()<=Date.now()) {
       if(!await this.store.finish(id,userId,check.jobId,'failed',{error:'This check was interrupted. Please try again.'}))return this.get(id,userId);
       return {state:'failed' as const,input:check.input,error:'This check was interrupted. Please try again.'};

@@ -3,8 +3,8 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 
-SCIENCE_SHA = 'af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63'
-HISTORY_SHA = '12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8'
+SCIENCE_SHA = '021bb8bd41df5d55599258144a9694097a32cae054ebabd12643783d1d50b191'
+HISTORY_SHA = '7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7'
 ICT_SHA = 'df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b'
 ICT_SOURCES = {
     'ict_coverage_v11': '3f79b908990ca6172ec34e7b468468995e06caa60f61469bc9dfe527219ec915',
@@ -19,6 +19,11 @@ HISTORY_SOURCES = {
     'history_semantic': '46f4a478078529f13d4f4de9dd5891dca523d085e16565b8214d0ddc9aa0d067',
     'history_semantic_core': '9baeed03091ac7b308be4a8e4d4841684fd7a0033bea724474d8c2a688154a48',
     'history_semantic_review': 'db14d92754529a93289fb836fedbf4c80f1c7237e4ed415734663f43c3f7b9d4',
+    'history_partial': 'bd1bd227bbfe64d454e4a13828562ab5d5495bc29158b7f81bff2268c75d4383',
+    'history_point_coverage': 'd554bf9a1fac3080a6bc519124ee36c2b0b2108df82b215eef9be1cb58decda8',
+    'history_point_core': 'e0a84acea7a459579c7999c7b7beea4dd93ec45fad4cee81359b77af1badefb6',
+    'history_evidence': '948f0ffa74c0bba04568c83d9009c9346066e010b917ffd497d22491987ceae5',
+    'history_grounded_core': 'abecfa4f5ad51d57fec2e3fa61c94cc560ef3ef122c526f12af90f9c7e5c9e31',
 }
 
 

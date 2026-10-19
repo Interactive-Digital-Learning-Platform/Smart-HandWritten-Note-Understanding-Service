@@ -34,7 +34,10 @@ COPY packaging/ict-verification.json ./packaging/ict-verification.json
 RUN mkdir -p uploads generated_audio .cache && chown node:node uploads generated_audio .cache \
     && /opt/coverage-python/bin/python -B -c "import sys;sys.path.insert(0,'coverage-runtime/ml-training');from coverage_runtime_bundle import load_bundle;load_bundle('coverage-runtime')"
 USER node
+LABEL org.opencontainers.image.title="Smart Handwritten Notes" \
+      org.opencontainers.image.description="Notes API with packaged Science and History models, private R2 images and Knowledge Base v2 retrieval" \
+      org.opencontainers.image.source="https://github.com/Interactive-Digital-Learning-Platform/Smart-HandWritten-Note-Understanding-Service"
 EXPOSE 8004
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD node -e "fetch('http://127.0.0.1:8004/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+    CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8004)+'/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "dist/server.js"]
