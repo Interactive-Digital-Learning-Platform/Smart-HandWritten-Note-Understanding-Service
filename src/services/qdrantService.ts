@@ -93,7 +93,8 @@ export class QdrantService {
       const result = response.data?.result;
       const pointsCount = result?.points_count ?? result?.vectors_count ?? 0;
       const status = result?.status ?? "unknown";
-      const dense = result?.config?.params?.vectors?.dense;
+      const vectors = result?.config?.params?.vectors;
+      const dense = config.qdrant.vectorName ? vectors?.[config.qdrant.vectorName] : vectors;
       const compatible = Number.isInteger(dense?.size) && dense.size > 0 && dense.distance === "Cosine";
 
       return {
@@ -152,7 +153,7 @@ export class QdrantService {
     if (bounds?.grade !== undefined) must.push({ key: "grade", match: { value: bounds.grade } });
     const requestBody = {
       query: vector,
-      using: "dense",
+      using: config.qdrant.vectorName || undefined,
       limit: candidateLimit,
       with_payload: true,
       with_vector: false,
@@ -177,7 +178,7 @@ export class QdrantService {
         const { query: _query, using: _using, ...options } = requestBody;
         const legacyResponse = await axios.post(
           `${this.qdrantBaseUrl}/collections/${this.collectionName}/points/search`,
-          { ...options, vector: { name: "dense", vector } },
+          { ...options, vector: config.qdrant.vectorName ? { name: config.qdrant.vectorName, vector } : vector },
           qdrantRequestOptions(10000)
         );
         points = legacyResponse.data?.result;

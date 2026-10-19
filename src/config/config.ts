@@ -80,6 +80,8 @@ export const config = {
     url: process.env.QDRANT_DB_URL || "http://localhost:6333",
     collection: process.env.QDRANT_COLLECTION?.trim() || "pdf_knowledge_base_v2",
     apiKey: process.env.QDRANT_API_KEY?.trim() || "",
+    // Keep the v2 default; an explicit empty value selects an unnamed vector.
+    vectorName: process.env.QDRANT_VECTOR_NAME?.trim() ?? "dense",
     // The actual upstream v2 extractor emits one-based PDF page numbers.
     // An explicit zero-based setting supports a deployment matching the guide.
     payloadPageBase: Number(process.env.QDRANT_PAYLOAD_PAGE_BASE ?? "1"),

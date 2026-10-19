@@ -50,9 +50,12 @@ For GitHub Actions, enable LFS during checkout before the Docker build:
 - run: git lfs fsck
 ```
 
-This is a checkout fragment, not a complete workflow. No auto-deploy workflow
-is enabled by this handover. The group leader can add registry authentication,
-image publication and Azure deployment to the team's existing pipeline later.
+This is a checkout fragment. The CI/CD integration branch also contains
+`.github/workflows/deploy.yml`: it caches/pulls Git LFS, builds and publishes
+the image to ACR, then updates the existing Azure Container App using OIDC.
+Its only trigger is a push to `main`; pushing `feature/ci-cd-pipeline` does not
+deploy. A later merge to `main` can deploy using the configured Azure secrets.
+The workflow preserves the Container App's existing environment values.
 Use a current GitHub-hosted runner or a compatible self-hosted runner; see the
 [checkout action documentation](https://github.com/actions/checkout).
 
@@ -68,6 +71,13 @@ persistent audio/cache mounts, private R2 images, the gateway prefix rewrite and
 Clerk and OCR connections as described in [the Azure guide](../docs/azure-deployment.md).
 The checked-in Compose file is a Docker-host profile; translate its environment,
 volumes and preflight checks to the Azure configuration.
+
+The CI/CD Dockerfile preloads the Nomic encoder at `/app/.cache/embeddings`.
+A runtime mount over `/app/.cache` hides that image directory; seed the mounted
+cache with the matching encoder or permit its first download. Do not assume a
+new empty cache volume contains the baked encoder. Keep `QDRANT_VECTOR_NAME`
+aligned with the ingested collection (`dense` by default); API-key authentication,
+page-base configuration and compatibility checks remain required.
 
 Existing media/databases are not copied by cloning this repository or building
 the image. Keep current production volumes and migrate data privately when

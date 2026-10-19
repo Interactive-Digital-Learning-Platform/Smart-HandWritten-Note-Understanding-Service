@@ -46,6 +46,35 @@ test("a named-vector dimension mismatch fails before sending a query", async () 
   finally {get.mock.restore();embed.mock.restore();post.mock.restore();}
 });
 
+test("configured vector names and explicit unnamed vectors retain validation, auth and fallback filters", async () => {
+  const originalName = config.qdrant.vectorName;
+  const originalKey = config.qdrant.apiKey;
+  const embed = mock.method(embeddingService, "embedRetrievalQuery", async () => Array(768).fill(.1));
+  try {
+    config.qdrant.apiKey = "test-secret";
+    for (const name of ["text_dense", ""]) {
+      config.qdrant.vectorName = name;
+      const get = mock.method(axios, "get", async () => ({ data: { result: {
+        status: "green", points_count: 20,
+        config: { params: { vectors: name ? { [name]: { size: 768, distance: "Cosine" } } : { size: 768, distance: "Cosine" } } },
+      } } }));
+      const calls: any[] = [];
+      const post = mock.method(axios, "post", async (url: string, body: any, options: any) => {
+        calls.push({ url, body, options });
+        if (calls.length === 1) throw { response: { status: 405 } };
+        return { data: { result: [] } };
+      });
+      try {
+        await qdrantService.searchKnowledgeBase("science", 2, { grade: 10 });
+        assert.equal(calls[0].body.using, name || undefined);
+        assert.deepEqual(calls[1].body.vector, name ? { name, vector: Array(768).fill(.1) } : Array(768).fill(.1));
+        assert.deepEqual(calls[1].body.filter, calls[0].body.filter);
+        assert.ok(calls.every(call => call.options.headers["api-key"] === "test-secret"));
+      } finally { get.mock.restore(); post.mock.restore(); }
+    }
+  } finally { embed.mock.restore(); config.qdrant.vectorName = originalName; config.qdrant.apiKey = originalKey; }
+});
+
 test("unnamed v1 collection metadata is rejected rather than silently skipping compatibility checks", async()=>{
   const get=mock.method(axios,"get",async()=>({data:{result:{status:"green",points_count:10,config:{params:{vectors:{size:768,distance:"Cosine"}}}}}}));
   const embed=mock.method(embeddingService,"embedRetrievalQuery",async()=>{throw Error("must not embed");});
