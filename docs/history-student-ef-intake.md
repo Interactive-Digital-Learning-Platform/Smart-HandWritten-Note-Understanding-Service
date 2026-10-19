@@ -171,3 +171,8 @@ corrected targets, substantially improved Partial results, remaining errors and
 the reason the selected candidate has not replaced the running History model.
 The earlier 70%/78% agreement figures above refer to the original flawed proposals
 and must not be used as accuracy against the corrected audit.
+
+The subsequent [History V6 release](history-v6-grounded-release.md) is the current
+update. It explicitly fits the corrected 50 examples, preserves the original
+dataset and checks broader regressions. Its 50/50 fitted-case agreement must not
+be confused with held-out accuracy.

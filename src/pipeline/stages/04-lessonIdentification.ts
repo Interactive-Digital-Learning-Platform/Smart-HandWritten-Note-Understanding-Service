@@ -97,6 +97,8 @@ export const runLessonIdentification = async (
     throw new Error("Stage 4 requires subjectDetection from Stage 3");
   }
 
+  const text = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
+
   // 0. Priority: User explicitly provided a lesson ID (e.g. from UI or Benchmark)
   if (ctx.userLessonId) {
     const userLesson = getLessonById(ctx.userLessonId);
@@ -106,12 +108,29 @@ export const runLessonIdentification = async (
       ctx.lessonMatchConfidence = 1.0;
       ctx.lessonMatchMethod = "user-specified";
       console.log(`  [Stage 4] 🎯 Using specified lesson: "${userLesson.lessonName}" (${userLesson.lessonId})`);
+      // Selecting a lesson fixes the scope; it must not skip textbook retrieval.
+      // Use the selected lesson's own identity, never inconsistent upload hints.
+      try {
+        const textbook = await qdrantService.getCurriculumTextbookContext(
+          userLesson.subject, userLesson.lessonName, text, userLesson.grade
+        );
+        ctx.textbookPassages = textbook.passages.map(p => ({
+          text: p.text, filename: p.filename, pages: p.pages, score: p.score,
+        }));
+        if (!ctx.textbookPassages.length) {
+          ctx.qualityWarnings = [...(ctx.qualityWarnings ?? []),
+            "Textbook references are temporarily unavailable. Your note was checked against the lesson checklist."];
+        }
+      } catch {
+        ctx.textbookPassages = [];
+        ctx.qualityWarnings = [...(ctx.qualityWarnings ?? []),
+          "Textbook references are temporarily unavailable. Your note was checked against the lesson checklist."];
+      }
       return;
     }
   }
 
   const { subject, grade, topicHint } = ctx.subjectDetection;
-  const text = ctx.ocrCleaning?.cleanedText ?? ctx.rawOcrText ?? "";
 
   // 1. Check Table of Contents Chapter Boundaries from Neon Database Registry
   const chapterBounds = curriculumDbService.getChapterPageBounds(subject, grade || 10, topicHint);

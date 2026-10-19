@@ -8,8 +8,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / 'src'))
-EXPECTED = '12ba94e87415adb0ceb851919a6e87bc5d36e8535f0539352b450bd104e368e8'
-MODEL_DIR = ROOT / 'outputs/history-coverage-v5.1-review-policy-2026-10-15'
+EXPECTED = '7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7'
+MODEL_DIR = ROOT / 'outputs/history-coverage-v6.2-paraphrases-2026-10-19'
 
 
 def load_artifact():
@@ -24,7 +24,7 @@ def load_artifact():
     if protocol['modelSha256'] != EXPECTED:
         raise ValueError('Protocol integrity check failed')
     for name, expected in protocol['sourceHashes'].items():
-        path = Path(name)
+        path = Path(name) if Path(name).is_absolute() else ROOT.parent / name
         if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             raise ValueError('Frozen source integrity check failed')
     return json.loads(raw)
@@ -46,6 +46,8 @@ class HistoryPreviewRuntime:
         self.artifact = load_artifact()
         from smart_note_training.history_semantic import FrozenEncoder
         from smart_note_training.history_semantic_review import ReviewedSemanticPredictor
+        from smart_note_training.history_grounded_core import GroundedSignedKernelPredictor
+        from smart_note_training.history_point_coverage import point_queries
         if os.environ.get('COVERAGE_BUNDLE_DIR'):
             from coverage_runtime_bundle import load_bundle, contained
             root, manifest = load_bundle(os.environ['COVERAGE_BUNDLE_DIR'])
@@ -57,8 +59,12 @@ class HistoryPreviewRuntime:
             self.encoder = FrozenEncoder(ROOT / 'encoders/minilm-l6-v2/encoder-manifest.json',
                                          ROOT / 'outputs/history-semantic-embedding-cache-v1')
         self.encoder.cache_dir = None  # Never overwrite the training cache.
+        if self.artifact['schemaVersion'] == 12:
+            self.encoder.prime([query for c in self.artifact['rubrics']['concepts'] for group in point_queries(c) for query in group])
+            self.predictor = GroundedSignedKernelPredictor(self.artifact, self.encoder)
+        else:
+            self.predictor = ReviewedSemanticPredictor(self.artifact, self.encoder)
         self.base_cache = dict(self.encoder.cache)
-        self.predictor = ReviewedSemanticPredictor(self.artifact, self.encoder)
         if warm:
             self.encoder.load()
 

@@ -6,6 +6,7 @@ import {activeOcrText} from './ocrText';
 import {HistoryPreviewWorker} from './historyPreviewWorker';
 import {coverageRuntimeRoot} from './coverageRuntime';
 import {config} from '../config/config';
+import {knowledgeBasePdfPages, qdrantCollectionUrl, qdrantHeaders} from './knowledgeBaseV2';
 
 export const ICT_MODEL_SHA = 'df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b';
 const SOURCES = {
@@ -86,18 +87,33 @@ export class ICTCoverageReviewService {
     if (!concept) throw new AppError('Choose a supported ICT concept', 400);
     const base = config.qdrant.url;
     if (!base) throw new AppError('Textbook references are temporarily unavailable', 503);
-    const response = await this.fetchReference(`${base.replace(/\/$/, '')}/collections/${config.qdrant.collection}/points/scroll`, {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, signal: AbortSignal.timeout(10000),
-      body: JSON.stringify({filter: {must: [{key: 'job_id', match: {value: concept.textbook.jobId}},
-        {key: 'pages', match: {any: concept.textbook.pdfPages}}]}, limit: 8, with_payload: true, with_vector: false}),
-    });
-    if (!response.ok) throw new Error('Reference unavailable');
-    const result = await response.json() as any;
-    const passages = (result.result?.points || []).map((p: any) => p.payload)
-      .filter((p: any) => p.job_id === concept.textbook.jobId && p.filename === concept.textbook.filename &&
-        Array.isArray(p.pages) && p.pages.every((page: any) => Number.isInteger(page) && page > 0) &&
-        p.pages.some((page: number) => concept.textbook.pdfPages.includes(page)) && typeof p.text === 'string' && p.text.trim())
-      .map((p: any) => ({text: p.text, pdfPages: p.pages as number[]}));
+    // 'pages' is unindexed on strict-mode v2. Scroll the verified job and check
+    // its pages locally, including later scroll pages. Keep source identity
+    // pinned: a newly uploaded job needs explicit source verification first.
+    const signal = AbortSignal.timeout(10000);
+    const passages: {text: string; pdfPages: number[]}[] = [];
+    let offset: string | number | undefined;
+    let complete = false;
+    for (let page = 0; page < 40; page++) {
+      const response = await this.fetchReference(`${qdrantCollectionUrl()}/points/scroll`, {
+        method: 'POST', headers: {'Content-Type': 'application/json', ...qdrantHeaders()}, signal,
+        body: JSON.stringify({filter: {must: [{key: 'job_id', match: {value: concept.textbook.jobId}}]},
+          offset, limit: 256, with_payload: true, with_vector: false}),
+      });
+      if (!response.ok) throw new Error('Reference unavailable');
+      const result = await response.json() as any;
+      if (!Array.isArray(result.result?.points)) throw new Error('Reference unavailable');
+      for (const point of result.result.points) {
+        const p = point.payload || {}, pdfPages = knowledgeBasePdfPages(p);
+        if (p.job_id === concept.textbook.jobId && p.filename === concept.textbook.filename &&
+            pdfPages.some(n => concept.textbook.pdfPages.includes(n)) && typeof p.text === 'string' && p.text.trim()) {
+          passages.push({text: p.text, pdfPages});
+        }
+      }
+      offset = result.result.next_page_offset;
+      if (offset === null || offset === undefined) {complete = true; break;}
+    }
+    if (!complete) throw new Error('Reference unavailable');
     if (!passages.length) throw new Error('Reference unavailable');
     return {conceptId, source: concept.textbook, passages};
   }

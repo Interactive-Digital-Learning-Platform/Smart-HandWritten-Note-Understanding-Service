@@ -34,7 +34,7 @@ def run(args):
         raise ValueError('Audit mismatch')
     if args.fit_assistant_review:
         rows += [{'recordId':r['recordId'],'text':r['modelInputText'],'conceptId':r['conceptId'],
-            'target':LABELS.index(truth[r['recordId']]),'weight':3.,'source':'assistant_adjudicated_development_train_not_human'} for r in held]
+            'target':LABELS.index(truth[r['recordId']]),'weight':args.review_weight,'source':'assistant_adjudicated_development_train_not_human'} for r in held]
     held_hashes = {sha(' '.join(r['modelInputText'].lower().split()).encode()) for r in held}
     if not args.fit_assistant_review and any(sha(' '.join(r['text'].lower().split()).encode()) in held_hashes for r in rows):raise ValueError('Reserved text fitted')
     encoder = FrozenEncoder(ROOT/'encoders/minilm-l6-v2/encoder-manifest.json',ROOT/'outputs/history-semantic-embedding-cache-v1')
@@ -46,11 +46,12 @@ def run(args):
     extra_scaler = StandardScaler().fit(x[:,n:],sample_weight=w)
     mean = np.r_[base['scalerMean'],extra_scaler.mean_]; scale=np.r_[base['scalerScale'],extra_scaler.scale_]
     prior = np.pad(np.asarray(base['weights']),((0,0),(0,len(FEATURES)-n)))
-    weights,bias = anchored_fit((x-mean)/scale,np.asarray([r['target'] for r in rows]),w,prior,np.asarray(base['intercept']),.1)
+    weights,bias = anchored_fit((x-mean)/scale,np.asarray([r['target'] for r in rows]),w,prior,np.asarray(base['intercept']),args.prior_strength)
     model = copy.deepcopy(base)
     model.update(schemaVersion=8,features=FEATURES,scalerMean=mean.tolist(),scalerScale=scale.tolist(),weights=weights.tolist(),intercept=bias.tolist(),modelType='history_point_assisted_concept_head')
     model['metadata'].update(experimentId=out.name,enabledByDefault=False,humanReviewed=False,studentBatchSha256=digest,
-        pointModelSha256=sha(Path(args.point_model).read_bytes()),encoderAndRubricsFrozen=True)
+        pointModelSha256=sha(Path(args.point_model).read_bytes()),encoderAndRubricsFrozen=True,
+        assistantReviewFitted=args.fit_assistant_review,assistantReviewWeight=args.review_weight,priorStrength=args.prior_strength)
     out.mkdir(parents=True)
     raw=(json.dumps(model,indent=2)+'\n').encode();(out/'model.json').write_bytes(raw)
     (out/'training-snapshot.json').write_text(json.dumps({'rows':rows,'reservedNotebookIds':[] if args.fit_assistant_review else [r['recordId'] for r in held],
@@ -74,5 +75,7 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('dataset','splits','adjudication','point-model','output'):p.add_argument('--'+name,required=True)
     p.add_argument('--fit-assistant-review',action='store_true',help='Use the corrected AI review for fitting; report it as training, never holdout accuracy')
+    p.add_argument('--review-weight',type=float,default=3.)
+    p.add_argument('--prior-strength',type=float,default=.1)
     from threadpoolctl import threadpool_limits
     with threadpool_limits(limits=2):run(p.parse_args())

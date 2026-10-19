@@ -5,6 +5,7 @@ import { cachedOcrInput } from "../pipeline/ocrProvenance";
 import {claimProcessing,expireProcessingNote,processingLeaseFilter,PROCESSING_LEASE_MS} from './processingLease';
 import { updateProfileFromAnalysis } from "./profileService";
 import { queueNoteForExpertReview } from "./annotationCollectionService";
+import {processingFailureMessage} from "./processingFailureMessage";
 
 // Processing options.
 
@@ -296,10 +297,10 @@ export const processNote = async (
       if (isForcedReanalysis && previousAnalysis) {
         note.analysis = previousAnalysis;
         note.status = "analyzed";
-        note.errorMessage = 'Analysis was interrupted. Your earlier results were kept. Try analyzing again.';
+        note.errorMessage = `${processingFailureMessage(message)} Your earlier results were kept.`;
       } else {
         note.status = "failed";
-        note.errorMessage = 'We could not finish this analysis. Please try again.';
+        note.errorMessage = processingFailureMessage(message);
       }
       await Note.updateOne({_id:noteId,status:'processing',processingRunId:token},
         {$set:{status:note.status,errorMessage:note.errorMessage},$unset:{processingProgress:1,processingRunId:1,processingLeaseExpiresAt:1}});

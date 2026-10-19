@@ -3,7 +3,8 @@ import path from "path";
 import sharp from "sharp";
 import { config } from "../config/config";
 import { groqPool } from "./groqPool";
-import { activeOcrText, hasRepeatedOcrPassage, markReviewedDeletions } from "./ocrText";
+import { isR2Image, noteImageMime, noteImageStorage } from "./noteImageStorage";
+import { activeOcrText, hasReadableOcrContent, hasRepeatedOcrPassage, markReviewedDeletions } from "./ocrText";
 
 // OCR result types.
 
@@ -42,7 +43,11 @@ export const validateOcrPageText = (
       reason: `OCR returned ${trimmed.length} characters for one handwritten page (limit ${MAX_REASONABLE_PAGE_CHARACTERS})`,
     };
   }
-  try { activeOcrText(trimmed); } catch {
+  try {
+    if (!hasReadableOcrContent(trimmed)) {
+      return { valid: false, reason: "OCR could not read any active note text. Try a clearer image." };
+    }
+  } catch {
     return { valid: false, reason: "OCR returned malformed crossed-out text markers" };
   }
   if (hasRepeatedOcrPassage(trimmed)) {
@@ -79,7 +84,8 @@ export const extractTextFromImage = async (
 
   try {
     let absolutePath = imagePath;
-    if (!fs.existsSync(absolutePath)) {
+    const remoteImage = isR2Image(path.basename(imagePath));
+    if (!remoteImage && !fs.existsSync(absolutePath)) {
       const stripped = imagePath.replace(/^[/\\]+/, "");
       const resolved = path.resolve(process.cwd(), stripped);
       if (fs.existsSync(resolved)) {
@@ -94,9 +100,8 @@ export const extractTextFromImage = async (
     }
 
     // Convert the image to base64.
-    const imageBuffer = fs.readFileSync(absolutePath);
-    const base64Image = imageBuffer.toString("base64");
-    const mimeType = path.extname(absolutePath).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
+    const imageBuffer = remoteImage ? await noteImageStorage.read(path.basename(imagePath)) : fs.readFileSync(absolutePath);
+    const mimeType = noteImageMime(absolutePath);
 
     console.log(`🔍 OCR via Groq Vision for: ${path.basename(absolutePath)}`);
 
@@ -113,23 +118,28 @@ export const extractTextFromImage = async (
 
     for (const model of VISION_MODELS) {
       for (let attempt = 1; attempt <= 3; attempt++) {
-        const poolStatus = groqPool.getStatus();
+        const poolStatus = groqPool.getStatus(model);
         if (poolStatus.totalKeys > 0 && poolStatus.healthyKeys === 0) {
           lastFailureKind = "rate_limit";
-          retryAfterMs = Math.max(
-            retryAfterMs,
-            ...poolStatus.cooldowns.map(
-              (cooldown) => cooldown.cooldownSecondsRemaining * 1_000
-            )
-          );
+          const nextReady=Math.min(...poolStatus.cooldowns.map(cooldown=>cooldown.cooldownSecondsRemaining*1000));
+          if(Number.isFinite(nextReady))retryAfterMs=nextReady;
           break;
         }
-        const { client, keyIndex, maskedKey } = groqPool.getNextClient();
+        const { client, keyIndex, maskedKey } = groqPool.getNextClient(model);
 
         try {
           if (attempt > 1 || model !== VISION_MODELS[0]) {
             console.log(`🔄 OCR model ${model} via Key #${keyIndex + 1} (${maskedKey}) (attempt ${attempt}/3)...`);
           }
+
+          // Repeating the identical pixels can reproduce the same tiled OCR
+          // failure. Retry the whole page at a smaller size without cropping
+          // or removing writing; every retry still passes the quality checks.
+          const requestImage = attempt === 1 ? imageBuffer : await sharp(imageBuffer)
+            .rotate().resize({ width: attempt === 2 ? 1280 : 1024,
+              height: attempt === 2 ? 1800 : 1440, fit: "inside", withoutEnlargement: true })
+            .png().toBuffer();
+          const requestMime = attempt === 1 ? mimeType : "image/png";
 
           // Apply the request timeout.
           const controller = new AbortController();
@@ -154,7 +164,7 @@ Return only the transcription, with balanced <deleted> markers and no code fence
                       {
                         type: "image_url",
                         image_url: {
-                          url: `data:${mimeType};base64,${base64Image}`,
+                          url: `data:${requestMime};base64,${requestImage.toString("base64")}`,
                         },
                       },
                     ],
@@ -244,7 +254,7 @@ ${activeOcrText(rawContent)}`},
             const providerRetryMs = parseRetryAfterMs(msg);
             const cooldownMs = Math.max(20_000, providerRetryMs ?? 0);
             retryAfterMs = Math.max(retryAfterMs, cooldownMs);
-            groqPool.markCooldown(keyIndex, cooldownMs);
+            groqPool.markCooldown(keyIndex, cooldownMs,model);
             const backoffMs = attempt * 1500;
             console.log(`⏳ Groq rate limit/capacity hit on Key #${keyIndex + 1}. Switching/waiting ${backoffMs / 1000}s before retry...`);
             await new Promise((resolve) => setTimeout(resolve, backoffMs));
@@ -260,6 +270,15 @@ ${activeOcrText(rawContent)}`},
     }
 
     if (!extractedText) {
+      // The final attempt can exhaust the last healthy key without another
+      // loop iteration. Report when the first vision key will recover.
+      if(lastFailureKind === "rate_limit") {
+        const status=groqPool.getStatus(config.groq.ocrModel);
+        if(status.healthyKeys===0) {
+          const nextReady=Math.min(...status.cooldowns.map(cooldown=>cooldown.cooldownSecondsRemaining*1000));
+          if(Number.isFinite(nextReady))retryAfterMs=nextReady;
+        }
+      }
       const isCapacity = lastError?.status === 503 ||
         lastError?.name === "AbortError" ||
         String(lastError?.message).includes("over capacity") ||

@@ -1,0 +1,14 @@
+services:
+  notes-coverage:
+    image: smart-notes-coverage:science-v35-history-v62-ict-v31-materials-v31-ocr-v2-kb-v2-local
+    environment:
+      QDRANT_DB_URL: http://qdrant:6333
+      QDRANT_API_KEY: ${LOCAL_QDRANT_API_KEY:?Set local credentials}
+      QDRANT_COLLECTION: pdf_knowledge_base_v2
+      QDRANT_PAYLOAD_PAGE_BASE: "1"
+      CURRICULUM_DB_URL: postgresql://notes_ingestion:${LOCAL_DB_PASSWORD:?Set local credentials}@postgres:5432/notes_ingestion_v2
+    networks: [default, kb-v2]
+networks:
+  kb-v2:
+    external: true
+    name: notes-kb-v2-local_default

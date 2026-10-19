@@ -18,18 +18,19 @@ and frozen artifacts; `npm ci` alone does not install them.
   included inference bundle, and build the complete backend/model image.
 - [Azure deployment and model hosting](docs/azure-deployment.md): recommended
   hosting for the existing service and the boundary between source and artifacts.
-- [Current Science + History release](deployment/science-history-v34-2026-10-18/README.md):
+- [Current Science + History release](deployment/azure-ready-2026-10-19/README.md):
   frozen image identity, configuration, dependency checks and gateway routes.
 - [Model packaging](docs/coverage-deployment.md): inference bundle and offline checks.
 - [Notes security](docs/student-notes-security.md): authentication and ownership.
 
-The selected release enables Science v3.4 and History v5.1. ICT remains
+The selected release enables Science v3.5 and History v6.2, with Knowledge Base
+v2 retrieval and private R2 image storage. ICT remains
 disabled by that release profile. Suggestions describe submitted note coverage
 and require review; they do not establish student understanding.
 
-[Science review and evidence fixes](docs/science-reviewed-fix-v34.md) document
-the corrected AI-label audit and development checks; these are not independent
-real-handwriting accuracy results.
+[Science OCR update](docs/science-ocr-training-v35.md) and
+[History v6.2 checks](docs/history-paraphrases-v62.md) document the current model
+development checks; these are not independent real-handwriting accuracy results.
 
 ## What belongs in Git
 

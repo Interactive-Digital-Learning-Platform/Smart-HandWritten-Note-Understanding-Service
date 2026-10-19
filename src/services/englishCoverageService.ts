@@ -35,8 +35,8 @@ const alignEvidenceOffsets = (result: CoveragePrediction, text: string): void =>
   for(const point of result.evidence.points)convert(point,point.candidateEvidence);
   for(const concern of result.evidence.concerns)convert(concern,concern.quote);
 };
-const MODEL_HASH = "af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63";
-const MODEL_VERSION = "english-coverage-v3.4-review-fix-2026-10-18";
+const MODEL_HASH = "021bb8bd41df5d55599258144a9694097a32cae054ebabd12643783d1d50b191";
+const MODEL_VERSION = "english-coverage-v3.5-ocr-notes-2026-10-19";
 const SOURCES: Record<string,string> = {
   "ml-training/english_coverage_v31_cli.py": "8d18fd28f8f49f42384e139328c560df0d3689cd0b391ed2aa8f72941db61f0b",
   "ml-training/src/smart_note_training/english_coverage_v31.py": "b653bd56f495b67e281239bc3c7c0abbe20f0a75e7461c952a0e576862fa4af1",

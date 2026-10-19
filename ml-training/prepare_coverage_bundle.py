@@ -7,10 +7,11 @@ from coverage_runtime_bundle import SCIENCE_SHA, HISTORY_SHA, ICT_SHA, load_bund
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / 'runtime/coverage'
-HISTORY = ROOT / 'ml-training/outputs/history-coverage-v5.1-review-policy-2026-10-15'
+HISTORY = ROOT / 'ml-training/outputs/history-coverage-v6.2-paraphrases-2026-10-19'
 ICT = ROOT / 'ml-training/outputs/ict-coverage-v3.1-2026-10-15'
 MODULES = ['__init__', 'english_coverage', 'english_coverage_v3', 'english_coverage_v31',
            'history_coverage', 'history_coverage_v31', 'history_semantic', 'history_semantic_core', 'history_semantic_review',
+           'history_partial', 'history_point_coverage', 'history_point_core', 'history_evidence', 'history_grounded_core',
            'ict_coverage', 'ict_coverage_v11', 'ict_coverage_v3', 'ict_coverage_v31']
 
 
@@ -42,7 +43,7 @@ def build():
         files[relative] = sha(target)
 
     copy(ROOT / 'models/english-coverage-v3.1.json', 'models/english-coverage-v3.1.json')
-    copy(HISTORY / 'model.json', 'models/history-coverage-v5.1.json')
+    copy(HISTORY / 'model.json', 'models/history-coverage-v6.json')
     copy(ICT / 'model.json', 'models/ict-coverage-v3.1.json')
     for name in MODULES:
         copy(ROOT / f'ml-training/src/smart_note_training/{name}.py', f'ml-training/src/smart_note_training/{name}.py')
@@ -63,7 +64,7 @@ def build():
         raise ValueError('Unexpected files in bundle; use a new clean runtime directory')
     manifest = dict(schemaVersion=1, subjects={
         'science': dict(model='models/english-coverage-v3.1.json', sha256=SCIENCE_SHA),
-        'history': dict(model='models/history-coverage-v5.1.json', sha256=HISTORY_SHA),
+        'history': dict(model='models/history-coverage-v6.json', sha256=HISTORY_SHA),
         'ict': dict(model='models/ict-coverage-v3.1.json', sha256=ICT_SHA)},
         encoder=dict(manifest='encoders/encoder-manifest.json', directory='encoders/minilm-l6-v2', revision=encoder['revision']),
         provenance=dict(historyProtocolSha256=sha(HISTORY / 'protocol.json'), ictReleaseSha256=sha(ICT / 'release.json'), originalEncoderManifestSha256=sha(source)),

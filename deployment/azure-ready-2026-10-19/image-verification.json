@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-19",
+  "image": "smart-notes:science-v35-history-v62-r2-20261019",
+  "imageId": "sha256:b765a626ba5952f13305dfa4b19bca7f4ff82c1603cf4ff1bc1523e5f364f13b",
+  "platform": "linux/amd64",
+  "containerUser": 1000,
+  "buildPassed": true,
+  "offlineModelFixturesPassed": 15,
+  "configurationAndCatalogCheckPassed": true,
+  "customPortHealthCheckPassed": true,
+  "unhealthyResponseRejected": true,
+  "credentialsAbsentFromImage": true,
+  "studentUploadsAbsentFromImage": true,
+  "azureResourcesCreated": false,
+  "registryPushed": false,
+  "destinationConnectivityVerified": false,
+  "groqInvoked": false
+}

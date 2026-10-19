@@ -64,13 +64,25 @@ export const config = {
     uploadDir: process.env.UPLOAD_DIR || "uploads",
   },
 
+  noteImages: {
+    provider: process.env.NOTE_IMAGE_STORAGE?.trim() || "local",
+    endpoint: process.env.R2_ENDPOINT?.trim() || "",
+    bucket: process.env.R2_BUCKET?.trim() || "",
+    accessKeyId: process.env.R2_ACCESS_KEY_ID?.trim() || "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY?.trim() || "",
+  },
+
   elevenlabs: {
     apiKey: process.env.ELEVENLABS_API_KEY || "",
   },
 
   qdrant: {
     url: process.env.QDRANT_DB_URL || "http://localhost:6333",
-    collection: process.env.QDRANT_COLLECTION || "pdf_knowledge_base",
+    collection: process.env.QDRANT_COLLECTION?.trim() || "pdf_knowledge_base_v2",
+    apiKey: process.env.QDRANT_API_KEY?.trim() || "",
+    // The actual upstream v2 extractor emits one-based PDF page numbers.
+    // An explicit zero-based setting supports a deployment matching the guide.
+    payloadPageBase: Number(process.env.QDRANT_PAYLOAD_PAGE_BASE ?? "1"),
   },
 
   curriculumDb: {

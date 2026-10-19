@@ -1,12 +1,17 @@
 # Group leader handover: build the backend and models from GitHub
 
+The current source targets Knowledge Base v2. See [the v2 migration notes](../docs/knowledge-base-v2-notes-migration.md) before starting it. A verified [local v2 stack](kb-v2-local/README.md) is active with Science/History textbooks. Shared cloud deployment requires its own URL/key and matching re-ingested textbooks. Historical frozen images predating this migration cannot consume v2 as written.
+
 The complete inference-only bundle is versioned under `runtime/coverage/`.
 The 90,868,376-byte MiniLM `model.safetensors` file uses Git LFS. The models,
 tokenizer, inference Python modules and integrity manifests are included.
 No separate Blob Storage, training environment or training run is required.
 
-Current release: Science v3.4 (the compatibility filename remains
-`english-coverage-v3.1.json`), History v5.1 and pipeline 2.1.9. The current
+Current prepared local release: Science V3.5 (the compatibility filename remains
+`english-coverage-v3.1.json`), History V6.2 and pipeline 2.1.9. See the
+[V6.2 model report](../docs/history-paraphrases-v62.md) and
+[local release manifest](history-v62-2026-10-19/release-manifest.json).
+Use the instructions below from the integration branch containing this release. The current
 production profile disables ICT and expert research-review routes. Its ICT
 artifact is retained in the bundle for the existing integrity contract.
 
@@ -21,8 +26,8 @@ cd Smart-HandWritten-Note-Understanding-Service
 git lfs install --local
 git lfs pull
 git lfs fsck
-docker build --platform linux/amd64 -t smart-notes-coverage:science-v34-history-v51-release-20261018 .
-docker run --rm --network none --read-only --tmpfs /tmp smart-notes-coverage:science-v34-history-v51-release-20261018 node dist/scripts/verify-coverage-container.js
+docker build --platform linux/amd64 -t smart-notes:science-v35-history-v62-r2-20261019 .
+docker run --rm --network none --read-only --tmpfs /tmp smart-notes:science-v35-history-v62-r2-20261019 node dist/scripts/verify-coverage-container.js
 ```
 
 The Docker build installs Node/Python dependencies and validates every bundled
@@ -53,13 +58,13 @@ Use a current GitHub-hosted runner or a compatible self-hosted runner; see the
 
 ## Run or deploy
 
-Use [the current production profile](science-history-v34-2026-10-18/README.md)
+Use [the current Docker production profile](azure-ready-2026-10-19/README.md)
 and its `.env.production.example` for the required configuration. Supply actual
 credentials privately. The Compose profile expects the image tag built above.
 
 For Azure, publish this complete image to ACR and run it in Container Apps on
-port 8004. Models stay inside the image. Configure one active replica, persistent
-uploads/audio/cache mounts, the gateway prefix rewrite and existing database,
+port 8004. Models stay inside the image. Configure one active replica,
+persistent audio/cache mounts, private R2 images, the gateway prefix rewrite and existing database,
 Clerk and OCR connections as described in [the Azure guide](../docs/azure-deployment.md).
 The checked-in Compose file is a Docker-host profile; translate its environment,
 volumes and preflight checks to the Azure configuration.

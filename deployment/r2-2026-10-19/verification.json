@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-19",
+  "scope": "Handwritten Notes service only",
+  "image": "smart-notes-coverage:science-v35-history-v62-kb-v2-r2",
+  "imageId": "sha256:556a0564946380eda964527ebce1ec76a9370571481fedc0e3684e46ecb9683a",
+  "dockerBuildPassed": true,
+  "containerHealthy": true,
+  "healthHttpStatus": 200,
+  "regressionTestsPassed": 171,
+  "syntheticLocalS3Compatibility": {
+    "provider": "Existing local MinIO, temporary private test bucket",
+    "passed": true,
+    "checks": ["streamed upload", "exact byte retrieval", "anonymous access denied", "deletion", "database-failure rollback"],
+    "testObjectsAndBucketRemoved": true
+  },
+  "containerLocalUploadFlow": {
+    "passed": true,
+    "syntheticOnly": true,
+    "checks": ["multipart upload", "private image access", "ownership enforcement", "polling", "pre-analysis material rejection", "Science and History v2 retrieval", "deletion"],
+    "testDataCleaned": true,
+    "groqInvoked": false
+  },
+  "cloudflareLiveVerified": true,
+  "cloudflareActivation": "Active for new Notes image uploads; only the Notes container recreated",
+  "activeUploadProvider": "r2",
+  "cloudflareSyntheticProbe": {
+    "passed": true,
+    "checks": ["upload", "exact byte read", "deletion", "deleted object returns 404"],
+    "studentNotesUsed": 0
+  },
+  "containerCloudUploadFlow": {
+    "passed": true,
+    "syntheticOnly": true,
+    "authMode": "production routers and verified isolated test JWTs; production authentication unchanged",
+    "checks": ["multipart upload to R2", "persisted private image reference", "no permanent local R2 copy", "exact bytes from R2 and authenticated image route", "unsigned S3 access rejected", "anonymous and cross-user app image access rejected", "polling", "pre-analysis material rejection", "Science and History v2 retrieval", "test note and remote object deletion"],
+    "testDataCleaned": true,
+    "groqInvoked": false,
+    "freshImageOCRTested": false
+  },
+  "existingStudentImagesMigrated": true,
+  "existingImageMigration": {
+    "validImages": 114,
+    "notes": 35,
+    "missingOriginalFilesRetainedUnchanged": 75,
+    "invalidOriginalFilesRetainedUnchanged": 1,
+    "report": "deployment/r2-2026-10-19/migration-verification.json"
+  },
+  "guide": "docs/private-note-images-r2.md"
+}

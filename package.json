@@ -4,6 +4,8 @@
   "description": "AI-Driven Handwritten Note Understanding and Learning Gap Detection Service",
   "main": "dist/server.js",
   "scripts": {
+    "verify:deployment": "ts-node src/scripts/verify-deployment.ts",
+    "verify:image-storage": "ts-node src/scripts/verify-note-image-storage.ts",
     "dev": "nodemon --exec ts-node src/server.ts",
     "build": "tsc",
     "test:coverage": "node --test -r ts-node/register src/services/englishCoverageService.test.ts",
@@ -20,7 +22,7 @@
     "start": "node dist/server.js",
     "eval:benchmarks": "ts-node src/scripts/run-research-benchmarks.ts",
     "eval:dashboard": "ts-node src/scripts/generate-eval-dashboard.ts",
-    "test": "node --test -r ts-node/register src/config/validateConfig.test.ts src/curriculum/identity.test.ts src/pipeline/conceptPrediction.test.ts src/pipeline/ocrProvenance.test.ts src/pipeline/stages/02-ocrCleaning.test.ts src/pipeline/stages/06-conceptMatching.test.ts src/pipeline/stages/10-qualityVerification.test.ts src/annotations/contract.test.ts src/annotations/expertAuth.test.ts src/annotations/liveReview.test.ts src/annotations/textIntake.test.ts src/ml/conceptClassifier.test.ts src/services/ocrService.test.ts src/services/textbookFilename.test.ts src/middleware/studentSecurity.test.ts src/services/materialJobs.test.ts src/services/historyNoteChecks.test.ts src/services/processingLease.test.ts src/services/processingRecovery.test.ts src/services/scienceNoteChecks.test.ts src/middleware/upload.test.ts src/services/scienceModelText.test.ts",
+    "test": "node --test -r ts-node/register src/services/noteImageStorage.test.ts src/config/deploymentProfile.test.ts src/config/validateConfig.test.ts src/curriculum/identity.test.ts src/pipeline/conceptPrediction.test.ts src/pipeline/ocrProvenance.test.ts src/pipeline/stages/02-ocrCleaning.test.ts src/pipeline/stages/04-lessonIdentification.test.ts src/pipeline/stages/06-conceptMatching.test.ts src/pipeline/stages/10-qualityVerification.test.ts src/annotations/contract.test.ts src/annotations/expertAuth.test.ts src/annotations/liveReview.test.ts src/annotations/textIntake.test.ts src/ml/conceptClassifier.test.ts src/services/ocrService.test.ts src/services/groqPool.test.ts src/services/knowledgeBaseV2.test.ts src/services/textbookFilename.test.ts src/middleware/studentSecurity.test.ts src/services/materialJobs.test.ts src/services/studyMaterialContent.test.ts src/services/historyNoteChecks.test.ts src/services/processingLease.test.ts src/services/processingRecovery.test.ts src/services/processingFailureMessage.test.ts src/services/scienceNoteChecks.test.ts src/middleware/upload.test.ts src/services/scienceModelText.test.ts",
     "security:secrets": "ts-node src/scripts/check-committed-secrets.ts",
     "annotations:export": "ts-node src/scripts/export-annotation-candidates.ts",
     "annotations:import": "ts-node src/scripts/import-reviewed-annotations.ts",
@@ -30,6 +32,8 @@
     "annotations:ingest-notes": "ts-node src/scripts/ingest-offline-note-batch.ts",
     "annotations:intake-text": "ts-node src/scripts/prepare-text-annotation-candidates.ts",
     "annotations:release": "ts-node src/scripts/release-annotation-dataset.ts",
+    "kb:verify-v2": "ts-node src/scripts/verify-knowledge-base-v2.ts",
+    "test:kb-v2": "node --test -r ts-node/register src/services/knowledgeBaseV2.test.ts src/config/validateConfig.test.ts src/services/lessonStudyGuide.test.ts",
     "kb:verify": "ts-node src/scripts/verify-knowledge-base-coverage.ts",
     "model:train": "ts-node src/scripts/train-concept-classifier.ts",
     "model:collect-student-notes": "ts-node src/scripts/collect-student-model-batch.ts",
@@ -41,7 +45,8 @@
     "test:ict-review": "node --test -r ts-node/register src/routes/ictCoverage.test.ts",
     "test:processing-progress": "node --test -r ts-node/register src/pipeline/progress.test.ts",
     "verify:ict-integration": "ts-node src/scripts/verify-ict-integration.ts",
-    "test:student-security": "node --test -r ts-node/register src/middleware/studentSecurity.test.ts"
+    "test:student-security": "node --test -r ts-node/register src/middleware/studentSecurity.test.ts",
+    "test:study-materials": "node --test -r ts-node/register src/services/studyMaterialContent.test.ts src/services/materialJobs.test.ts src/services/lessonStudyGuide.test.ts"
   },
   "repository": {
     "type": "git",
@@ -56,6 +61,7 @@
   },
   "homepage": "https://github.com/Interactive-Digital-Learning-Platform/Smart-HandWritten-Note-Understanding-Service#readme",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
     "@huggingface/transformers": "^4.2.0",
     "@types/pg": "^8.23.1",
     "axios": "^1.16.0",

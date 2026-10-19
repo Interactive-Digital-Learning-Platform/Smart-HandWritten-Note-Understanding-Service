@@ -1,0 +1,43 @@
+{
+  "release": "science-v35-ocr-notes-2026-10-19",
+  "scope": "Notes service only",
+  "localContainerRunning": true,
+  "externalHostingDeployed": false,
+  "image": "smart-notes-coverage:science-v35-history-v6-ict-v31-materials-v31",
+  "imageId": "sha256:e1de6716137277af07f5614e49c5d563f2cd62e2271793b77b87f2b3f8fce0d9",
+  "science": {
+    "version": "english-coverage-v3.5-ocr-notes-2026-10-19",
+    "sha256": "021bb8bd41df5d55599258144a9694097a32cae054ebabd12643783d1d50b191",
+    "continuedTraining": true,
+    "architectureFeaturesScalerRubricsPolicyUnchanged": true,
+    "rehearsalRows": 71,
+    "newAiReviewedExamples": 8,
+    "newNotebooks": 3,
+    "newSourceFamilies": 2,
+    "syntheticHandwriting": true,
+    "newHumanLabels": 0,
+    "independentAccuracyIncreaseEstablished": false
+  },
+  "unchangedSubjects": {
+    "historySha256": "445f2986afecc521597d5ff82e69191bfe782e38ab42a099d49d5d4d8477f629",
+    "ictSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b"
+  },
+  "verification": {
+    "pythonChecksPassed": 55,
+    "nodeChecksPassed": 17,
+    "containerPredictionFixturesPassed": 15,
+    "containerNewTrainingExamplesMatched": 8,
+    "containerMissingDiagnosticPassed": true,
+    "newFalseCompleteRegressions": 0,
+    "noteRecordsWritten": 0,
+    "additionalExternalAiCalls": 0
+  },
+  "rollback": {
+    "image": "smart-notes-coverage:science-v34-history-v6-ict-v31-materials-v31",
+    "imageId": "sha256:62df6169c7414d5e4643065b4dffbc78ffa1e47c48beb2d6cb8cc7a9c896f53c",
+    "scienceSha256": "af9c5f0aeb326bb59f3ffc80ddecb61c251f0e02bdebfe9d272a98b8df16ef63",
+    "hostBackup": "ml-training/outputs/science-v35-new-notes-2026-10-19/fit/activation-backup"
+  },
+  "trainingReport": "ml-training/outputs/science-v35-new-notes-2026-10-19/fit/training-report.json",
+  "documentation": "docs/science-ocr-training-v35.md"
+}

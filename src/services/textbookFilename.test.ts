@@ -33,6 +33,13 @@ test("Grade 11 Science registry names match the ingested part filenames", () => 
   );
 });
 
+test("Grade 10 Science uses the verified v1 ingestion name without matching other grades", () => {
+  const canonical = "grade-10-science-text-book-6200ec8f089d4.pdf";
+  assert.ok(getTextbookFilenameCandidates(canonical).includes("grade-10-science-text-book-v1.pdf"));
+  assert.equal(matchesTextbookFilename("grade-10-science-text-book-v1.pdf", canonical), true);
+  assert.equal(matchesTextbookFilename("science grade 11 part 1.pdf", canonical), false);
+});
+
 test("the canonical History name accepts the legacy ingested typo", () => {
   assert.equal(
     matchesTextbookFilename(

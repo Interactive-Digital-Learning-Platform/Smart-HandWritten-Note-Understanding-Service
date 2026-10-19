@@ -16,6 +16,21 @@ export type MaterialType =
 export interface IFlashcard {
   front: string;
   back: string;
+  hint?: string;
+  explanation?: string;
+  kind?: "recall" | "explain" | "apply" | "compare";
+  sourceQuote?: string;
+}
+
+export interface IStudyVisual {
+  type: "flow" | "timeline" | "comparison" | "bar";
+  afterHeading: string;
+  title: string;
+  caption: string;
+  sourceQuote: string;
+  items?: Array<{ label: string; detail: string }>;
+  unit?: string;
+  data?: Array<{ label: string; value: number }>;
 }
 
 // ─── Definition sub-document ───────────────────────────────────────────────
@@ -41,6 +56,7 @@ export interface ILearningMaterial extends Document {
 
   // Content fields — only one will be populated depending on type
   textContent?: string;           // structured_notes, revision_summary, learning_points
+  visuals?: IStudyVisual[];       // source-grounded illustrations for structured notes
   flashcards?: IFlashcard[];      // flashcards
   definitions?: IDefinition[];    // definitions
   mindMap?: IMindMapNode;         // mindmap root node
@@ -66,6 +82,10 @@ const FlashcardSchema = new Schema<IFlashcard>(
   {
     front: { type: String, required: true },
     back: { type: String, required: true },
+    hint: String,
+    explanation: String,
+    kind: { type: String, enum: ["recall", "explain", "apply", "compare"] },
+    sourceQuote: String,
   },
   { _id: false }
 );
@@ -102,6 +122,13 @@ const LearningMaterialSchema = new Schema<ILearningMaterial>(
       required: true,
     },
     textContent: { type: String },
+    visuals: { type: [new Schema<IStudyVisual>({
+      type: { type: String, enum: ["flow", "timeline", "comparison", "bar"], required: true },
+      afterHeading: { type: String, required: true }, title: { type: String, required: true },
+      caption: { type: String, required: true }, sourceQuote: { type: String, required: true },
+      items: { type: [{ _id: false, label: String, detail: String }], default: undefined },
+      data: { type: [{ _id: false, label: String, value: Number }], default: undefined }, unit: String,
+    }, { _id: false })], default: undefined },
     flashcards: { type: [FlashcardSchema], default: undefined },
     definitions: { type: [DefinitionSchema], default: undefined },
     mindMap: { type: Schema.Types.Mixed, default: undefined },

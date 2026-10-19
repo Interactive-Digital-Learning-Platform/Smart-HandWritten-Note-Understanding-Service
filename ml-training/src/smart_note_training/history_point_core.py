@@ -8,6 +8,8 @@ from .english_coverage import LABELS
 from .history_semantic_core import SemanticCoreFeatures, CORE_FEATURES
 from .history_point_coverage import PointCoveragePredictor
 from .history_semantic_review import semantic_support_concerns
+from .history_coverage_v31 import prompt_signals
+import re
 
 FEATURES = CORE_FEATURES + ['point_complete_score', 'point_partial_score', 'point_missing_score',
     'point_complete_fraction', 'point_partial_fraction', 'point_missing_fraction']
@@ -45,19 +47,29 @@ class PointCorePredictor:
             or not all(np.isfinite(v).all() for v in (self.mean,self.scale,self.weights,self.intercept)) or (self.scale <= 0).any()):
             raise ValueError('Invalid History concept model parameters')
 
-    def predict(self, text, concept_id, language='English', scope_confirmed=False):
-        # The point predictor performs the same input/language/scope validation.
-        self.extractor.point.predict(text, concept_id, language, scope_confirmed)
-        x, evidence = self.extractor.one(text, concept_id)
+    def class_scores(self,x):
         logits = ((x-self.mean)/self.scale)@self.weights.T+self.intercept
-        scores = np.exp(logits-logits.max()); scores /= scores.sum()
+        scores = np.exp(logits-logits.max())
+        return scores/scores.sum()
+
+    def predict(self, text, concept_id, language='English', scope_confirmed=False):
+        if not isinstance(text,str) or not text.strip() or len(text)>20000:
+            raise ValueError('Provide 1–20000 characters')
+        if not isinstance(language,str) or language.lower() not in ('english','en') or re.search(r'[\u0D80-\u0DFF]',text):
+            raise ValueError('English only')
+        if scope_confirmed is not True:
+            raise ValueError('Confirm the selected concept applies')
+        if concept_id not in self.extractor.point.extractor.concepts:
+            raise ValueError('Choose a registered History concept')
+        x, evidence = self.extractor.one(text, concept_id)
+        scores = self.class_scores(x)
         raw = LABELS[int(scores.argmax())]
         result = {'status':None, 'rawModelStatus':raw, 'suggestedStatus':raw, 'scores':dict(zip(LABELS,scores.tolist())),
             'scoresCalibrated':False, 'reviewRequired':True, 'modelVersion':self.artifact['metadata']['experimentId'],
             'evidence':evidence, 'completeSuggestionWithheld':False, 'suggestionWithheld':False}
         evidence['concerns'].extend(semantic_support_concerns(result,self.artifact['rubrics']))
-        if (raw == 'present' and evidence['concerns']) or any(c['kind']=='possible_ocr_year_ambiguity' for c in evidence['concerns']):
+        if (raw == 'present' and evidence['concerns']) or (prompt_signals(text)[0] and raw!='missing') or any(c['kind']=='possible_ocr_year_ambiguity' for c in evidence['concerns']):
             result['suggestedStatus'] = None; result['suggestionWithheld'] = True
             result['completeSuggestionWithheld'] = raw == 'present'
-        result['reviewPolicyVersion'] = 'point-assisted-semantic-review-v1'
+        result['reviewPolicyVersion'] = 'point-assisted-semantic-review-v2'
         return result

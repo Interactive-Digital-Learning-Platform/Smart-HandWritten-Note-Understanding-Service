@@ -1,6 +1,6 @@
 # Azure deployment and model hosting
 
-Updated 18 October 2026 for the GitHub handover. The backend and model bundle
+Updated 19 October 2026 after R2 activation and existing-image migration. The backend and model bundle
 are built together from this repository, using Git LFS for the encoder binary.
 This guide does not create Azure resources or enable automatic deployment.
 
@@ -14,8 +14,8 @@ These dependencies are not inside the image and are not migrated by publishing
 the code. They may remain on their current hosts if reachable securely.
 
 Start with a single active replica, `minReplicas: 1`, `maxReplicas: 1` and
-single revision mode. The current service starts work inside the Node process
-and stores media on disk; its release guide explicitly requires one instance.
+single revision mode. The current service starts work inside the Node process;
+R2 image storage does not make its background workers distributed.
 Keep it running while processing work, drain active jobs before a revision
 change, and avoid routing work to two revisions during rollout. Single revision
 mode alone is not a distributed job lock. Start resource testing at 2 vCPU /
@@ -30,13 +30,13 @@ the current frozen release.
 
 | Component | Runtime behavior |
 | --- | --- |
-| Science v3.4 | Portable JSON weights/rubrics, called through the bundled Python bridge; compatibility filename remains v3.1 |
-| History v5.1 | Frozen JSON model plus the bundled MiniLM encoder, loaded by a persistent Python worker |
+| Science v3.5 | Portable JSON weights/rubrics, called through the bundled Python bridge; compatibility filename remains v3.1 |
+| History v6.2 | Frozen JSON model plus the bundled MiniLM encoder, loaded by a persistent Python worker |
 | ICT v3.1 | Artifact exists in this image; disabled in the selected release configuration |
 | OCR / selected text tasks | Requests to the configured external Groq models |
 | Curriculum retrieval | Separate Nomic embedding model and the existing 768-dimensional Qdrant collection |
 
-The coverage inference bundle has 30 hash-verified files, including the three
+The coverage inference bundle contains hash-verified files, including the three
 models, inference modules and MiniLM encoder. Keep it at
 `/app/coverage-runtime` in the image. It contains no training datasets. The
 Nomic retrieval encoder is separate: provision its cache and run the dependency
@@ -45,9 +45,14 @@ check before accepting uploads; the first check may download that encoder.
 Current tested image:
 
 ```text
-smart-notes-coverage:science-v34-history-v51-release-20261018
-sha256:83912e1cd9ea3cf84c90a482133e454371235dc6c2d9241a19803824e288d5c3
+smart-notes:science-v35-history-v62-r2-20261019
 ```
+
+See the current [Docker release](../deployment/azure-ready-2026-10-19/README.md)
+and its release-verification JSON for the local image ID and validation results.
+The team has not selected an Azure hosting option yet; the Linux amd64 image can
+also run in AKS or on an Azure Docker VM. Container Apps is the optional example
+in this guide, not a provisioned or verified Azure deployment.
 
 Use a versioned registry tag and record the registry digest after upload. Do
 not overwrite an older deployment tag. Preserve the earlier image for rollback.
@@ -67,8 +72,8 @@ Local Docker image IDs and registry manifest digests are different identifiers.
    ```powershell
    $registryName = '<your-acr-name>'
    $registryHost = az acr show --name $registryName --query loginServer --output tsv
-   $sourceImage = 'smart-notes-coverage:science-v34-history-v51-release-20261018'
-   $targetImage = "${registryHost}/smart-notes:science-v34-history-v51-20261018"
+   $sourceImage = 'smart-notes:science-v35-history-v62-r2-20261019'
+   $targetImage = "${registryHost}/smart-notes:science-v35-history-v62-r2-20261019"
    az acr login --name $registryName
    docker tag $sourceImage $targetImage
    docker push $targetImage
@@ -83,17 +88,23 @@ Local Docker image IDs and registry manifest digests are different identifiers.
    the developer `.env` into the image or GitHub. Set the real Clerk issuer and
    exact deployed frontend origins. Native session tokens still require Clerk
    verification. No Notes authentication bypass exists.
-5. Mount persistent Azure Files storage at `/app/uploads`,
-   `/app/generated_audio` and `/app/.cache`. Verify that UID 1000 (the image's
+5. Keep the existing private R2 bucket and its server-only credentials for note
+   images. Mount persistent Azure Files storage at `/app/generated_audio` and
+   `/app/.cache`. Verify that UID 1000 (the image's
    `node` user) can write to the mounts. Container/replica temporary storage is
-   insufficient for notes and audio across replacement. Migrate old media
-   privately if keeping existing note records; reusing MongoDB alone does not
-   transfer photos/audio.
+   insufficient for audio across replacement. `/app/uploads` is temporary staging
+   for new R2 uploads and must be writable. The 114 valid existing images have
+   already been migrated to R2, so keep that bucket and the matching Notes database.
+   Transfer audio separately when keeping its existing records. Keep original
+   recovery copies on the old host; the Docker image contains no student media.
 6. Run release configuration/dependency preflight against the destination
-   settings. The scripts live in `deployment/science-history-v34-2026-10-18/`;
-   the current Dockerfile does not copy them into the image. Run them in a
-   controlled preflight container/job with the same environment, connectivity
-   and mounted cache. Require `ready: true` from `check-dependencies.cjs`.
+   settings. `node dist/scripts/verify-deployment.js` is inside the image and checks
+   the configuration and packaged model catalogs without connecting externally.
+   Then run `node dist/scripts/verify-knowledge-base-v2.js` in a controlled
+   container/job with the destination network and the same cache mount; require
+   `ready: true`. Verify the destination PostgreSQL ingestion records too. The
+   existing local v2 PostgreSQL/Qdrant Docker stack is not included in this image
+   and must be deployed/restored separately. Health alone cannot verify this.
 7. Add startup/readiness/liveness HTTP probes on port `8004`, path
    `/api/health`, allowing enough startup time to load dependencies. Health is
    not a substitute for dependency preflight or an authenticated upload test.
@@ -123,7 +134,19 @@ ENGLISH_COVERAGE_REVIEW_ENABLED=false
 ANNOTATION_REVIEW_ENABLED=false
 UPLOAD_DIR=/app/uploads
 EMBEDDING_CACHE_DIR=/app/.cache/embeddings
+NOTE_IMAGE_STORAGE=r2
+QDRANT_COLLECTION=pdf_knowledge_base_v2
+QDRANT_PAYLOAD_PAGE_BASE=1
 ```
+
+Use the [current production environment example](../deployment/azure-ready-2026-10-19/.env.production.example)
+for all database, Clerk, Groq and R2 variable names. Supply their values as secrets,
+including `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`. Configure startup, readiness
+and liveness probes explicitly in the Azure hosting spec; the Dockerfile's own
+health check does not replace platform probe configuration. A reasonable initial
+Container Apps startup allowance is 10-second periods with 30 failures (five
+minutes); readiness/liveness may use 10-second periods, 5-second timeouts and
+failure thresholds of 3. Tune these after measuring the destination cold start.
 
 Do not use `localhost` or `host.docker.internal` for Azure-hosted databases.
 Set their reachable private/managed-service DNS addresses instead. Preserve
@@ -148,7 +171,8 @@ hashes, and the offline regression script verifies model behavior. See
 bundle on the deployment host: its preparer is a model-workstation tool that
 needs ignored historical provenance. Use the versioned bundle as supplied.
 
-Relevant guides: [release profile](../deployment/science-history-v34-2026-10-18/README.md),
+Relevant guides: [release profile](../deployment/azure-ready-2026-10-19/README.md),
+[existing-image migration](note-image-migration-2026-10-19.md),
 [model packaging](coverage-deployment.md).
 
 Microsoft references checked for this guide:
