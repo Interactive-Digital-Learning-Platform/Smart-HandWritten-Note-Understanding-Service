@@ -47,6 +47,13 @@ export interface IMindMapNode {
   children?: IMindMapNode[];
 }
 
+export interface IAudioTranscriptCue {
+  start: number;
+  end: number;
+  startOffset: number;
+  endOffset: number;
+}
+
 // ─── Main LearningMaterial document ───────────────────────────────────────
 
 export interface ILearningMaterial extends Document {
@@ -61,6 +68,7 @@ export interface ILearningMaterial extends Document {
   definitions?: IDefinition[];    // definitions
   mindMap?: IMindMapNode;         // mindmap root node
   audioUrl?: string;              // audio file path/URL
+  transcriptCues?: IAudioTranscriptCue[]; // original script word offsets + recording seconds
 
   // Personalized study metadata
   targetedGaps?: string[];        // missing concepts or outcome IDs addressed
@@ -133,6 +141,12 @@ const LearningMaterialSchema = new Schema<ILearningMaterial>(
     definitions: { type: [DefinitionSchema], default: undefined },
     mindMap: { type: Schema.Types.Mixed, default: undefined },
     audioUrl: { type: String },
+    transcriptCues: { type: [new Schema<IAudioTranscriptCue>({
+      start: { type: Number, required: true, min: 0 },
+      end: { type: Number, required: true, min: 0 },
+      startOffset: { type: Number, required: true, min: 0 },
+      endOffset: { type: Number, required: true, min: 0 },
+    }, { _id: false })], default: undefined },
     targetedGaps: { type: [String], default: [] },
     estimatedMinutes: { type: Number, default: 3 },
     purposeDescription: { type: String },
