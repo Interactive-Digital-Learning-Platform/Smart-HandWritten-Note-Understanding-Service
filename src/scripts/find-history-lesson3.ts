@@ -2,9 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import axios from "axios";
+import { knowledgeBasePdfPages, qdrantCollectionUrl, qdrantRequestOptions } from "../services/knowledgeBaseV2";
 
 async function run() {
-  const url = "http://localhost:6333/collections/pdf_knowledge_base/points/scroll";
+  const url = `${qdrantCollectionUrl()}/points/scroll`;
   let offset: string | null = null;
 
   for (let i = 0; i < 20; i++) {
@@ -13,10 +14,12 @@ async function run() {
       offset,
       with_payload: true,
       with_vector: false,
-    });
+    }, qdrantRequestOptions(10000));
     const pts = res.data.result.points || [];
     for (const pt of pts) {
-      const payload = pt.payload || {};
+      const raw = pt.payload || {};
+      const pdfPages = knowledgeBasePdfPages(raw);
+      const payload = {...raw, pages: pdfPages, page_start: pdfPages[0] ?? 0};
       const text = (payload.text || "").toLowerCase();
       if (text.includes("evolution of political power") || text.includes("prince vijaya") || text.includes("political power")) {
         console.log(`\n=== Found Match in: ${payload.filename} (Page: ${payload.page_start}, Pages: ${JSON.stringify(payload.pages)}) ===`);
@@ -28,4 +31,4 @@ async function run() {
   }
 }
 
-run();
+run().catch(() => {console.error("Knowledge base inspection failed. Check the v2 endpoint and credentials.");process.exitCode=1;});

@@ -1,5 +1,11 @@
 # History Partial review — 18 October 2026
 
+**Superseded:** the candidate discussed below remains an archived experiment.
+The subsequent [History V6 release](history-v6-grounded-release.md) resolves its
+release-blocking regressions and includes explicit AI-reviewed training replay.
+Refer to that report for the current model. The historical results below remain
+unchanged for auditability.
+
 The assistant completed the requested review of all 50 reserved History cases,
 including the 30 displayed in the review page. The 13 underlying complete
 transcripts, exact concept requirements and supplied error ledgers were checked.

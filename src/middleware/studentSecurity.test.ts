@@ -6,12 +6,15 @@ import path from "node:path";
 import express from "express";
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose";
 import { createStudentAuth, studentAuthConfig } from "./studentAuth";
-import { errorHandler } from "./errorHandler";
+import { AppError, errorHandler } from "./errorHandler";
 import notesRouter from "../routes/notes";
 import materialsRouter from "../routes/materials";
 import analysisRouter from "../routes/analysis";
 import profileRouter from "../routes/profile";
 import { createPrivateAssets } from "../routes/privateAssets";
+import { noteImageStorage } from "../services/noteImageStorage";
+import { config } from "../config/config";
+import { S3Client } from "@aws-sdk/client-s3";
 import { Note } from "../models/Note";
 import { LearningMaterial } from "../models/LearningMaterial";
 import {createHistoryCoverageRouter} from '../routes/historyCoverage';
@@ -25,14 +28,21 @@ const owner = "user_security_owner";
 const other = "user_security_other";
 const noteId = "0123456789abcdef01234567";
 const filename = "private-page.png";
+const cloudFilename = "r2-00000000-0000-4000-8000-000000000000.png";
+let cloudReads = 0;
+let cloudUnavailable = false;
 let base: string;
 let close: () => Promise<void>;
 let directory: string;
 let sign: (subject: string, extra?: Record<string, any>) => Promise<string>;
 let createdOwner: string | undefined;
 let listOwner: unknown;
+const originalImageProvider = config.noteImages.provider;
 
 before(async () => {
+  // Security fixtures must not inherit the operator's live R2 upload setting.
+  config.noteImages.provider = "local";
+  mock.method(S3Client.prototype, "send", () => { throw Error("Unit tests must not contact live object storage"); });
   directory = await mkdtemp(path.join(os.tmpdir(), "notes-private-test-"));
   await writeFile(path.join(directory, filename), "private image fixture");
   await writeFile(path.join(directory, "lesson.txt"), "private audio transcript");
@@ -44,7 +54,7 @@ before(async () => {
 
   mock.method(Note, "exists", async (filter: any) => {
     const own = filter.userId === owner;
-    const match = filter._id === noteId || filter.$or?.some((f: any) => Object.values(f).includes(`/uploads/${filename}`));
+    const match = filter._id === noteId || filter.$or?.some((f: any) => Object.values(f).some(value => [filename, cloudFilename].some(name => value === `/uploads/${name}`)));
     return own && match ? { _id: noteId } : null;
   });
   mock.method(Note, "findById", () => ({ select: async () => ({ _id: noteId, userId: owner, title: "Owned synthetic note" }) }));
@@ -58,6 +68,11 @@ before(async () => {
   mock.method(Note, "countDocuments", async () => 0);
   mock.method(Note, "findOne", async (filter: any) => filter.userId === owner ? {_id:noteId,userId:owner,status:'analyzed'} : null);
   mock.method(Note, "create", async (input: any) => { createdOwner = input.userId; return { ...input, _id: noteId }; });
+  mock.method(noteImageStorage, "read", async () => {
+    cloudReads++;
+    if (cloudUnavailable) throw new AppError("Note image storage is temporarily unavailable. Please try again later.", 503);
+    return Buffer.from("private cloud image fixture");
+  });
   mock.method(LearningMaterial, "findOne", (filter: any) => ({ select: async () => filter.userId === owner && filter.audioUrl === "/generated_audio/lesson.txt" ? { noteId } : null }));
 
   const app = express(); app.use(express.json());
@@ -78,6 +93,7 @@ before(async () => {
   close = () => new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
 });
 after(async () => {
+  config.noteImages.provider = originalImageProvider;
   await close?.(); mock.restoreAll();
   if (directory) {
     assert.ok(path.resolve(directory).startsWith(path.resolve(os.tmpdir()) + path.sep) && path.basename(directory).startsWith("notes-private-test-"));
@@ -88,6 +104,27 @@ after(async () => {
 async function call(url: string, token?: string, method = "GET", body?: unknown) {
   return fetch(base + url, { method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined });
 }
+
+test("private R2 images are read only after verifying ownership and keep private response headers", async () => {
+  const reads = cloudReads;
+  assert.equal((await call(`/uploads/${cloudFilename}`)).status, 401);
+  assert.equal((await call(`/uploads/${cloudFilename}`, await sign(other))).status, 404);
+  assert.equal(cloudReads, reads, "unauthorized requests never contact R2");
+  const response = await call(`/uploads/${cloudFilename}`, await sign(owner));
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), "private cloud image fixture");
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+  assert.equal(response.headers.get("content-type"), "image/png");
+});
+
+test("R2 outages return an actionable 503 without redirecting students to a public bucket", async () => {
+  cloudUnavailable = true;
+  try {
+    const response = await call(`/uploads/${cloudFilename}`, await sign(owner));
+    assert.equal(response.status, 503); assert.equal(response.headers.get("location"), null);
+    assert.match((await response.json() as any).error, /temporarily unavailable/);
+  } finally { cloudUnavailable = false; }
+});
 
 test("auth configuration is mandatory even if an old AUTH_BYPASS variable exists", () => {
   assert.throws(() => studentAuthConfig({ AUTH_BYPASS: "true" }));

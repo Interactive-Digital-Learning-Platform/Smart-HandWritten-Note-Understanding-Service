@@ -10,6 +10,13 @@ export const activeOcrText = (text: string): string => {
     .trim();
 };
 
+/** Placeholder-only pages contain no evidence about concept coverage. */
+export const hasReadableOcrContent = (text: string): boolean => /[\p{L}\p{N}]/u.test(
+  activeOcrText(text)
+    .replace(/---\s*Page\s+\d+\s*---/gi, " ")
+    .replace(/\[(?:illegible|unreadable|inaudible|unclear)(?:\s+(?:text|writing))?\]/gi, " ")
+);
+
 /** A visual deletion review may only mark exact, unambiguous OCR phrases.
  * It cannot add facts, replace words, or delete an unrelated occurrence.
  */
@@ -71,9 +78,11 @@ export const hasRepeatedOcrPassage = (text: string): boolean => {
     if (previous !== undefined && index - previous >= 150 && !coveredStarts.some(start => previous < start + width && previous + width > start)) {
       repeatedCharacters += width;
       coveredStarts.push(previous);
-      // Multiple separated matches catch fragmented/reordered second copies,
-      // while a single repeated heading or brief definition remains acceptable.
-      if (repeatedCharacters >= 175 && repeatedCharacters * 2 >= compact.length * .25) return true;
+      // A summary chart can repeat a substantial part of the preceding prose.
+      // Require overlap consistent with a second reading of most of the page,
+      // rather than rejecting ordinary prose-to-diagram repetition. Restarted
+      // headings are checked separately above, including reordered fragments.
+      if (repeatedCharacters >= 175 && repeatedCharacters * 2 >= compact.length * .75) return true;
     }
     if (previous === undefined) seen.set(passage, index);
   }

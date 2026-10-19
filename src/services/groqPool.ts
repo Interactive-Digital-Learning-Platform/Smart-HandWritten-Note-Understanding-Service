@@ -20,7 +20,8 @@ export interface GroqPoolStatus {
 class GroqPoolManager {
   private clients: { client: Groq; index: number }[] = [];
   private currentIndex = 0;
-  private keyCooldowns = new Map<number, number>(); // keyIndex -> cooldownUntil timestamp
+  private keyCooldowns = new Map<string, Map<number, number>>(); // model -> key -> cooldown
+  private modelCooldowns = new Map<string, number>();
 
   constructor() {
     this.initClients();
@@ -42,13 +43,14 @@ class GroqPoolManager {
     );
   }
 
-  public getStatus(): GroqPoolStatus {
+  public getStatus(model = config.groq.model): GroqPoolStatus {
+    const modelKeys=this.keyCooldowns.get(model)??new Map<number,number>();
     const now = Date.now();
     let healthyCount = 0;
     const cooldowns: { keyIndex: number; maskedKey: string; cooldownSecondsRemaining: number }[] = [];
 
     this.clients.forEach((c) => {
-      const cooldownUntil = this.keyCooldowns.get(c.index) || 0;
+      const cooldownUntil = modelKeys.get(c.index) || 0;
       const masked = `key_${c.index + 1}`;
       if (cooldownUntil > now) {
         cooldowns.push({
@@ -64,13 +66,14 @@ class GroqPoolManager {
     return {
       totalKeys: this.clients.length,
       healthyKeys: healthyCount,
-      activeModel: config.groq.model,
+      activeModel: model,
       cooldowns,
     };
   }
 
   // Gets the next available client.
-  public getNextClient(): { client: Groq; keyIndex: number; maskedKey: string } {
+  public getNextClient(model = config.groq.model): { client: Groq; keyIndex: number; maskedKey: string } {
+    const modelKeys=this.keyCooldowns.get(model)??new Map<number,number>();
     if (this.clients.length === 0) {
       throw new Error("No Groq API keys configured. Set GROQ_API_KEY, GROQ_API_KEY_2, or GROQ_API_KEYS in .env");
     }
@@ -81,7 +84,7 @@ class GroqPoolManager {
     // First, look for a key that is not cooling down.
     for (let i = 0; i < count; i++) {
       const idx = (this.currentIndex + i) % count;
-      const cooldown = this.keyCooldowns.get(idx) || 0;
+      const cooldown = modelKeys.get(idx) || 0;
       if (cooldown <= now) {
         this.currentIndex = (idx + 1) % count;
         const entry = this.clients[idx];
@@ -94,7 +97,7 @@ class GroqPoolManager {
     let earliestIdx = 0;
     let earliestCooldown = Infinity;
     for (let i = 0; i < count; i++) {
-      const cooldown = this.keyCooldowns.get(i) || 0;
+      const cooldown = modelKeys.get(i) || 0;
       if (cooldown < earliestCooldown) {
         earliestCooldown = cooldown;
         earliestIdx = i;
@@ -108,8 +111,9 @@ class GroqPoolManager {
   }
 
   // Pauses a key for a short time.
-  public markCooldown(keyIndex: number, cooldownMs: number = 25000) {
-    this.keyCooldowns.set(keyIndex, Date.now() + cooldownMs);
+  public markCooldown(keyIndex: number, cooldownMs: number = 25000, model = config.groq.model) {
+    if(!this.keyCooldowns.has(model))this.keyCooldowns.set(model,new Map());
+    this.keyCooldowns.get(model)!.set(keyIndex, Date.now() + cooldownMs);
     const masked = `key_${keyIndex + 1}`;
     console.warn(`⏳ [GroqPool] Marked key #${keyIndex + 1} (${masked}) on cooldown for ${cooldownMs / 1000}s`);
   }
@@ -126,7 +130,6 @@ class GroqPoolManager {
     const requestedModel = params.model || config.groq.model;
     const fallbackModels = options?.fallbackModels || [
       "openai/gpt-oss-120b",
-      "qwen/qwen3.8-27b",
       "openai/gpt-oss-20b",
     ];
 
@@ -148,9 +151,13 @@ class GroqPoolManager {
 
     for (let mIdx = 0; mIdx < modelsToTry.length; mIdx++) {
       const currentModel = modelsToTry[mIdx];
+      // A known exhausted model should not be retried for every section of a
+      // long guide. Other configured models remain eligible on the same keys.
+      if ((this.modelCooldowns.get(currentModel) ?? 0) > Date.now()) continue;
+      const limitedKeys = new Map<number, number>();
 
       for (let attempt = 0; attempt < totalKeyAttempts; attempt++) {
-        const { client, keyIndex, maskedKey } = this.getNextClient();
+        const { client, keyIndex, maskedKey } = this.getNextClient(currentModel);
 
         try {
           const timeoutMs = options?.timeoutMs || 45000;
@@ -202,7 +209,17 @@ class GroqPoolManager {
             status === 503 || msg.includes("over capacity") || msg.includes("service unavailable");
 
           if (isRateLimit || isTpmExceeded || isOverCapacity) {
-            this.markCooldown(keyIndex, isTpmExceeded ? 30000 : 20000);
+            this.markCooldown(keyIndex, isTpmExceeded ? 30000 : 20000,currentModel);
+
+            if (isRateLimit) {
+              const retry=msg.match(/try again in\s+(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m)?(?:(\d+(?:\.\d+)?)s)?/i);
+              const duration=retry?(Number(retry[1]??0)*3600+Number(retry[2]??0)*60+Number(retry[3]??0))*1000:0;
+              limitedKeys.set(keyIndex,Math.max(20000,duration));
+              if(limitedKeys.size===this.clients.length) {
+                this.modelCooldowns.set(currentModel,Date.now()+Math.min(...limitedKeys.values()));
+                break;
+              }
+            }
 
             if (this.clients.length > 1) {
               console.warn(

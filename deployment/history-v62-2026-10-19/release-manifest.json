@@ -1,0 +1,61 @@
+{
+  "release": "history-v62-paraphrases-2026-10-19",
+  "scope": "Notes service only",
+  "localContainerRunning": true,
+  "externalHostingDeployed": false,
+  "image": "smart-notes-coverage:science-v35-history-v62-ict-v31-materials-v31-ocr-v2",
+  "imageId": "sha256:55d651a01f5cdd1ed0656404efc9506085d520787281efb12b39d49c23aeec69",
+  "history": {
+    "version": "history-coverage-v6.2-paraphrases-2026-10-19",
+    "sha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7",
+    "architectureFeaturesEncoderScalerRubricsPointModelPolicyUnchanged": true,
+    "classHeadsUpdated": true,
+    "baseHeadRetention": 0.25,
+    "originalTrainingRowsReplayed": 2185,
+    "v61TrainingRowsReplayed": 17,
+    "addedAuthoredContrastRows": 29,
+    "exposedFailuresIncludedInTraining": 2,
+    "newHumanLabels": 0,
+    "independentAccuracyEstablished": false
+  },
+  "unchangedModels": {
+    "scienceSha256": "021bb8bd41df5d55599258144a9694097a32cae054ebabd12643783d1d50b191",
+    "ictSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b"
+  },
+  "verification": {
+    "pythonChecksPassed": 34,
+    "nodeChecksPassed": 15,
+    "containerPredictionFixturesPassed": 15,
+    "containerTargetedServiceChecksPassed": 26,
+    "additionalNonFittedTypedProbesMatched": 12,
+    "healthHttpStatus": 200,
+    "containerHealthy": true,
+    "externalAiCalls": 0,
+    "noteRecordsWritten": 0,
+    "previouslyCorrectOlderRegressionCasesLost": 0,
+    "newIncorrectCompleteSuggestions": 0,
+    "oldSyntheticTestMatches": {
+      "before": 333,
+      "after": 333,
+      "total": 340
+    },
+    "oldSyntheticValidationMatches": {
+      "before": 334,
+      "after": 334,
+      "total": 338
+    }
+  },
+  "knownLimits": [
+    "Assistant-authored labels and exposed development selection are not independent real-student accuracy.",
+    "Three of 29 authored training contrasts still mismatch: two other terse foreign-account statements and one denial.",
+    "Three older related-text challenges remain withheld.",
+    "The 98-page OCR evaluation remains incomplete after prior provider rate limits."
+  ],
+  "rollback": {
+    "image": "smart-notes-coverage:science-v35-history-v61-ict-v31-materials-v31-ocr-v2",
+    "imageId": "sha256:fa7af7b9e437acf8d0f3dbfb79fd5780699541b3796bc80f2e99247e32008da6",
+    "historySha256": "e9440b662ae46838e40ff68da23ce150db10e6c3edd1a2311841989561260233",
+    "hostBackup": "ml-training/outputs/history-coverage-v6.2-paraphrases-2026-10-19/activation-backup"
+  },
+  "documentation": "docs/history-paraphrases-v62.md"
+}

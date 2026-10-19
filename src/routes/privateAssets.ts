@@ -4,6 +4,7 @@ import { Note } from "../models/Note";
 import { LearningMaterial } from "../models/LearningMaterial";
 import { AppError } from "../middleware/errorHandler";
 import { studentId } from "../middleware/studentAuth";
+import { isR2Image, noteImageMime, noteImageStorage } from "../services/noteImageStorage";
 
 /** Mounted behind student authentication; URLs carry no session tokens. */
 export function createPrivateAssets(kind: "uploads" | "generated_audio", directory: string): Router {
@@ -24,6 +25,11 @@ export function createPrivateAssets(kind: "uploads" | "generated_audio", directo
       if (!owned) throw new AppError("File not found", 404);
       res.setHeader("Cache-Control", "private, no-store");
       res.setHeader("Referrer-Policy", "no-referrer");
+      if (kind === "uploads" && isR2Image(filename)) {
+        const bytes = await noteImageStorage.read(filename);
+        res.type(noteImageMime(filename)).send(bytes);
+        return;
+      }
       res.sendFile(filename, { root: path.resolve(directory), dotfiles: "deny", cacheControl: false, lastModified: false }, error => {
         if (error) next(new AppError("File not found", 404));
       });

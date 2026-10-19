@@ -1,4 +1,5 @@
 import axios from "axios";
+import { knowledgeBasePdfPages, qdrantFailure, qdrantRequestOptions } from "./knowledgeBaseV2";
 import { config } from "../config/config";
 import { groqPool } from "./groqPool";
 import { CurriculumLesson } from "../curriculum/types";
@@ -8,6 +9,7 @@ import { buildDynamicCurriculumLesson } from "../curriculum/identity";
 import { validateLesson } from "../curriculum/validator";
 import {
   getTextbookStorageSources,
+  getTextbookFilenameCandidates,
   matchesTextbookFilename,
 } from "./textbookFilename";
 
@@ -43,6 +45,9 @@ export interface IngestionSearchChunk {
 }
 
 export interface SearchPageBounds {
+  /** Optional indexed upload tags. Omit for legacy untagged textbooks. */
+  subject?: string;
+  grade?: number;
   minPage?: number;
   maxPage?: number;
   filename?: string;
@@ -71,20 +76,10 @@ export interface CurriculumRetrievalContext {
 export class QdrantService {
   private qdrantBaseUrl: string;
   private collectionName: string;
-  private vectorName: string;
 
   constructor() {
     this.qdrantBaseUrl = config.qdrant.url.replace(/\/+$/, "");
     this.collectionName = config.qdrant.collection;
-    this.vectorName = config.qdrant.vectorName;
-  }
-
-  // Adds the API key Qdrant Cloud requires to each request.
-  private requestOptions(timeout: number) {
-    return {
-      timeout,
-      headers: config.qdrant.apiKey ? { "api-key": config.qdrant.apiKey } : {},
-    };
   }
 
   // Gets the Qdrant collection status and counts.
@@ -92,23 +87,23 @@ export class QdrantService {
     try {
       const response = await axios.get(
         `${this.qdrantBaseUrl}/collections/${this.collectionName}`,
-        this.requestOptions(3000)
+        qdrantRequestOptions(3000)
       );
 
       const result = response.data?.result;
       const pointsCount = result?.points_count ?? result?.vectors_count ?? 0;
       const status = result?.status ?? "unknown";
-      // Named vectors are keyed by name; a single unnamed vector is not.
       const vectors = result?.config?.params?.vectors;
-      const vectorParams = this.vectorName ? vectors?.[this.vectorName] : vectors;
+      const dense = config.qdrant.vectorName ? vectors?.[config.qdrant.vectorName] : vectors;
+      const compatible = Number.isInteger(dense?.size) && dense.size > 0 && dense.distance === "Cosine";
 
       return {
         collection: this.collectionName,
         totalPoints: pointsCount,
-        status,
-        vectorDim: vectorParams?.size,
-        distance: vectorParams?.distance,
-        isAvailable: pointsCount > 0 || status === "green" || status === "yellow",
+        status: compatible ? status : "incompatible_named_dense_vector",
+        vectorDim: dense?.size,
+        distance: dense?.distance,
+        isAvailable: compatible && (pointsCount > 0 || status === "green" || status === "yellow"),
       };
     } catch (error) {
       console.warn(
@@ -140,25 +135,29 @@ export class QdrantService {
     limit: number = 10,
     bounds?: SearchPageBounds
   ): Promise<IngestionSearchChunk[]> {
-    const vector = await embeddingService.embedRetrievalQuery(query);
     const collection = await this.getCollectionStats();
     if (!collection.isAvailable) {
       throw new Error(
         `Qdrant collection '${this.collectionName}' is unavailable at the configured QDRANT_DB_URL.`
       );
     }
+    const vector = await embeddingService.embedRetrievalQuery(query);
     if (collection.vectorDim && collection.vectorDim !== vector.length) {
       throw new Error(
         `Qdrant expects ${collection.vectorDim}-dimensional vectors but the embedding model produced ${vector.length}.`
       );
     }
     const candidateLimit = Math.max(limit * 8, 40);
+    const must: Record<string, unknown>[] = [];
+    if (bounds?.subject) must.push({ key: "subject", match: { value: bounds.subject } });
+    if (bounds?.grade !== undefined) must.push({ key: "grade", match: { value: bounds.grade } });
     const requestBody = {
       query: vector,
-      ...(this.vectorName ? { using: this.vectorName } : {}),
+      using: config.qdrant.vectorName || undefined,
       limit: candidateLimit,
       with_payload: true,
       with_vector: false,
+      ...(must.length ? { filter: { must } } : {}),
     };
 
     let points: any[];
@@ -166,25 +165,26 @@ export class QdrantService {
       const response = await axios.post(
         `${this.qdrantBaseUrl}/collections/${this.collectionName}/points/query`,
         requestBody,
-        this.requestOptions(10000)
+        qdrantRequestOptions(10000)
       );
-      points = response.data?.result?.points || [];
+      points = response.data?.result?.points;
+      if (!Array.isArray(points)) throw new Error("Invalid knowledge base query response");
     } catch (queryError) {
-      // Older Qdrant versions use this search endpoint.
+      // Fall back only when the endpoint is unsupported, never on strict-mode,
+      // authentication, timeout or provider errors.
+      const status = (queryError as any)?.response?.status;
+      if (![404, 405, 501].includes(status)) throw qdrantFailure("query", queryError);
       try {
+        const { query: _query, using: _using, ...options } = requestBody;
         const legacyResponse = await axios.post(
           `${this.qdrantBaseUrl}/collections/${this.collectionName}/points/search`,
-          {
-            limit: candidateLimit,
-            with_payload: true,
-            with_vector: false,
-            vector: this.vectorName ? { name: this.vectorName, vector } : vector,
-          },
-          this.requestOptions(10000)
+          { ...options, vector: config.qdrant.vectorName ? { name: config.qdrant.vectorName, vector } : vector },
+          qdrantRequestOptions(10000)
         );
-        points = legacyResponse.data?.result || [];
-      } catch {
-        throw queryError;
+        points = legacyResponse.data?.result;
+        if (!Array.isArray(points)) throw new Error("Invalid knowledge base search response");
+      } catch (error) {
+        throw qdrantFailure("search", error);
       }
     }
 
@@ -227,29 +227,35 @@ export class QdrantService {
     }
 
     try {
-      const scrollRes = await this.scrollPoints(200);
       const docsMap = new Map<string, IngestedDocumentInfo>();
+      let offset: string | number | undefined;
+      let complete = false;
+      for (let page = 0; page < 40; page++) {
+        const scrollRes = await this.scrollPoints(256, offset);
+        for (const pt of scrollRes.points) {
+          const fn = (pt.payload.filename as string) || "Unknown Document";
+          const jobId = (pt.payload.job_id as string) || "";
+          const pages = knowledgeBasePdfPages(pt.payload);
 
-      for (const pt of scrollRes.points) {
-        const fn = (pt.payload.filename as string) || "Unknown Document";
-        const jobId = (pt.payload.job_id as string) || "";
-        const pages = (pt.payload.pages as number[]) || [];
+          if (!docsMap.has(fn)) {
+            docsMap.set(fn, {
+              filename: fn,
+              job_id: jobId,
+              total_chunks: (pt.payload.total_chunks as number) || 1,
+              page_count: 0,
+              pages: [],
+            });
+          }
 
-        if (!docsMap.has(fn)) {
-          docsMap.set(fn, {
-            filename: fn,
-            job_id: jobId,
-            total_chunks: (pt.payload.total_chunks as number) || 1,
-            page_count: 0,
-            pages: [],
+          const doc = docsMap.get(fn)!;
+          pages.forEach((p) => {
+            if (!doc.pages?.includes(p)) doc.pages?.push(p);
           });
         }
-
-        const doc = docsMap.get(fn)!;
-        pages.forEach((p) => {
-          if (!doc.pages?.includes(p)) doc.pages?.push(p);
-        });
+        offset = scrollRes.nextOffset;
+        if (offset === null || offset === undefined) {complete = true; break;}
       }
+      if (!complete) throw new Error("Textbook inventory exceeded its safe limit");
 
       for (const doc of docsMap.values()) {
         if (doc.pages) {
@@ -337,6 +343,39 @@ export class QdrantService {
       passages,
       combinedContext,
     };
+  }
+
+  /** Study guides need the chapter, including material absent from the upload.
+   * Scroll the named sources instead of ranking only a handful of similar chunks.
+   * This is intentionally separate from the analysis retrieval path. */
+  public async getStudyLessonPassages(bounds: ChapterPageBounds): Promise<IngestionSearchChunk[]> {
+    const sources = getTextbookStorageSources(bounds.textbookFilename);
+    const filenames = sources.flatMap(source => getTextbookFilenameCandidates(source.filename));
+    const searchBounds: SearchPageBounds = { sources: sources.map(source => ({
+      filename: source.filename, minPage: bounds.pdfPageStart + source.pageOffset,
+      maxPage: bounds.pdfPageEnd + source.pageOffset,
+    })) };
+    const passages: IngestionSearchChunk[] = [];
+    let offset: string | number | undefined;
+    const seen = new Set<string>();
+    for (let page = 0; page < 40; page++) {
+      const response = await axios.post(`${this.qdrantBaseUrl}/collections/${this.collectionName}/points/scroll`, {
+        limit: 256, offset, with_payload: true, with_vector: false,
+        filter: { must: [{ key: "filename", match: { any: filenames } }] },
+      }, qdrantRequestOptions(5000)).catch(error => { throw qdrantFailure("chapter retrieval", error); });
+      const result = response.data?.result;
+      if (!Array.isArray(result?.points)) throw new Error("Lesson textbook retrieval failed.");
+      for (const point of result.points) {
+        if (!this.isWithinBounds(point.payload || {}, searchBounds)) continue;
+        const chunk = this.toSearchChunk(point, "keyword");
+        const fingerprint = chunk.text.trim().replace(/\s+/g, " ");
+        if (!fingerprint || seen.has(fingerprint)) continue;
+        seen.add(fingerprint); passages.push(chunk);
+      }
+      offset = result.next_page_offset;
+      if (offset === null || offset === undefined) return passages.sort((a, b) => a.page_start - b.page_start || a.chunk_index - b.chunk_index);
+    }
+    throw new Error("Lesson textbook retrieval exceeded its safe limit; no incomplete guide was saved.");
   }
 
   // Builds a lesson from stored textbook passages.
@@ -463,11 +502,12 @@ Rules:
           with_payload: true,
           with_vector: false,
         },
-        this.requestOptions(5000)
+        qdrantRequestOptions(5000)
       );
 
       const result = response.data?.result;
-      const points = (result?.points || []).map((pt: any) => ({
+      if (!Array.isArray(result?.points)) throw new Error("Invalid knowledge base scroll response");
+      const points = result.points.map((pt: any) => ({
         id: pt.id,
         score: 1.0,
         payload: pt.payload || {},
@@ -478,7 +518,7 @@ Rules:
         nextOffset: result?.next_page_offset,
       };
     } catch (error) {
-      return { points: [] };
+      throw qdrantFailure("scroll", error);
     }
   }
 
@@ -516,8 +556,8 @@ Rules:
         score: 0.85,
         text: pt.payload.text || "",
         filename: pt.payload.filename || "",
-        pages: pt.payload.pages || [],
-        page_start: pt.payload.page_start || 0,
+        pages: knowledgeBasePdfPages(pt.payload),
+        page_start: knowledgeBasePdfPages(pt.payload)[0] ?? 0,
         chunk_index: pt.payload.chunk_index || 0,
         payload: pt.payload || {},
         retrievalMode: "keyword",
@@ -534,12 +574,8 @@ Rules:
     if (!bounds) return true;
 
     const filename = String(payload.filename || "").toLowerCase();
-    const pageStart = Number(payload.page_start || 0);
-    const pages = Array.isArray(payload.pages)
-      ? payload.pages.map(Number).filter(Number.isFinite)
-      : [];
+    const pages = knowledgeBasePdfPages(payload);
     const overlaps = (minPage: number, maxPage: number): boolean =>
-      (pageStart >= minPage && pageStart <= maxPage) ||
       pages.some((page) => page >= minPage && page <= maxPage);
 
     if (bounds.sources && bounds.sources.length > 0) {
@@ -574,10 +610,8 @@ Rules:
       score: Number(point.score || 0),
       text: String(payload.text || ""),
       filename: String(payload.filename || ""),
-      pages: Array.isArray(payload.pages)
-        ? payload.pages.map(Number).filter(Number.isFinite)
-        : [],
-      page_start: Number(payload.page_start || 0),
+      pages: knowledgeBasePdfPages(payload),
+      page_start: knowledgeBasePdfPages(payload)[0] ?? 0,
       chunk_index: Number(payload.chunk_index || 0),
       payload,
       retrievalMode,

@@ -1,6 +1,6 @@
 services:
   notes-coverage:
-    image: smart-notes-coverage:science-v34-history-v51-ict-v31
+    image: smart-notes-coverage:science-v35-history-v62-ict-v31-materials-v31-ocr-v2-kb-v2
     build: .
     init: true
     restart: unless-stopped
@@ -20,8 +20,11 @@ services:
       ENGLISH_COVERAGE_SUGGESTIONS_ENABLED: "true"
       HISTORY_COVERAGE_REVIEW_ENABLED: "true"
       ICT_COVERAGE_REVIEW_ENABLED: "true"
-      # Local Qdrant runs outside this backend container.
-      QDRANT_DB_URL: ${COVERAGE_QDRANT_URL:-http://host.docker.internal:6333}
+      # Respect the configured cloud endpoint; a local override is explicit.
+      QDRANT_DB_URL: ${COVERAGE_QDRANT_URL:-${QDRANT_DB_URL:-http://host.docker.internal:6333}}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-pdf_knowledge_base_v2}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      QDRANT_PAYLOAD_PAGE_BASE: ${QDRANT_PAYLOAD_PAGE_BASE:-1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

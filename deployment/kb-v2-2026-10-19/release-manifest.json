@@ -1,0 +1,45 @@
+{
+  "release": "notes-knowledge-base-v2-2026-10-19",
+  "scope": "Handwritten Notes repository only",
+  "preparedImage": "smart-notes-coverage:science-v35-history-v62-ict-v31-materials-v31-ocr-v2-kb-v2",
+  "imageId": "sha256:0574d612f7fdf6d031cb17f564db0aaa54bde1825d093144f69441f511fd4688",
+  "activated": false,
+  "liveCloudVerified": false,
+  "pending": [
+    "Shared QDRANT_DB_URL and QDRANT_API_KEY are not yet available to the user.",
+    "Ingestion owners must confirm the v2 release/migrations and re-upload the textbooks.",
+    "Run kb:verify-v2 and kb:verify before replacing the current Notes container.",
+    "New ICT ingestion jobs require verified source rebinding before manual textbook reference lookup."
+  ],
+  "contract": {
+    "collection": "pdf_knowledge_base_v2",
+    "vector": "dense",
+    "dimensions": 768,
+    "retrievalMode": "dense-only",
+    "embeddingQueryPrefix": "search_query: ",
+    "apiKeySupportedOnAllReaders": true,
+    "unindexedPageFiltersRemoved": true,
+    "storedPageBase": 0,
+    "notesPdfReferencePageBase": 1
+  },
+  "validation": {
+    "typescriptBuildPassed": true,
+    "defaultNotesTestsPassed": 148,
+    "additionalIntegrationTestsPassed": 8,
+    "dockerBuildPassed": true,
+    "offlineContainerModelFixturesPassed": 15,
+    "externalAiCalls": 0,
+    "sharedIndexesOrCollectionsModified": false,
+    "studentRecordsWritten": false
+  },
+  "unchangedModels": {
+    "scienceSha256": "021bb8bd41df5d55599258144a9694097a32cae054ebabd12643783d1d50b191",
+    "historySha256": "7e24afeafe9505f6ac82444d16a8c85aefe484a0fa6d673dc3207366bd7ed3a7",
+    "ictSha256": "df42a138824f57fec3339ecb973f643cebf8899d7eaba902d5adfb40d4a3b74b"
+  },
+  "runningContainerUnchanged": {
+    "imageId": "sha256:55d651a01f5cdd1ed0656404efc9506085d520787281efb12b39d49c23aeec69",
+    "health": "healthy"
+  },
+  "documentation": "docs/knowledge-base-v2-notes-migration.md"
+}

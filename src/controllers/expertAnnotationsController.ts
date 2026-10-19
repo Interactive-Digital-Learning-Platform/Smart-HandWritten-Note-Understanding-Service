@@ -13,6 +13,7 @@ import {
   ExpertAnnotationTaskStatus,
 } from "../models/ExpertAnnotationTask";
 import { Note } from "../models/Note";
+import { isR2Image, noteImageMime, noteImageStorage } from "../services/noteImageStorage";
 
 const allowedStatuses = new Set<ExpertAnnotationTaskStatus>([
   "queued",
@@ -326,6 +327,11 @@ export const getExpertAnnotationImage = async (
       throw new AppError("Invalid stored image path", 400);
     }
     res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    if (isR2Image(filename)) {
+      res.type(noteImageMime(filename)).send(await noteImageStorage.read(filename));
+      return;
+    }
     res.sendFile(target, (error) => {
       if (error && !res.headersSent) next(error);
     });

@@ -2651,7 +2651,8 @@ export class CurriculumDbService {
         `SELECT 
           COUNT(*) as total_count,
           COUNT(*) FILTER (WHERE status = 'done') as done_count
-         FROM jobs`
+         FROM jobs WHERE qdrant_collection = $1`,
+        [config.qdrant.collection]
       );
 
       const totalJobs = parseInt(countRes.rows[0]?.total_count || "0", 10);
@@ -2790,8 +2791,9 @@ export class CurriculumDbService {
           started_at,
           completed_at
          FROM jobs
-         WHERE status = 'done'
-         ORDER BY completed_at DESC NULLS LAST, started_at DESC`
+         WHERE status = 'done' AND qdrant_collection = $1
+         ORDER BY completed_at DESC NULLS LAST, started_at DESC`,
+        [config.qdrant.collection]
       );
 
       return res.rows;
@@ -2817,8 +2819,9 @@ export class CurriculumDbService {
           status,
           completed_at
          FROM jobs
-         WHERE status = 'done'
-         ORDER BY filename, completed_at DESC NULLS LAST`
+         WHERE status = 'done' AND qdrant_collection = $1
+         ORDER BY filename, completed_at DESC NULLS LAST`,
+        [config.qdrant.collection]
       );
 
       return res.rows.map((row) => ({
@@ -2858,8 +2861,8 @@ export class CurriculumDbService {
           started_at,
           completed_at
          FROM jobs
-         WHERE job_id = $1`,
-        [jobId]
+         WHERE job_id = $1 AND qdrant_collection = $2`,
+        [jobId, config.qdrant.collection]
       );
 
       return res.rows[0] || null;

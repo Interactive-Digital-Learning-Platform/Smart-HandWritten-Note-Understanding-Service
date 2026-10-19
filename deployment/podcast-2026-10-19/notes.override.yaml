@@ -1,0 +1,3 @@
+services:
+  notes-coverage:
+    image: smart-notes:podcast-sync-v1-20261019

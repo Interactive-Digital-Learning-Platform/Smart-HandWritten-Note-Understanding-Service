@@ -59,6 +59,7 @@ test('ICT API validates scope, preserves withheld/Unicode evidence, isolates ver
     assert.equal(withheld.suggestedStatus, null); assert.equal(withheld.completeSuggestionWithheld, false);
     const reference = (await (await fetch(url + '/ict/concepts/ict-g10-u02-cpu/reference')).json() as any).data;
     assert.deepEqual(sourceRequest.filter.must[0], {key: 'job_id', match: {value: '3fa953c7-3d14-4612-9bed-b3887cf1a624'}});
+    assert.equal(sourceRequest.filter.must.length, 1, 'unindexed pages must not be sent to strict-mode Qdrant');
     assert.equal(reference.passages.length, 1); assert.equal(reference.passages[0].text, 'Verified CPU reference');
     pending = true; const running = post(valid);
     while (!finish) await new Promise(resolve => setTimeout(resolve, 10));

@@ -1,4 +1,5 @@
 const filenameAliases: Record<string, string[]> = {
+  "grade-10-science-text-book-6200ec8f089d4.pdf": ["grade-10-science-text-book-v1.pdf"],
   "ict g-11 e.pdf": ["ict grade 11.pdf"],
   "grade-10-history-text-book-64017cf286c01.pdf": [
     "histoy grade 10.pdf",

@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-19",
+  "scope": "Notes podcast only",
+  "image": "smart-notes:podcast-sync-v1-20261019",
+  "localImageId": "sha256:e7d374db830051c311d0e88c72c8ad59433b80e03b884c86c24d2042be770560",
+  "backendPodcastChecksPassed": 6,
+  "mobilePodcastChecksPassed": 8,
+  "backendBuildPassed": true,
+  "mobileTypeScriptAndLintPassed": true,
+  "expoAndroidBundleCompiled": true,
+  "syntheticElevenLabsTimingProbe": {
+    "studentDataSent": false,
+    "audioBytes": 73185,
+    "wordCues": 12,
+    "firstWordStartSeconds": 0,
+    "lastWordEndSeconds": 4.505
+  },
+  "activeContainerHealthy": true,
+  "directAndLanHealthHttpStatus": 200,
+  "anonymousNotesRequestHttpStatus": 401,
+  "packagedTimingDecoderAndSchemaVerified": true,
+  "existingNotesOrRecordingsRegenerated": false,
+  "physicalPhoneAlignmentVerified": false,
+  "modelWeightsChanged": false,
+  "guide": "docs/podcast-improvements-2026-10-19.md"
+}

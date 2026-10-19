@@ -1,4 +1,5 @@
 import axios from "axios";
+import { knowledgeBasePdfPages, qdrantFailure, qdrantRequestOptions } from "../services/knowledgeBaseV2";
 import { config } from "../config/config";
 import { TEXTBOOK_TOC_REGISTRY } from "../services/curriculumDbService";
 import {
@@ -34,10 +35,7 @@ const scrollAllPoints = async (): Promise<StoredPoint[]> => {
     const response = await axios.post(
       `${config.qdrant.url.replace(/\/+$/, "")}/collections/${config.qdrant.collection}/points/scroll`,
       body,
-      {
-        timeout: 10000,
-        headers: config.qdrant.apiKey ? { "api-key": config.qdrant.apiKey } : {},
-      }
+      qdrantRequestOptions(10000)
     );
     const result = response.data?.result ?? {};
     points.push(...(result.points ?? []));
@@ -47,11 +45,7 @@ const scrollAllPoints = async (): Promise<StoredPoint[]> => {
 };
 
 const pointPages = (point: StoredPoint): number[] => {
-  const payload = point.payload ?? {};
-  const pages = Array.isArray(payload.pages) ? payload.pages.map(Number) : [];
-  const start = Number(payload.page_start);
-  if (Number.isFinite(start)) pages.push(start);
-  return pages.filter((page) => Number.isFinite(page) && page > 0);
+  return knowledgeBasePdfPages(point.payload ?? {});
 };
 
 const main = async (): Promise<void> => {
@@ -122,6 +116,6 @@ const main = async (): Promise<void> => {
 };
 
 main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
+  console.error(qdrantFailure("coverage verification", error).message);
   process.exitCode = 1;
 });

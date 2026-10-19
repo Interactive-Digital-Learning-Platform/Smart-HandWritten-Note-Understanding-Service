@@ -34,7 +34,7 @@ export function materialOverview(records: Array<Partial<ILearningMaterial>>) {
 export async function enqueueMaterialJobs(
   noteId: string, userId: string, types: MaterialType[],
   build: (type: MaterialType, generationId: string) => Promise<Partial<ILearningMaterial>>,
-  timing = { leaseMs: LEASE_MS, timeoutMs: WORK_TIMEOUT_MS, heartbeatMs: 15_000 },
+  timing: { leaseMs: number; timeoutMs: number; heartbeatMs: number; structuredTimeoutMs?: number } = { leaseMs: LEASE_MS, timeoutMs: WORK_TIMEOUT_MS, heartbeatMs: 15_000, structuredTimeoutMs: 600_000 },
 ) {
   await expireMaterialJobs(noteId);
   const jobs: Array<{ type: MaterialType; generationId: string }> = [];
@@ -62,7 +62,12 @@ export async function enqueueMaterialJobs(
 
   const completion = (noteWorkers.get(noteId) ?? Promise.resolve()).catch(() => {}).then(async () => {
     const results = [];
-    for (const { type, generationId } of jobs) {
+    // A full lesson can take minutes. Make short study tools available first
+    // when the student requests several types together; keep all job leases
+    // and the acknowledged requested types unchanged.
+    const priority = (type: MaterialType) => type === "audio" ? 2 : type === "structured_notes" ? 1 : 0;
+    const workOrder = [...jobs].sort((a,b) => priority(a.type) - priority(b.type));
+    for (const { type, generationId } of workOrder) {
       const filter = { noteId, type, generationId };
       let timer: ReturnType<typeof setTimeout> | undefined;
       try {
@@ -71,7 +76,7 @@ export async function enqueueMaterialJobs(
         if (!claimed.modifiedCount) continue;
         const content = await Promise.race([
           build(type, generationId),
-          new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error("Material generation timed out")), timing.timeoutMs); }),
+          new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error("Material generation timed out")), type === "structured_notes" ? timing.structuredTimeoutMs ?? timing.timeoutMs : timing.timeoutMs); }),
         ]);
         // No upsert: deletion, retry and lease expiry invalidate the old result.
         const saved = await LearningMaterial.updateOne({ ...filter, generationStatus: "generating" },
